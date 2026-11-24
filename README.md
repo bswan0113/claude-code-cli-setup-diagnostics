@@ -1,73 +1,71 @@
-# Claude Code 런처
+# Claude Code Launcher
 
-이 Windows 런처에는 두 가지 기능이 있습니다.
+**English** · [한국어](README.ko.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
-1. **Claude Code CLI 자동 설치·복구**
+1. **Install and repair the Claude Code CLI.** Install the CLI on first use or run eight diagnostic checks when it stops working. The launcher shows what it found and asks for approval before making changes.
+2. **Manage Claude Desktop Code sessions in a GUI.** Browse conversations by project folder when their Claude Code history is saved on this PC. Select a session to open PowerShell in its working folder and continue the conversation in the CLI.
 
-   처음 쓸 때는 CLI를 설치하고, 실행에 문제가 생기면 8단계로 원인을 점검합니다. 해결 방법을 확인하고 승인하면 런처가 선택한 조치를 적용합니다.
-2. **Claude Desktop 앱의 Code 세션을 GUI에서 관리**
+## Install and repair
 
-   이 PC에 Claude Code 기록이 남아 있는 Desktop 앱의 대화를 폴더별로 찾아볼 수 있습니다. 대화를 선택하면 해당 폴더에서 PowerShell이 열리고 CLI로 이어서 작업할 수 있습니다.
+Open **Setup and repair** at the top of the main window or at the bottom left of the sidebar. The quick check shows which `claude` command PowerShell finds in the selected folder, verifies the executable’s publisher and version, and checks sign-in status. Select **Run full 8-step diagnosis** and expand a step to see the evidence, likely cause and available actions.
 
-## 설치 · 복구
+Select a repair to see the files, processes or settings it would change. Choose **Apply this action** to proceed or cancel to return to the results. If the target changes after the scan, review the new result before approving it.
 
-기본 창 상단이나 사이드바 왼쪽 아래에서 **설치 · 복구 → 8단계 전체 검사**를 누릅니다. 결과에서 단계를 펼치면 각 항목의 상태와 근거, 가능한 원인, 해결 방법을 볼 수 있습니다. 팝업을 열자마자 나오는 빠른 진단은 선택한 폴더에서 PowerShell이 찾는 `claude`, 실행 파일의 게시자 서명, 버전과 로그인 상태를 확인합니다.
-
-고칠 항목을 선택하면 확인 화면에 바뀔 파일, 프로세스 또는 설정이 표시됩니다. **확인한 조치 적용**을 눌러야 그 작업을 실행합니다. **취소**하면 결과로 돌아갑니다. 검사 후 대상이 달라졌다면 새 결과를 확인하고 다시 선택하세요.
-
-| 단계 | 무엇을 확인하나요? | 문제가 있으면 어떻게 하나요? |
+| Step | What the launcher checks | What you can do |
 |---|---|---|
-| 1. PC 환경 | Windows 빌드·아키텍처, Windows PowerShell 버전과 실행 경로, 사용자 폴더의 공백·비ASCII 문자를 확인합니다. | x64 실행 환경과 PowerShell 경로를 확인합니다. 사용자 폴더에 한글이나 공백이 있다는 사실만으로 오류로 판단하지 않습니다. |
-| 2. 실행 파일 | 설치 경로, 실행 파일의 서명과 버전, 업데이트 도중 남은 `.new.*`·`.old.*` 백업과 이전 버전 파일을 확인합니다. | 사용할 수 있는 백업을 선택해 복원하거나 WinGet으로 공식 패키지를 설치·재설치합니다. 파일 교체를 위해 Claude를 닫아야 하면 해당 프로세스의 PID를 확인하세요. 종료하면 그 세션의 작업이 끊깁니다. |
-| 3. PATH | 현재 런처가 쓰는 PATH, Windows에 저장된 사용자·시스템 PATH, 실제로 찾아낸 CLI 위치를 대조합니다. | 검증된 설치 폴더가 빠졌으면 사용자 PATH에 추가합니다. 이미 등록돼 있으면 런처의 PATH를 새로고쳐 여기서 여는 PowerShell에 반영합니다. |
-| 4. 중복 설치와 명령 충돌 | 같은 이름으로 잡히는 실행 파일, npm 전역 패키지, WindowsApps 별칭, 예전 설치 폴더 `.claude\local`을 확인합니다. | 정상 설치가 먼저 실행되도록 사용자 PATH 순서를 바꿀 수 있습니다. 중복 npm 패키지 제거와 구형 설치 파일 삭제는 별도 작업입니다. 구형 설치를 정리할 때는 확인 화면에 나열된 일반 파일만 삭제합니다. |
-| 5. PowerShell 실행 정책 | npm으로 설치한 PowerShell 스크립트가 현재 정책에 막히는지, 조직에서 관리하는 정책이 있는지 확인합니다. | 사용자 범위에서 해결할 수 있을 때만 `CurrentUser`의 실행 정책을 `RemoteSigned`로 바꿀 수 있습니다. 조직 정책이 적용된다면 관리자에게 문의하거나 네이티브 CLI를 사용합니다. |
-| 6. 인증·인증서·Git·프록시 | `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL`의 설정 범위, `NODE_EXTRA_CA_CERTS`의 인증서 파일, `CLAUDE_CODE_GIT_BASH_PATH`의 셸 경로, Git 설치와 프록시 설정을 확인합니다. 자격 증명과 프록시 주소의 실제 값은 화면에 표시하지 않습니다. | 회사·교육용 설정은 용도를 확인하세요. 필요 없어진 사용자 변수는 개별 삭제하고, 잘못된 Git Bash 경로는 발견한 셸 경로로 수정할 수 있습니다. 시스템 변수나 관리자가 지정한 값은 해당 관리자에게 확인합니다. |
-| 7. 네트워크 | 설치·업데이트 서버, Claude API, 로그인 서버에 각각 접속합니다. 다운로드 응답이 예상한 내용인지도 확인합니다. | 실패한 서버와 오류를 보고 인증서, 프록시, 방화벽 또는 네트워크 연결을 확인합니다. API 서버에서 HTTP 응답을 받은 것은 서버에 닿았다는 뜻이며, 로그인 성공 여부는 빠른 진단에서 따로 확인합니다. |
-| 8. 업데이트 정리 | `claude.exe.old.*`, `.new.*`, `.broken.*` 파일, `.claude\downloads`의 캐시, 현재 계정의 자동 업데이트 설정을 확인합니다. | 잔여 파일과 다운로드 캐시는 각각 대상 목록을 확인한 뒤 삭제합니다. 업데이트 잔여 파일을 정리할 때 가장 최근의 old 백업은 남겨 둡니다. 네이티브 설치에서 업데이트 손상 흔적이 있어 자동 업데이트를 끄기로 했다면 이후에는 직접 업데이트해야 합니다. |
+| 1. PC environment | Windows build and architecture, Windows PowerShell version and path, spaces and non-ASCII characters in the user profile path. | Check x64 compatibility and the PowerShell path. Spaces and non-ASCII characters are informational. |
+| 2. Executable | Known install paths, publisher signature, version, `.new.*` and `.old.*` update backups, and saved versions. | Restore a verified backup or install or reinstall the official package with WinGet. If a running Claude process blocks replacement, check its PID before closing it. Closing it interrupts that session. |
+| 3. PATH | The launcher’s current PATH, the user and system PATH saved by Windows, and the location of the CLI. | Add a verified installation folder to the user PATH. If already registered, refresh the launcher’s PATH for new PowerShell windows. |
+| 4. Duplicate installs and command conflicts | Executables with the same name, the global npm package, WindowsApps aliases and the legacy `.claude\local` folder. | Reorder the user PATH so the working installation runs first. Removing a duplicate npm package and deleting legacy files are separate actions. Legacy cleanup deletes only the regular files listed for approval. |
+| 5. PowerShell execution policy | Whether policy blocks the npm PowerShell script and whether an organization manages the policy. | Set `CurrentUser` to `RemoteSigned` when a user-level change can resolve the issue. For an organization policy, contact the administrator or use the native CLI. |
+| 6. Authentication, certificates, Git and proxies | The scope of `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN` and `ANTHROPIC_BASE_URL`, the certificate file in `NODE_EXTRA_CA_CERTS`, the shell path in `CLAUDE_CODE_GIT_BASH_PATH`, Git and proxy settings. Credential values and proxy addresses stay hidden. | Check what your workplace or course requires. Remove obsolete user variables individually or point Git Bash to a detected shell. Ask your administrator about system variables and managed settings. |
+| 7. Network | Connections to the download and update server, API and sign-in service, plus the contents of the download response. | Use the failing endpoint and error to check certificates, proxy, firewall or connectivity. An HTTP response from the API confirms reachability. The quick check verifies sign-in separately. |
+| 8. Update cleanup | Leftover `claude.exe.old.*`, `.new.*` and `.broken.*` files, the `.claude\downloads` cache and the user’s automatic update setting. | Review leftover files and the download cache separately before deleting them. Cleanup keeps the newest old backup. If a damaged native update leads you to disable automatic updates, install future updates manually. |
 
-네트워크 검사는 `downloads.claude.ai`, `api.anthropic.com`, `claude.ai`를 대상으로 합니다. 회사에서 프록시나 자체 CA 인증서를 쓴다면 네트워크 담당자와 검사 결과를 확인하세요. [Anthropic의 네트워크 설정 안내](https://code.claude.com/docs/en/network-config)
+**If `~/.local/bin/claude.exe` disappears**, the quick check may report traces of a previous install. Open step 2 of the full diagnosis. A verified backup can restore the file to its original path. WinGet can reinstall the CLI in its own package directory. If another verified installation is available, the launcher checks its PATH.
 
-**빠른 진단에서 자주 보는 결과**
+The network check contacts `downloads.claude.ai`, `api.anthropic.com` and `claude.ai`. If your organization uses a proxy or a private certificate authority, review the results with your network administrator. [Anthropic network configuration](https://code.claude.com/docs/en/network-config)
 
-- **Claude Code 설치**는 WinGet의 `winget` 원본에서 `Anthropic.ClaudeCode` 포터블 패키지를 현재 Windows 계정에 설치합니다. WinGet 약관 동의가 필요하면 표시된 명령을 PowerShell에서 직접 실행합니다.
-- **로그인이 필요합니다**가 나오면 PowerShell에서 `claude auth login`을 실행한 뒤 런처에서 다시 확인하세요. CLI 시작 실패와 실행 후 오류 종료는 따로 표시하며, 확인한 종료 코드도 보여줍니다.
-- 대화를 열다가 설치·복구로 들어왔다면, 복구 후 빠른 진단이 정상인지 확인하고 처음 선택한 폴더와 세션으로 돌아갈 수 있습니다.
+### Quick check results
 
-| 검사나 복구가 멈춘 경우 | 확인할 내용 |
+- Installing Claude Code uses the `winget` source and the portable `Anthropic.ClaudeCode` package for the current Windows user. If WinGet asks you to accept its terms, run the displayed command in PowerShell.
+- If sign-in is required, run `claude auth login` in PowerShell and check again. The launcher distinguishes failure to start from an error after startup and shows the exit code when available.
+- If you opened setup while launching a conversation, a successful quick check after repair lets you return to the original folder and session.
+
+| Symptom | Next step |
 |---|---|
-| 작업 폴더를 열 수 없음 | 폴더를 옮겼거나 삭제했는지 확인하고 **폴더 찾아보기**로 현재 위치를 선택하세요. |
-| PowerShell에서 다른 설치본을 찾음 | 같은 폴더에서 `Get-Command claude -All`로 실행 순서를 확인하세요. 런처는 네이티브 실행 파일의 Authenticode 서명과 게시자 `Anthropic, PBC`를 검증한 뒤 버전을 조회합니다. |
-| WinGet 설치가 끝나지 않음 | 다른 WinGet 작업이 실행 중인지 확인하세요. 설치가 5분을 넘겼거나 종료 후에도 CLI를 찾지 못하면 **다시 검사**를 누르세요. WinGet 자체를 열 수 없다면 **공식 도움말**에서 Windows 설치 방법을 확인하세요. |
-| 검사용 PowerShell이 응답하지 않음 | 빠른 진단은 PowerShell 검사 한 번에 최대 25초를 기다립니다. 팝업의 오류와 종료 코드를 확인하고 해당 폴더에서 PowerShell을 열어 보세요. |
+| The working folder cannot be opened | Check whether it was moved or deleted. Use **Browse folders** to select its current location. |
+| PowerShell finds another installation | Run `Get-Command claude -All` in that folder to inspect command order. The launcher checks the native executable’s Authenticode signature and publisher (`Anthropic, PBC`) before requesting its version. |
+| WinGet installation stalls | Check for another running WinGet job. Choose **Check again** if installation exceeds five minutes or the CLI is still missing afterward. If WinGet cannot start, open the official Windows installation help from the launcher. |
+| The diagnostic PowerShell process stops responding | Each quick PowerShell probe waits up to 25 seconds. Read the error and exit code in the dialog, then open PowerShell in the affected folder. |
 
-빠른 설치는 아래 명령을 사용합니다. 전체 검사에서 공식 패키지 재설치를 선택하면 `--no-upgrade` 대신 `--force`로 실행합니다.
+Quick installation runs the following command. Reinstalling the official package from the full diagnosis changes `--no-upgrade` to `--force`.
 
 ```powershell
 winget install --id Anthropic.ClaudeCode --exact --source winget --scope user --installer-type portable --no-upgrade --disable-interactivity
 ```
 
-## GUI에서 세션 관리하기
+## Manage sessions
 
-1. Windows x64용 `ClaudeLauncher.exe`를 엽니다. .NET 데스크톱 런타임은 실행 파일에 포함돼 있습니다.
-2. 열려 있는 터미널로 돌아가려면 **지금 실행 중 → 이동**을 누릅니다. 이전 대화는 **최근 실행한 세션**에서 고릅니다. 최근 목록에는 최대 5개가 표시됩니다.
-3. 오래된 대화는 **폴더 및 세션**에서 폴더를 펼치거나 세션 이름을 검색해 엽니다. 선택한 대화는 해당 폴더에서 `claude --resume <세션 ID>`로 이어집니다. 새 대화는 폴더에서 **새 세션 시작**을 누르거나 다른 폴더 경로를 입력해 시작합니다.
-4. 기록을 읽지 못한 폴더는 **CLI에서 이 폴더의 세션 선택**을 누르면 PowerShell에서 `claude -r` 선택기가 열립니다. 폴더를 직접 지정하려면 트리를 우클릭하세요.
+1. Open `ClaudeLauncher.exe` on Windows x64. The executable includes the .NET desktop runtime.
+2. Under **Running now**, choose **Switch** to return to an open terminal. **Recently run** lists up to five sessions.
+3. Expand a project under **Folders and sessions** or search by session name. Selecting a session runs `claude --resume <session-id>` in its folder. To begin a new conversation, choose **Start a new session** or enter another folder path.
+4. If a folder’s history cannot be read, choose **Open this folder in the CLI picker** to run `claude -r` in PowerShell. Right-click the tree to specify a folder yourself.
 
-대화 제목과 폴더는 Claude 설정 디렉터리의 `projects` 아래에서 세션 JSONL을 읽어 표시합니다. 런처에 실행 이력이 없는 대화는 파일의 마지막 수정 시각으로 최근 순서를 정합니다.
+Session titles and folders come from JSONL files under `projects` in the Claude configuration directory. For a session with no launcher run history, the launcher uses the file’s last modification time to sort it by recency.
 
-## 화면 설정
+## Appearance
 
-창 상단에서 왼쪽 또는 오른쪽 고정을 선택하면 사이드바로 쓸 수 있습니다. **화면 설정**에서는 다크 모드, 글자 크기(85~125%), 창 불투명도(60~100%)를 조절합니다. 기본 창과 사이드바가 같은 설정을 쓰며, 다음 실행 때도 유지됩니다. 한국어, 영어, 중국어 간체, 일본어를 지원합니다.
+Dock the window to the left or right edge to use it as a sidebar. In **Appearance**, choose dark mode, adjust text size (85–125%) or change window opacity (60–100%). The main window and sidebar share these settings across launches. The interface supports English, Korean, Simplified Chinese and Japanese.
 
-## 소스에서 빌드하기
+## Build from source
 
-.NET 10 SDK가 설치된 Windows에서 저장소 루트를 열고 실행합니다.
+On Windows with the .NET 10 SDK installed, run this command from the repository root.
 
 ```powershell
 dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64
 ```
 
-실행 파일은 `artifacts/publish/win-x64/ClaudeLauncher.exe`에 생성됩니다.
+The executable is written to `artifacts/publish/win-x64/ClaudeLauncher.exe`.
 
-[화면 흐름과 진단 분기](docs/workflow.md) · [개발 순서와 검수 기준](docs/development-plan.md)
+[Workflow and diagnostic decisions (Korean)](docs/workflow.md) · [Development plan and acceptance criteria (Korean)](docs/development-plan.md)
