@@ -170,7 +170,7 @@ internal static class PowerShellProbe
             if (process.ExitCode != 0)
                 return Result.Failure($"PowerShellExitFailed (0x{unchecked((uint)process.ExitCode):X8})");
 
-            return JsonSerializer.Deserialize<Result>(await stdout.ConfigureAwait(false))
+            return JsonSerializer.Deserialize(await stdout.ConfigureAwait(false), DiagnosticJson.Default.ProbeResult)
                 is { Kind: not null } result ? result : Result.Failure("PowerShellOutputInvalid");
         }
         catch (Win32Exception exception)

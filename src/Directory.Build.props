@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup Condition="'$(Edition)' == 'Mini'">
-    <!-- WPF generated sources contain assembly-specific pack URIs. -->
+    <!-- Keep the legacy Mini publish command separate from the full launcher's WPF build. -->
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == ''">obj/Mini/</BaseIntermediateOutputPath>
   </PropertyGroup>
 </Project>

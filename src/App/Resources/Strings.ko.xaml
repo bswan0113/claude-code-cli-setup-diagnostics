@@ -248,4 +248,5 @@
     <sys:String x:Key="UsageLoading">사용량 읽는 중…</sys:String>
     <sys:String x:Key="UsageContextUnknown">컨텍스트 미확인</sys:String>
     <sys:String x:Key="ClosingAfterWork">작업을 마치면 런처를 종료합니다</sys:String>
+    <sys:String x:Key="MiniMoreActions">추가 작업</sys:String>
 </ResourceDictionary>

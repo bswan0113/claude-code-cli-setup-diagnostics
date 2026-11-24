@@ -18,6 +18,8 @@ The full Windows launcher helps you install or repair the Claude Code CLI and pi
 
 ## Install and repair
 
+In Mini, open `ClaudeRepairMini.exe`. The first screen shows the result of the automatic scan. If it finds a problem, it explains the cause and asks whether to apply the recommended fix.
+
 In the full edition, open **Setup and repair** at the top of the main window or at the bottom left of the sidebar. The scan starts automatically. The result is **Installation needed**, **Issue found** or **No issues found**. Issues are marked in red.
 
 If the launcher can fix the problem, it explains what happened, recommends one action and asks whether to proceed. Choose **Yes** to run that action or **No** to leave things as they are. If you need to sign in or contact an administrator, the result tells you what to do. Expand **Full diagnostic results** to see all eight checks and their evidence.
@@ -121,7 +123,7 @@ On Windows with the .NET 10 SDK installed, run the command for the edition you w
 dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64
 
 # Repair Mini
-dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64 -p:Edition=Mini
+dotnet publish src/Mini/ClaudeRepairMini.csproj -c Release
 ```
 
 Both commands publish to `artifacts/publish/win-x64/`. The full edition produces `ClaudeLauncher.exe` and Mini produces `ClaudeRepairMini.exe`.

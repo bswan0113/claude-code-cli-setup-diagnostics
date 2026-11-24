@@ -18,6 +18,8 @@
 
 ## セットアップと修復
 
+Mini は `ClaudeRepairMini.exe` を開くと診断を開始し、最初の画面に結果を表示します。問題があれば原因と対処方法を示し、修復を進めるか確認します。
+
 フル版では、メイン画面の上部またはサイドバーの左下で **セットアップと修復** を開くと、診断が自動で始まります。結果は「インストールが必要」「問題あり」「問題なし」のいずれかです。問題がある場合は赤で表示します。
 
 修復できる問題があれば、ランチャーが原因と推奨する操作を一つ示し、実行するか尋ねます。**はい** を選ぶとその操作を実行し、**いいえ** を選ぶと変更しません。ログインや管理者への問い合わせが必要な場合は、次の手順が表示されます。判定の根拠を見たいときは「診断結果の詳細」を展開すると、全 8 ステップの結果を確認できます。
@@ -121,7 +123,7 @@ Windows のタイトルバーをドラッグするとサイドバーを移動で
 dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64
 
 # インストール・修復専用 Mini
-dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64 -p:Edition=Mini
+dotnet publish src/Mini/ClaudeRepairMini.csproj -c Release
 ```
 
 出力先は `artifacts/publish/win-x64/` です。フル版は `ClaudeLauncher.exe`、Mini は `ClaudeRepairMini.exe` として生成されます。

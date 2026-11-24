@@ -148,7 +148,7 @@ internal static partial class EnvironmentChecks
                 token.ThrowIfCancellationRequested();
                 return null;
             }
-            return process.ExitCode == 0 ? JsonSerializer.Deserialize<ShellState>(output.Result) : null;
+            return process.ExitCode == 0 ? JsonSerializer.Deserialize(output.Result, DiagnosticJson.Default.ShellState) : null;
         }
         catch (Exception ex) when (ex is Win32Exception or IOException or JsonException or InvalidOperationException)
         {
@@ -219,9 +219,9 @@ internal static partial class EnvironmentChecks
             shell is null ? CheckState.Unknown : CheckState.Info, "git.exe · bash.exe");
     }
 
-    private sealed record NpmShim(string FileHash, int ZoneId, string ZoneHash, string? SignatureStatus);
+    internal sealed record NpmShim(string FileHash, int ZoneId, string ZoneHash, string? SignatureStatus);
 
-    private sealed record ShellState(string? Effective, string? MachinePolicy, string? UserPolicy, string? Process,
+    internal sealed record ShellState(string? Effective, string? MachinePolicy, string? UserPolicy, string? Process,
         string? CurrentUser, string? LocalMachine, string ClaudeType, string? ClaudePath, string? GitPath,
         bool Applied = false)
     {

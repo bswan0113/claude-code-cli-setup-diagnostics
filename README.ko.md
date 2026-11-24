@@ -22,6 +22,8 @@
 
 ## 설치 · 복구
 
+Mini는 `ClaudeRepairMini.exe`를 열면 바로 검사합니다. 첫 화면에 결과가 표시되고, 문제가 있으면 원인과 해결 방법을 보여준 뒤 진행할지 묻습니다.
+
 전체판의 기본 창 상단이나 사이드바 왼쪽 아래에서 **설치 · 복구**를 누르면 검사가 시작됩니다. 결과는 **설치 필요**, **이상 있음**, **이상 없음** 중 하나로 표시됩니다. 문제가 있으면 빨간색으로 강조합니다.
 
 고칠 수 있는 문제가 있으면 런처가 원인과 권장 조치 한 가지를 보여주고 진행할지 묻습니다. **예**를 누르면 해당 작업을 실행하고, **아니요**를 누르면 변경하지 않습니다. 직접 로그인하거나 관리자에게 문의해야 할 때는 화면에 다음 할 일이 나옵니다. 검사 근거가 궁금하면 **전체 검사 결과**를 펼쳐 여덟 단계의 세부 내용을 확인하세요.
@@ -125,7 +127,7 @@ Claude가 세션마다 만드는 임시 `scratchpad` 폴더와 서브에이전�
 dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64
 
 # 설치·복구 전용 Mini
-dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64 -p:Edition=Mini
+dotnet publish src/Mini/ClaudeRepairMini.csproj -c Release
 ```
 
 출력 폴더는 `artifacts/publish/win-x64/`입니다. 전체판은 `ClaudeLauncher.exe`, Mini는 `ClaudeRepairMini.exe`로 생성됩니다.

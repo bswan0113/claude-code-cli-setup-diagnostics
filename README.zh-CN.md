@@ -18,6 +18,8 @@
 
 ## 安装和修复
 
+Mini 会在打开 `ClaudeRepairMini.exe` 后立即开始检查，并在第一个画面显示结果。如果发现问题，会说明原因和建议的修复方式，并询问是否继续。
+
 在完整版中，点击主窗口顶部或侧边栏左下角的**安装和修复**后，启动器会自动检查。结果分为「需要安装」「发现问题」和「未发现问题」。发现问题时，状态会以红色突出显示。
 
 如果能自动修复，启动器会说明原因，推荐一项操作，并询问是否继续。选**是**执行这项操作，选**否**则保留现有设置。需要自行登录或联系管理员时，结果中会给出下一步。想查看检查依据时，可以展开「完整诊断结果」，查看八个步骤的详情。
@@ -121,7 +123,7 @@ irm https://claude.ai/install.ps1 | iex
 dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64
 
 # 安装和修复专用 Mini
-dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64 -p:Edition=Mini
+dotnet publish src/Mini/ClaudeRepairMini.csproj -c Release
 ```
 
 输出目录为 `artifacts/publish/win-x64/`。完整版会生成 `ClaudeLauncher.exe`，Mini 会生成 `ClaudeRepairMini.exe`。

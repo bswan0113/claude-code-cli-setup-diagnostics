@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Win32.SafeHandles;
 
 namespace ClaudeLauncher;
@@ -10,7 +11,13 @@ namespace ClaudeLauncher;
 internal static partial class InstallChecks
 {
     private const string RequestVariable = "BLSLAB_CLAUDE_INSTALL_CHECK_INPUT";
-    private sealed record ProcessIdentity(int Pid, int Session, long Started, string Executable, bool CanStop);
+    internal sealed record ProcessIdentity(
+        [property: JsonPropertyOrder(0)] int Pid,
+        [property: JsonPropertyOrder(1)] int Session,
+        [property: JsonPropertyOrder(2)] long Started,
+        [property: JsonPropertyOrder(3)] string Executable,
+        [property: JsonPropertyOrder(4)] bool CanStop);
+    internal sealed record SignatureRequest(string[] Paths, string[] Publishers);
     private sealed record ProcessScan(List<ProcessIdentity> Active, bool Unverified);
     private readonly record struct BinaryState(FileStamp? File, bool Valid, string? Version, string? Issue,
         string? SignatureStatus = null);
@@ -186,10 +193,11 @@ internal static partial class InstallChecks
         var signed = new List<string>();
         foreach (var batch in candidates.Chunk(12))
         {
-            var result = await RunScriptAsync(SignatureScript, new { Paths = batch, Publishers = publishers }, token)
-                .ConfigureAwait(false);
+            var request = new SignatureRequest(batch, publishers);
+            var result = await RunPowerShellAsync(SignatureScript, token, env =>
+                env[RequestVariable] = JsonSerializer.Serialize(request, DiagnosticJson.Default.SignatureRequest)).ConfigureAwait(false);
             if (result is { ExitCode: 0, Output.Length: > 0 } &&
-                JsonSerializer.Deserialize<string[]>(result.Output) is { } matches)
+                JsonSerializer.Deserialize(result.Output, DiagnosticJson.Default.StringArray) is { } matches)
             {
                 signed.AddRange(matches.Where(path => batch.Contains(path, PathComparer)));
             }
@@ -197,9 +205,6 @@ internal static partial class InstallChecks
 
         return signed;
     }
-
-    private static Task<ToolResult?> RunScriptAsync(string script, object input, CancellationToken token) =>
-        RunPowerShellAsync(script, token, env => env[RequestVariable] = JsonSerializer.Serialize(input));
 
     private static Task<ToolResult?> RunPowerShellAsync(string script, CancellationToken token,
         Action<IDictionary<string, string?>> environment)

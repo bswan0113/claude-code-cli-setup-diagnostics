@@ -9,7 +9,7 @@ internal sealed record RepairHistoryEntry(Guid Id, DateTimeOffset At, string Act
 
 internal static partial class RepairJournal
 {
-    private sealed record Entry(Guid Id, DateTimeOffset At, string Action, string Status, UndoPlan? Plan = null,
+    internal sealed record Entry(Guid Id, DateTimeOffset At, string Action, string Status, UndoPlan? Plan = null,
         string? Scope = null, Guid? Undoes = null);
     internal sealed record UndoPlan(string Kind, PathChange? UserPath = null, PathChange? ProcessPath = null,
         Guid Instance = default, string? Previous = null, string? Expected = null, string? PreviousProcess = null,
@@ -177,7 +177,7 @@ internal static partial class RepairJournal
         var plain = ProtectedData.Unprotect(encrypted, null, DataProtectionScope.CurrentUser);
         try
         {
-            var entry = JsonSerializer.Deserialize<Entry>(plain);
+            var entry = JsonSerializer.Deserialize(plain, DiagnosticJson.Default.JournalEntry);
             if (entry is null || entry.Id != id)
                 throw new IOException("Invalid repair history record.");
             return entry;
@@ -191,7 +191,7 @@ internal static partial class RepairJournal
         var path = Path.Combine(Folder, entry.Id.ToString("N") + ".bin");
         GuardPath(path);
         Directory.CreateDirectory(Folder);
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(entry);
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(entry, DiagnosticJson.Default.JournalEntry);
         byte[] encrypted;
         try { encrypted = ProtectedData.Protect(bytes, null, DataProtectionScope.CurrentUser); }
         finally { CryptographicOperations.ZeroMemory(bytes); }

@@ -136,7 +136,7 @@ internal static class LauncherProfiles
             {
                 using (output)
                 {
-                    JsonSerializer.Serialize(output, new ProfileList(1, entries));
+                    JsonSerializer.Serialize(output, new ProfileList(1, entries), DiagnosticJson.Default.ProfileList);
                     output.Flush(flushToDisk: true);
                 }
                 File.Move(temporary, RegistryPath, overwrite: true);
@@ -181,8 +181,8 @@ internal static class LauncherProfiles
         "ANTHROPIC_GOOGLE_CLOUD_LOCATION", "ANTHROPIC_GOOGLE_CLOUD_WORKSPACE_ID", "ANTHROPIC_GOOGLE_CLOUD_BASE_URL"
     ];
 
-    private sealed record Entry(string Id, string Label);
-    private sealed record ProfileList(int Version, List<Entry> Profiles);
+    internal sealed record Entry(string Id, string Label);
+    internal sealed record ProfileList(int Version, List<Entry> Profiles);
 
     private static List<Entry> ReadEntries()
     {
@@ -192,7 +192,7 @@ internal static class LauncherProfiles
             if ((File.GetAttributes(RegistryPath) & FileAttributes.ReparsePoint) != 0)
                 throw new IOException("The profile registry is redirected.");
             using var file = new FileStream(RegistryPath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
-            if (JsonSerializer.Deserialize<ProfileList>(file) is not { Version: 1, Profiles: { } entries })
+            if (JsonSerializer.Deserialize(file, DiagnosticJson.Default.ProfileList) is not { Version: 1, Profiles: { } entries })
                 throw new InvalidDataException("Unrecognized profile registry.");
             var ids = new HashSet<string>(StringComparer.Ordinal);
             foreach (var entry in entries)

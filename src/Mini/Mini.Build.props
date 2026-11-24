@@ -1,0 +1,52 @@
+<Project>
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <UseWPF>false</UseWPF>
+    <UseWindowsForms>false</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ClaudeLauncher</RootNamespace>
+    <AssemblyName>ClaudeRepairMini</AssemblyName>
+    <StartupObject>ClaudeLauncher.MiniProgram</StartupObject>
+    <Product>Claude Code Setup and Repair Mini</Product>
+    <Version>0.5.1</Version>
+    <ApplicationIcon>$(MSBuildThisFileDirectory)../Launcher.ico</ApplicationIcon>
+    <ApplicationManifest>$(MSBuildThisFileDirectory)app.manifest</ApplicationManifest>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>full</TrimMode>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <DebugType>none</DebugType>
+    <TrimmerRemoveSymbols>true</TrimmerRemoveSymbols>
+    <PublishDir>$(MSBuildThisFileDirectory)../../artifacts/publish/win-x64/</PublishDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../Diagnostics/*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../App/DiagnosticPresentation.cs;$(MSBuildThisFileDirectory)../App/GuidedDiagnosis.cs;$(MSBuildThisFileDirectory)../App/LaunchIntent.cs;$(MSBuildThisFileDirectory)../App/LauncherProfiles.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../History/ProfileDataPaths.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../Launcher/ConsoleProcess.cs;$(MSBuildThisFileDirectory)../Launcher/SignedExecutable.cs;$(MSBuildThisFileDirectory)../Launcher/WorkingFolder.cs" />
+  </ItemGroup>
+  <!-- DPAPI is also shipped as a standalone assembly in the Windows runtime. Use the
+       matching .NET 10 implementation for offline SDKs without taking a desktop framework reference. -->
+  <PropertyGroup Condition="'$(MiniProtectedDataAssembly)' == '' and '$(NETCoreAppMaximumVersion)' == '10.0'">
+    <MiniProtectedDataAssembly Condition="Exists('$(MSBuildToolsPath)/../../shared/Microsoft.WindowsDesktop.App/$(BundledNETCoreAppPackageVersion)/System.Security.Cryptography.ProtectedData.dll')">$(MSBuildToolsPath)/../../shared/Microsoft.WindowsDesktop.App/$(BundledNETCoreAppPackageVersion)/System.Security.Cryptography.ProtectedData.dll</MiniProtectedDataAssembly>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MiniProtectedDataAssembly)' != ''">
+    <Reference Include="System.Security.Cryptography.ProtectedData">
+      <HintPath>$(MiniProtectedDataAssembly)</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(MiniProtectedDataAssembly)' == ''">
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.15" />
+  </ItemGroup>
+  <Import Project="$(MSBuildThisFileDirectory)MiniLanguages.targets" />
+</Project>

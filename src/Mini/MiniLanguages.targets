@@ -1,0 +1,77 @@
+<Project>
+  <PropertyGroup>
+    <_MiniStringsDirectory>$(MSBuildThisFileDirectory)../App/Resources</_MiniStringsDirectory>
+    <_MiniStringsBuildFile>$(MSBuildThisFileFullPath)</_MiniStringsBuildFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <_MiniLanguage Include="en;ko;zh-Hans;ja" />
+    <!-- Later dictionaries override earlier keys, as they do in the full launcher. -->
+    <_MiniStringFamily Include="Strings;CoreChecks;InstallChecks;EnvChecks;SettingsRepair;InteractiveRepair;RepairHistory" />
+    <_MiniStringInput Include="@(_MiniStringFamily->'$(_MiniStringsDirectory)/%(Identity).en.xaml')" />
+    <_MiniStringInput Include="@(_MiniStringFamily->'$(_MiniStringsDirectory)/%(Identity).ko.xaml')" />
+    <_MiniStringInput Include="@(_MiniStringFamily->'$(_MiniStringsDirectory)/%(Identity).zh-Hans.xaml')" />
+    <_MiniStringInput Include="@(_MiniStringFamily->'$(_MiniStringsDirectory)/%(Identity).ja.xaml')" />
+  </ItemGroup>
+
+  <UsingTask TaskName="WriteClaudeMiniLanguages" TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Languages ParameterType="System.String[]" Required="true" />
+      <Families ParameterType="System.String[]" Required="true" />
+      <SourceDirectory Required="true" />
+      <OutputDirectory Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.Xml.Linq" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        XNamespace strings = "clr-namespace:System;assembly=mscorlib";
+        XNamespace xaml = "http://schemas.microsoft.com/winfx/2006/xaml";
+        Directory.CreateDirectory(OutputDirectory);
+        foreach (string language in Languages)
+        {
+            var values = new SortedDictionary<string, string>(StringComparer.Ordinal);
+            foreach (string family in Families)
+            {
+                string source = Path.Combine(SourceDirectory, family + "." + language + ".xaml");
+                var document = XDocument.Load(source, LoadOptions.PreserveWhitespace);
+                foreach (var element in document.Root.Elements(strings + "String"))
+                {
+                    var key = (string)element.Attribute(xaml + "Key");
+                    if (string.IsNullOrEmpty(key))
+                        throw new InvalidDataException("Missing string key in " + source);
+                    values[key] = element.Value;
+                }
+            }
+            string output = Path.Combine(OutputDirectory, language + ".bin");
+            using (var writer = new BinaryWriter(File.Create(output), Encoding.UTF8))
+            {
+                writer.Write(values.Count);
+                foreach (var entry in values)
+                {
+                    writer.Write(entry.Key);
+                    writer.Write(entry.Value);
+                }
+            }
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="GenerateClaudeMiniLanguages"
+          Inputs="$(_MiniStringsBuildFile);@(_MiniStringInput)"
+          Outputs="@(_MiniLanguage->'$(IntermediateOutputPath)MiniStrings/%(Identity).bin')">
+    <WriteClaudeMiniLanguages Languages="@(_MiniLanguage)" Families="@(_MiniStringFamily)"
+                             SourceDirectory="$(_MiniStringsDirectory)"
+                             OutputDirectory="$(IntermediateOutputPath)MiniStrings" />
+  </Target>
+
+  <Target Name="EmbedClaudeMiniLanguages" BeforeTargets="AssignTargetPaths" DependsOnTargets="GenerateClaudeMiniLanguages">
+    <ItemGroup>
+      <EmbeddedResource Include="@(_MiniLanguage->'$(IntermediateOutputPath)MiniStrings/%(Identity).bin')"
+                        WithCulture="false">
+        <LogicalName>MiniStrings.%(Filename).bin</LogicalName>
+      </EmbeddedResource>
+      <FileWrites Include="@(_MiniLanguage->'$(IntermediateOutputPath)MiniStrings/%(Identity).bin')" />
+    </ItemGroup>
+  </Target>
+</Project>

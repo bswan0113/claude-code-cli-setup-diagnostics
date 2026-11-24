@@ -28,7 +28,6 @@ public partial class SetupPanel : UserControl
     }
 
     internal event Action<LaunchIntent?>? Finished;
-    internal event Action? BusyChanged;
     internal bool IsBusy => _work is not null;
 
     internal void CancelPendingReadOrLogin()
@@ -160,7 +159,6 @@ public partial class SetupPanel : UserControl
     private void Begin(string work)
     {
         _work = work;
-        BusyChanged?.Invoke();
         _feedback = null;
         Render();
         BodyScroll.ScrollToTop();
@@ -174,7 +172,6 @@ public partial class SetupPanel : UserControl
     private void End()
     {
         _work = null;
-        BusyChanged?.Invoke();
         Render();
         if (IsVisible)
             CloseButton.Focus();

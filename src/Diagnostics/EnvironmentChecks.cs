@@ -330,7 +330,7 @@ internal static partial class EnvironmentChecks
 
     private static string Revision(params string?[] values)
     {
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(values);
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(values, typeof(string[]), DiagnosticJson.Default);
         try { return Convert.ToHexString(HMACSHA256.HashData(RevisionKey, bytes)); }
         finally { CryptographicOperations.ZeroMemory(bytes); }
     }

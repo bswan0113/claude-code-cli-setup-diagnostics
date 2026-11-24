@@ -248,4 +248,5 @@
     <sys:String x:Key="UsageLoading">Reading usage…</sys:String>
     <sys:String x:Key="UsageContextUnknown">Context unknown</sys:String>
     <sys:String x:Key="ClosingAfterWork">Closing the launcher when the current operation finishes</sys:String>
+    <sys:String x:Key="MiniMoreActions">More actions</sys:String>
 </ResourceDictionary>

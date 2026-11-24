@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Win32;
 
 namespace ClaudeLauncher;
@@ -11,18 +12,25 @@ internal static partial class InstallChecks
     private const string DisableUpdater = "DISABLE_AUTOUPDATER";
     private const string ManagerUpdater = "CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE";
 
-    private sealed record RegistryPath(string Raw, RegistryValueKind Kind)
+    internal sealed record RegistryPath(
+        [property: JsonPropertyOrder(0)] string Raw,
+        [property: JsonPropertyOrder(1)] RegistryValueKind Kind)
     {
+        [JsonPropertyOrder(2)]
         public string Expanded => Kind == RegistryValueKind.ExpandString ? Environment.ExpandEnvironmentVariables(Raw) : Raw;
     }
 
-    private sealed record PathState(RegistryPath Machine, RegistryPath User, string Process)
+    internal sealed record PathState(
+        [property: JsonPropertyOrder(0)] RegistryPath Machine,
+        [property: JsonPropertyOrder(1)] RegistryPath User,
+        [property: JsonPropertyOrder(2)] string Process)
     {
+        [JsonPropertyOrder(3)]
         public string Stored => CombinePath(Machine.Expanded, User.Expanded);
     }
 
-    private sealed record CommandHit(string Kind, string? Path);
-    private sealed record PathReport(CommandHit[] Live, CommandHit[] Stored, CommandHit[] ProposedStored,
+    internal sealed record CommandHit(string Kind, string? Path);
+    internal sealed record PathReport(CommandHit[] Live, CommandHit[] Stored, CommandHit[] ProposedStored,
         CommandHit[] ProposedLive);
 
     private const string FindCommands = """
@@ -142,7 +150,7 @@ internal static partial class InstallChecks
         try
         {
             return response is { ExitCode: 0, Output.Length: > 0 } &&
-                JsonSerializer.Deserialize<PathReport>(response.Output) is
+                JsonSerializer.Deserialize(response.Output, DiagnosticJson.Default.PathReport) is
                     { Live: not null, Stored: not null, ProposedStored: not null, ProposedLive: not null } report
                 ? report : null;
         }
@@ -235,7 +243,11 @@ internal static partial class InstallChecks
     private static bool IsEnabled(string? value) => value is not null &&
         (value.Equals("1", StringComparison.Ordinal) || value.Equals("true", StringComparison.OrdinalIgnoreCase));
 
-    private sealed record UpdateFlags(string? User, string? Machine, string? Process, string? PackageManager);
+    internal sealed record UpdateFlags(
+        [property: JsonPropertyOrder(0)] string? User,
+        [property: JsonPropertyOrder(1)] string? Machine,
+        [property: JsonPropertyOrder(2)] string? Process,
+        [property: JsonPropertyOrder(3)] string? PackageManager);
 
     internal static bool UserUpdaterMutable() =>
         ReadScope(DisableUpdater, EnvironmentVariableTarget.Machine) is null &&

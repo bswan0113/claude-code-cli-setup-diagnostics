@@ -248,4 +248,5 @@
     <sys:String x:Key="UsageLoading">正在读取用量…</sys:String>
     <sys:String x:Key="UsageContextUnknown">上下文未知</sys:String>
     <sys:String x:Key="ClosingAfterWork">当前操作完成后将关闭启动器</sys:String>
+    <sys:String x:Key="MiniMoreActions">更多操作</sys:String>
 </ResourceDictionary>

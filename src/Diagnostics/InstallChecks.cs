@@ -2,6 +2,8 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Security;
 using System.Security.Cryptography;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ClaudeLauncher;
 
@@ -108,14 +110,19 @@ internal static partial class InstallChecks
     private sealed record Plan(CheckItem Item, Func<CancellationToken, Task<bool>>? Apply = null,
         string[]? WaitingOn = null, Func<CancellationToken, Task<DiagnosticResult>>? Install = null);
     private sealed record PreferredInstall(string Executable, string PathEntry);
-    private sealed record FileStamp(string Name, long Size, long Modified, long Created, FileAttributes Attributes);
+    internal sealed record FileStamp(
+        [property: JsonPropertyOrder(0)] string Name,
+        [property: JsonPropertyOrder(1)] long Size,
+        [property: JsonPropertyOrder(2)] long Modified,
+        [property: JsonPropertyOrder(3)] long Created,
+        [property: JsonPropertyOrder(4)] FileAttributes Attributes);
 
     private static Plan Mutation(int stage, string key, CheckState state, string evidence, string action,
         string target, string revision, Func<CancellationToken, Task<bool>> apply) =>
         new(new CheckItem(stage, key, state, evidence, action, target) { Revision = revision }, apply);
 
     private static string Fingerprint(params object?[] data) =>
-        Convert.ToHexString(SHA256.HashData(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(data)));
+        Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(data, typeof(object[]), DiagnosticJson.Default)));
 
     private static bool IsInspectionError(Exception error) => error is IOException or UnauthorizedAccessException or
         SecurityException or ArgumentException or InvalidOperationException or Win32Exception or NotSupportedException

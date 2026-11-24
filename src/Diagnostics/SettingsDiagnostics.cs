@@ -52,7 +52,7 @@ internal static partial class SettingsDiagnostics
                 return (invalid, null);
             var (scope, after, source, sourceHash) = recovery.Value;
             var fingerprint = SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new[]
-                { path, scope.ToString(), Hash(original), Hash(after), source, sourceHash }));
+                { path, scope.ToString(), Hash(original), Hash(after), source, sourceHash }, typeof(string[]), DiagnosticJson.Default));
             var revision = Convert.ToHexString(fingerprint);
             var recoveryPath = path + ".before-launcher-repair." + revision[..16];
             // After undo, an identical repair is legitimate. Keep every older original and bind
