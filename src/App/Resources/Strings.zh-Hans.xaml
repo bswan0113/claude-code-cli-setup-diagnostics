@@ -238,4 +238,13 @@
     <sys:String x:Key="FolderSortPathAscending">路径 · 升序</sys:String>
     <sys:String x:Key="FolderSortPathDescending">路径 · 降序</sys:String>
     <sys:String x:Key="FolderSortSaveFailed">未能保存下次启动时使用的文件夹排序。</sys:String>
+    <sys:String x:Key="UsageTotal">词元 {0}</sys:String>
+    <sys:String x:Key="UsageContext">上下文 {0} ({1})</sys:String>
+    <sys:String x:Key="UsageCompactions">压缩 {0} 次</sys:String>
+    <sys:String x:Key="UsageContextDetail">最近一次记录的上下文有 {0} 个词元 / 窗口容量 {1} 个词元（{2}）。</sys:String>
+    <sys:String x:Key="UsageFolderDetail">已记录 {0} 个词元。{2} 个会话中有 {1} 个有用量记录。</sys:String>
+    <sys:String x:Key="UsageEstimatedWindow">窗口大小根据记录中的模型估算。</sys:String>
+    <sys:String x:Key="UsagePartial">仅统计可读取的用量记录。</sys:String>
+    <sys:String x:Key="UsageUnknown">未知</sys:String>
+    <sys:String x:Key="UsageLoading">正在读取用量…</sys:String>
 </ResourceDictionary>

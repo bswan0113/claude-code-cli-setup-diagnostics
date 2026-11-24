@@ -88,19 +88,22 @@
                                                         AutomationProperties.HelpText="{Binding Subtitle}"
                                                         ToolTip="{Binding Terminal.Folder}">
                                                     <Border Style="{StaticResource RunningSeparator}">
-                                                        <DockPanel>
-                                                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource MainOnlyText}"
-                                                                       VerticalAlignment="Center" Margin="9,0,3,0" FontSize="{DynamicResource Font14}"
-                                                                       Foreground="{DynamicResource Muted}" Text="{DynamicResource FocusTerminal}" />
-                                                            <Border DockPanel.Dock="Right" Style="{StaticResource ActivityBadge}">
-                                                                <TextBlock Style="{StaticResource ActivityText}" Text="{Binding ActivityLabel}" />
-                                                            </Border>
-                                                            <StackPanel Margin="0,0,8,0" VerticalAlignment="Center">
-                                                                <TextBlock Style="{StaticResource ListTitle}" Text="{Binding Title}" />
-                                                                <TextBlock Text="{Binding Subtitle}" FontSize="{DynamicResource Font13}" Foreground="{DynamicResource Muted}"
-                                                                           TextTrimming="CharacterEllipsis" />
-                                                            </StackPanel>
-                                                        </DockPanel>
+                                                        <StackPanel>
+                                                            <DockPanel>
+                                                                <TextBlock DockPanel.Dock="Right" Style="{StaticResource MainOnlyText}"
+                                                                           VerticalAlignment="Center" Margin="9,0,3,0" FontSize="{DynamicResource Font14}"
+                                                                           Foreground="{DynamicResource Muted}" Text="{DynamicResource FocusTerminal}" />
+                                                                <Border DockPanel.Dock="Right" Style="{StaticResource ActivityBadge}">
+                                                                    <TextBlock Style="{StaticResource ActivityText}" Text="{Binding ActivityLabel}" />
+                                                                </Border>
+                                                                <StackPanel Margin="0,0,8,0" VerticalAlignment="Center">
+                                                                    <TextBlock Style="{StaticResource ListTitle}" Text="{Binding Title}" />
+                                                                    <TextBlock Text="{Binding Subtitle}" FontSize="{DynamicResource Font13}" Foreground="{DynamicResource Muted}"
+                                                                               TextTrimming="CharacterEllipsis" />
+                                                                </StackPanel>
+                                                            </DockPanel>
+                                                            <TextBlock Style="{StaticResource UsageMetadata}" />
+                                                        </StackPanel>
                                                     </Border>
                                                 </Button>
                                             </DataTemplate>
@@ -129,15 +132,18 @@
                                                         AutomationProperties.Name="{Binding AutomationName}" ToolTip="{Binding Session.Cwd}"
                                                         AutomationProperties.HelpText="{Binding FullTime}">
                                                     <Border Style="{StaticResource ItemSeparator}">
-                                                        <DockPanel>
-                                                            <TextBlock DockPanel.Dock="Right" FontSize="{DynamicResource Font14}" Text="{DynamicResource ResumeSession}"
-                                                                       Foreground="{DynamicResource Muted}" VerticalAlignment="Center" Margin="8,0,3,0" />
-                                                            <StackPanel VerticalAlignment="Center">
-                                                                <TextBlock Style="{StaticResource ListTitle}" Text="{Binding Session.Title}" />
-                                                                <TextBlock Text="{Binding Subtitle}" FontSize="{DynamicResource Font13}" Foreground="{DynamicResource Muted}"
-                                                                           TextTrimming="CharacterEllipsis" />
-                                                            </StackPanel>
-                                                        </DockPanel>
+                                                        <StackPanel>
+                                                            <DockPanel>
+                                                                <TextBlock DockPanel.Dock="Right" FontSize="{DynamicResource Font14}" Text="{DynamicResource ResumeSession}"
+                                                                           Foreground="{DynamicResource Muted}" VerticalAlignment="Center" Margin="8,0,3,0" />
+                                                                <StackPanel VerticalAlignment="Center">
+                                                                    <TextBlock Style="{StaticResource ListTitle}" Text="{Binding Session.Title}" />
+                                                                    <TextBlock Text="{Binding Subtitle}" FontSize="{DynamicResource Font13}" Foreground="{DynamicResource Muted}"
+                                                                               TextTrimming="CharacterEllipsis" />
+                                                                </StackPanel>
+                                                            </DockPanel>
+                                                            <TextBlock Style="{StaticResource UsageMetadata}" />
+                                                        </StackPanel>
                                                     </Border>
                                                 </Button>
                                             </DataTemplate>
@@ -231,6 +237,8 @@
                                         </TextBlock>
                                         <DockPanel Background="Transparent" PreviewMouseLeftButtonDown="FolderHeader_PreviewMouseLeftButtonDown"
                                                    ToolTip="{Binding Path}" AutomationProperties.Name="{Binding Path}" Margin="0,0,10,0">
+                                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource UsageMetadata}" Margin="6,0,0,0"
+                                                       VerticalAlignment="Center" />
                                             <TextBlock Style="{StaticResource FolderNameText}" Text="{Binding Title}" />
                                             <TextBlock Style="{StaticResource FolderPathText}" Text="{Binding Path}" ToolTip="{Binding Path}" />
                                         </DockPanel>
@@ -241,29 +249,32 @@
                                             AutomationProperties.AutomationId="{Binding TreeAutomationId}"
                                             AutomationProperties.Name="{Binding AutomationName}" ToolTip="{Binding Session.Title}"
                                             AutomationProperties.HelpText="{Binding Running.ActivityLabel}">
-                                        <DockPanel Style="{StaticResource TreeSessionLine}" Margin="7,0,1,0">
-                                            <TextBlock DockPanel.Dock="Right" FontSize="{DynamicResource Font13}" Foreground="{DynamicResource Muted}"
-                                                       VerticalAlignment="Center" Margin="7,0,0,0">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock" BasedOn="{StaticResource MainOnlyText}">
-                                                        <Setter Property="Text" Value="{DynamicResource OpenTerminal}" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                                                                <Setter Property="Text" Value="{DynamicResource FocusTerminalInTree}" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource MainOnlyText}" Text="{Binding When}"
-                                                       ToolTip="{Binding FullTime}" FontSize="{DynamicResource Font14}" Foreground="{DynamicResource Muted}"
-                                                       Margin="10,0,8,0" VerticalAlignment="Center" />
-                                            <Border DockPanel.Dock="Right" DataContext="{Binding Running}" Style="{StaticResource ActivityBadge}"
-                                                    Margin="8,0,0,0">
-                                                <TextBlock Style="{StaticResource ActivityText}" Text="{Binding ActivityLabel}" />
-                                            </Border>
-                                            <TextBlock Text="{Binding Session.Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                        </DockPanel>
+                                        <StackPanel Margin="7,0,1,0">
+                                            <DockPanel Style="{StaticResource TreeSessionLine}">
+                                                <TextBlock DockPanel.Dock="Right" FontSize="{DynamicResource Font13}" Foreground="{DynamicResource Muted}"
+                                                           VerticalAlignment="Center" Margin="7,0,0,0">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock" BasedOn="{StaticResource MainOnlyText}">
+                                                            <Setter Property="Text" Value="{DynamicResource OpenTerminal}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                                    <Setter Property="Text" Value="{DynamicResource FocusTerminalInTree}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <TextBlock DockPanel.Dock="Right" Style="{StaticResource MainOnlyText}" Text="{Binding When}"
+                                                           ToolTip="{Binding FullTime}" FontSize="{DynamicResource Font14}" Foreground="{DynamicResource Muted}"
+                                                           Margin="10,0,8,0" VerticalAlignment="Center" />
+                                                <Border DockPanel.Dock="Right" DataContext="{Binding Running}" Style="{StaticResource ActivityBadge}"
+                                                        Margin="8,0,0,0">
+                                                    <TextBlock Style="{StaticResource ActivityText}" Text="{Binding ActivityLabel}" />
+                                                </Border>
+                                                <TextBlock Text="{Binding Session.Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                            </DockPanel>
+                                            <TextBlock Style="{StaticResource UsageMetadata}" />
+                                        </StackPanel>
                                     </Button>
                                 </DataTemplate>
                                 <DataTemplate DataType="{x:Type local:FallbackTreeRow}">

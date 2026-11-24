@@ -238,4 +238,13 @@
     <sys:String x:Key="FolderSortPathAscending">パス・昇順</sys:String>
     <sys:String x:Key="FolderSortPathDescending">パス・降順</sys:String>
     <sys:String x:Key="FolderSortSaveFailed">次回起動時のフォルダーの並び順を保存できませんでした。</sys:String>
+    <sys:String x:Key="UsageTotal">トークン {0}</sys:String>
+    <sys:String x:Key="UsageContext">コンテキスト {0} ({1})</sys:String>
+    <sys:String x:Key="UsageCompactions">圧縮 {0} 回</sys:String>
+    <sys:String x:Key="UsageContextDetail">直近のコンテキスト {0} トークン / ウィンドウ {1} トークン ({2})</sys:String>
+    <sys:String x:Key="UsageFolderDetail">記録されたトークン {0}。使用量が分かるセッションは {2} 件中 {1} 件です。</sys:String>
+    <sys:String x:Key="UsageEstimatedWindow">ウィンドウのサイズは記録されたモデルから推定しています。</sys:String>
+    <sys:String x:Key="UsagePartial">読み取れた使用記録のみを集計しています。</sys:String>
+    <sys:String x:Key="UsageUnknown">不明</sys:String>
+    <sys:String x:Key="UsageLoading">使用量を読み込み中…</sys:String>
 </ResourceDictionary>

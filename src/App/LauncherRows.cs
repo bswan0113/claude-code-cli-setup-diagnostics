@@ -4,9 +4,18 @@ using System.Runtime.CompilerServices;
 
 namespace ClaudeLauncher;
 
-internal abstract class LauncherRow : INotifyPropertyChanged
+internal abstract class LauncherRow(UsageText? usage = null) : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
+    public UsageText? Usage { get; private set; } = usage;
+
+    internal void SetUsage(UsageText updated)
+    {
+        if (Usage == updated)
+            return;
+        Usage = updated;
+        Changed(nameof(Usage));
+    }
 
     protected void Changed([CallerMemberName] string? name = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
@@ -21,6 +30,9 @@ internal sealed class LiveRow(LiveTerminal terminal, int ordinal, bool owned) : 
     public string Title { get; private set; } = "";
     public string Subtitle { get; private set; } = "";
     public string Activity { get; private set; } = "";
+    private SessionUsage? _lastUsage;
+    private bool _usagePending;
+    private string? _usageLanguage;
     public string AutomationName =>
         $"{Title}, {UiLanguage.Text("FocusTerminalPlain")}, {Terminal.Folder}, {ActivityLabel}";
     public string ActivityLabel => UiLanguage.Text(Activity switch
@@ -35,8 +47,16 @@ internal sealed class LiveRow(LiveTerminal terminal, int ordinal, bool owned) : 
 
     public void UseTerminal(LiveTerminal snapshot) => Terminal = snapshot;
 
-    public void Update(Guid? id, string title, string folder, string activity)
+    public void Update(Guid? id, string title, string folder, string activity, SavedSession? saved = null)
     {
+        var pending = saved is { Usage: null };
+        if (_lastUsage != saved?.Usage || _usagePending != pending || _usageLanguage != UiLanguage.Current)
+        {
+            _lastUsage = saved?.Usage;
+            _usagePending = pending;
+            _usageLanguage = UiLanguage.Current;
+            SetUsage(UsageText.Session(_lastUsage, pending));
+        }
         if (SessionId != id)
         {
             SessionId = id;
@@ -76,7 +96,7 @@ internal sealed class LiveRow(LiveTerminal terminal, int ordinal, bool owned) : 
     }
 }
 
-internal abstract class TreeRow(string key, bool expanded = false) : LauncherRow
+internal abstract class TreeRow(string key, bool expanded = false, UsageText? usage = null) : LauncherRow(usage)
 {
     private bool _isSelected;
     private bool _isExpanded = expanded;
@@ -105,18 +125,19 @@ internal abstract class TreeRow(string key, bool expanded = false) : LauncherRow
     }
 }
 
-internal sealed class FolderTreeRow(string path, IReadOnlyList<TreeRow> children, int sessionCount, bool expanded)
-    : TreeRow("folder:" + path, expanded)
+internal sealed class FolderTreeRow(string path, IReadOnlyList<TreeRow> children, IReadOnlyList<SavedSession> sessions,
+    bool unreadable, bool expanded)
+    : TreeRow("folder:" + path, expanded, UsageText.Folder(sessions, unreadable))
 {
     public string Path { get; } = path;
     public string Title { get; } = LiveRow.FolderName(path);
     public IReadOnlyList<TreeRow> Children { get; } = children;
     public string CountLabel => string.Format(CultureInfo.GetCultureInfo(UiLanguage.Current),
-        UiLanguage.Text("FolderSessionCount"), sessionCount);
+        UiLanguage.Text("FolderSessionCount"), sessions.Count);
 }
 
 internal sealed class SessionTreeRow(SavedSession session, DateTime lastUsedUtc, LiveRow? running)
-    : TreeRow("session:" + session.Id.ToString("N"))
+    : TreeRow("session:" + session.Id.ToString("N"), usage: UsageText.Session(session.Usage, loading: true))
 {
     public SavedSession Session { get; } = session;
     public LiveRow? Running { get; } = running;

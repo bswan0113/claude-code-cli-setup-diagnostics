@@ -443,6 +443,7 @@ public partial class MainWindow : Window
             return;
         }
         _closing = true;
+        _usageRead?.Cancel();
         _activityTimer.Stop();
     }
 

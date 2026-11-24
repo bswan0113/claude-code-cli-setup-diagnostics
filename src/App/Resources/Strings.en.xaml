@@ -238,4 +238,13 @@
     <sys:String x:Key="FolderSortPathAscending">Path · A–Z</sys:String>
     <sys:String x:Key="FolderSortPathDescending">Path · Z–A</sys:String>
     <sys:String x:Key="FolderSortSaveFailed">Could not save the folder order for next time.</sys:String>
+    <sys:String x:Key="UsageTotal">Tokens {0}</sys:String>
+    <sys:String x:Key="UsageContext">Context {0} ({1})</sys:String>
+    <sys:String x:Key="UsageCompactions">Compactions {0}</sys:String>
+    <sys:String x:Key="UsageContextDetail">Last recorded context: {0} tokens / window {1} ({2}).</sys:String>
+    <sys:String x:Key="UsageFolderDetail">Recorded tokens: {0}. Sessions with usage data: {1} of {2}.</sys:String>
+    <sys:String x:Key="UsageEstimatedWindow">The window size is estimated from the recorded model.</sys:String>
+    <sys:String x:Key="UsagePartial">Only the available usage records are included.</sys:String>
+    <sys:String x:Key="UsageUnknown">Unknown</sys:String>
+    <sys:String x:Key="UsageLoading">Reading usage…</sys:String>
 </ResourceDictionary>

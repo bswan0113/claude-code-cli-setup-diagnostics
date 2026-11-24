@@ -35,12 +35,19 @@ public partial class MainWindow
         if (_closing || version != _historyVersion)
             return index;
 
+        var previous = _sessions?.Sessions.ToDictionary(session => session.Id);
+        if (previous is not null)
+            index = index with { Sessions = index.Sessions.Select(session =>
+                previous.TryGetValue(session.Id, out var old) && old.ModifiedUtc == session.ModifiedUtc &&
+                string.Equals(old.TranscriptPath, session.TranscriptPath, StringComparison.OrdinalIgnoreCase)
+                    ? session with { Usage = old.Usage } : session).ToArray() };
         _sessions = index;
         _folderHistoryUnavailable = folders is null;
         if (folders is not null)
             _folderHistory = folders;
         RefreshLiveRows();
         RefreshHistoryView();
+        ScheduleUsageRead(liveOnly: false);
         return index;
     }
 
@@ -78,6 +85,8 @@ public partial class MainWindow
         if (RefreshLiveRows())
             RefreshHistoryView();
         await DiscoverAsync();
+        if (!_closing && _usageRead is null && _activeIds.Count != 0 && DateTime.UtcNow >= _nextUsagePoll)
+            ScheduleUsageRead(liveOnly: true);
     }
 
     private async Task DiscoverAsync()
@@ -196,8 +205,9 @@ public partial class MainWindow
         if (!processes.Add(row.Terminal.ProcessId) || id is Guid session && !ids.Add(session))
             return;
 
-        var title = id is Guid known ? FindSession(known)?.Title : null;
-        row.Update(id, title ?? UiLanguage.Text("UnnamedTerminal"), row.Terminal.Folder, row.Terminal.Activity);
+        var savedSession = id is Guid known ? FindSession(known) : null;
+        row.Update(id, savedSession?.Title ?? UiLanguage.Text("UnnamedTerminal"), row.Terminal.Folder,
+            row.Terminal.Activity, savedSession);
         rows.Add(row);
     }
 
@@ -302,7 +312,7 @@ public partial class MainWindow
 
             var expanded = query.Length == 0 ? _expandedFolders.Contains(folder.Path)
                 : _renderedSearch != query || !previous.TryGetValue(folder.Path, out var old) || old.IsExpanded;
-            results.Add(new FolderTreeRow(folder.Path, children, saved.Length, expanded));
+            results.Add(new FolderTreeRow(folder.Path, children, saved, fallbacks.Contains(folder.Path), expanded));
         }
 
         _renderedSearch = query;

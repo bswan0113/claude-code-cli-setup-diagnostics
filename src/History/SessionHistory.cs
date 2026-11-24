@@ -4,7 +4,11 @@ using System.Text.Json;
 
 namespace ClaudeLauncher;
 
-public sealed record SavedSession(Guid Id, string Title, string Cwd, DateTime ModifiedUtc);
+public sealed record SavedSession(Guid Id, string Title, string Cwd, DateTime ModifiedUtc)
+{
+    internal string? TranscriptPath { get; init; }
+    public SessionUsage? Usage { get; init; }
+}
 
 public sealed record SessionIndex(IReadOnlyList<SavedSession> Sessions, bool HasReadErrors)
 {
@@ -102,7 +106,7 @@ public static class SessionHistory
 
             if (transcript.Title is { } title)
             {
-                sessions.Add(new(id, title, cwd, transcript.ModifiedUtc));
+                sessions.Add(new(id, title, cwd, transcript.ModifiedUtc) { TranscriptPath = transcript.FilePath });
             }
             else if (fallbackSeen.Add(cwd))
             {
@@ -118,6 +122,7 @@ public static class SessionHistory
     {
         var reader = new SessionRecordReader(id);
         var readFailed = false;
+        var skippedLargeRecord = false;
         DateTime modifiedUtc = default;
         string? title = null;
         try
@@ -142,7 +147,7 @@ public static class SessionHistory
                     else
                     {
                         oversized = true;
-                        readFailed = true;
+                        skippedLargeRecord = true;
                     }
 
                     if (newline < 0)
@@ -180,7 +185,7 @@ public static class SessionHistory
             readFailed = true;
         }
 
-        readFailed |= reader.HasUserMessage && (reader.Cwd is null || title is null);
+        readFailed |= (reader.HasUserMessage || skippedLargeRecord) && (reader.Cwd is null || title is null);
         hasErrors |= readFailed;
         return readFailed || (reader.HasUserMessage && title is not null)
             ? new Transcript(path, readFailed ? null : title, reader.Cwd, modifiedUtc)

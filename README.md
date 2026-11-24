@@ -58,6 +58,12 @@ Session titles and folders come from JSONL files under `projects` in the Claude 
 
 The sort menu beside **Folders and sessions** orders folders by last use, name or full path in either direction. The default is newest first. Your selection is saved for the next launch. In the sidebar, each folder shows its path on a second line. Hover over a shortened path to see it in full.
 
+### Token usage
+
+Each folder shows the sum of the recorded tokens for its sessions, including sessions hidden by a search. Each session shows its total input (including cache reads and writes) and output combined. These figures come from the main local transcript. Separate subagent logs and provider billing are outside that total.
+
+**Context** shows the most recent recorded context size and the percentage of the model’s window it uses. A percentage marked `≈` uses the model’s default window size. A dash means the value is unknown, and `≥` marks a partial total. The compaction count appears only after a recorded compaction. Hover over a usage line for exact counts. Short labels use K for thousands and M for millions.
+
 ## Appearance
 
 Dock the window to the left or right edge to use it as a sidebar. In **Appearance**, choose dark mode, adjust text size (85–125%) or change window opacity (60–100%). The main window and sidebar share these settings across launches. The interface supports English, Korean, Simplified Chinese and Japanese.

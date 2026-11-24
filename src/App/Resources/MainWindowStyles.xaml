@@ -130,6 +130,15 @@
             </DataTrigger>
         </Style.Triggers>
     </Style>
+    <Style x:Key="UsageMetadata" TargetType="TextBlock">
+        <Setter Property="Text" Value="{Binding Usage.Line}" />
+        <Setter Property="ToolTip" Value="{Binding Usage.Detail}" />
+        <Setter Property="AutomationProperties.HelpText" Value="{Binding Usage.Detail}" />
+        <Setter Property="FontSize" Value="{DynamicResource Font13}" />
+        <Setter Property="Foreground" Value="{DynamicResource Muted}" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
     <Style x:Key="ItemSeparator" TargetType="Border">
         <Setter Property="BorderBrush" Value="{DynamicResource RowLine}" />
         <Setter Property="BorderThickness" Value="0,0,0,1" />
