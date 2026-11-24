@@ -75,6 +75,35 @@ public sealed class LiveTerminal
         return live;
     }
 
+    // Deletion also needs to protect sessions that the dashboard intentionally does not display.
+    internal static bool HasActiveProject(string cwd)
+    {
+        try
+        {
+            foreach (var path in Directory.EnumerateFiles(SessionDirectory(Environment.CurrentDirectory), "*.json"))
+            {
+                if (!int.TryParse(Path.GetFileNameWithoutExtension(path), out var pid) || pid <= 0)
+                    continue;
+                var state = ReadState(path);
+                if (WorkingFolder.Normalize(state?.Cwd) is { } registered &&
+                    !registered.Equals(cwd, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                try
+                {
+                    using var process = Process.GetProcessById(pid);
+                    if (!process.HasExited && (state is null || state.MatchesProcess(pid, process.StartTime.ToUniversalTime().ToFileTimeUtc())))
+                        return true;
+                }
+                catch (ArgumentException) { } // The registry can outlive its process.
+                catch (InvalidOperationException) { } // Process exited during inspection.
+            }
+        }
+        catch (DirectoryNotFoundException) { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception
+            or System.Security.SecurityException or NotSupportedException) { return true; }
+        return false;
+    }
+
     public bool TryFocus()
     {
         if (Volatile.Read(ref _closed) != 0)

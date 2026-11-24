@@ -42,6 +42,8 @@ public partial class MainWindow : Window
         RenderInput();
         Loaded += async (_, _) =>
         {
+            if (_appearance.Sidebar)
+                PinSidebar(_appearance.SidebarRight, _appearance.SidebarMonitor);
             _activityTimer.Start();
             await Task.WhenAll(RefreshHistoriesAsync(), DiscoverAsync());
         };
@@ -436,7 +438,7 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
-        if (_setup?.IsBusy == true)
+        if (_setup?.IsBusy == true || _changingSessions)
         {
             e.Cancel = true;
             return;

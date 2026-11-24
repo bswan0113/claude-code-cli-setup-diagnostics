@@ -10,6 +10,11 @@ internal enum FolderSortOrder
 internal sealed record AppearancePreferences(bool DarkMode = false, int FontPercent = 100, int OpacityPercent = 100)
 {
     public FolderSortOrder FolderOrder { get; init; } = FolderSortOrder.RecentDescending;
+    public bool Sidebar { get; init; }
+    public bool SidebarRight { get; init; }
+    public string? SidebarMonitor { get; init; }
+    public double SidebarWidth { get; init; } = 450;
+    public double? SidebarHeight { get; init; }
 
     private static readonly string Store = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -31,6 +36,8 @@ internal sealed record AppearancePreferences(bool DarkMode = false, int FontPerc
     private AppearancePreferences Normalized() => this with
     {
         FolderOrder = Enum.IsDefined(FolderOrder) ? FolderOrder : FolderSortOrder.RecentDescending,
+        SidebarWidth = double.IsFinite(SidebarWidth) && SidebarWidth > 0 ? Math.Max(300, SidebarWidth) : 450,
+        SidebarHeight = SidebarHeight is > 0 and < double.PositiveInfinity ? Math.Max(460, SidebarHeight.Value) : null,
         FontPercent = NearestStep(FontPercent, 85, 125),
         OpacityPercent = NearestStep(OpacityPercent, 60, 100)
     };

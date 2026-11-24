@@ -29,6 +29,26 @@ public static class SessionHistory
 
     public static Task<SessionIndex> LoadAsync() => Task.Run(Load);
 
+    // Also used for a transcript moved to the launcher's trash, whose name now includes a suffix.
+    internal static SavedSession? InspectTranscript(string path, Guid id)
+    {
+        var chunk = ArrayPool<byte>.Shared.Rent(ChunkSize);
+        var record = ArrayPool<byte>.Shared.Rent(MaxRecordSize);
+        try
+        {
+            var failed = false;
+            var item = ReadSession(path, id, chunk, record, [], ref failed);
+            return !failed && item is { Cwd: { } cwd, Title: { } title }
+                ? new SavedSession(id, title, cwd, item.ModifiedUtc) { TranscriptPath = path }
+                : null;
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(chunk, clearArray: true);
+            ArrayPool<byte>.Shared.Return(record, clearArray: true);
+        }
+    }
+
     private static SessionIndex Load()
     {
         var configured = Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR");

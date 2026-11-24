@@ -29,37 +29,80 @@ public static class FolderHistory
         }
 
         var store = StorePath;
-        var storeKey = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(store.ToUpperInvariant())));
         try
         {
-            using var mutex = new Mutex(false, $"Local\\BlsLab.ClaudeLauncher.History.{storeKey}");
-            try
+            WithHistoryLock(store, () =>
             {
-                if (!mutex.WaitOne(TimeSpan.FromSeconds(1)))
-                {
-                    return;
-                }
-            }
-            catch (AbandonedMutexException)
-            {
-                // The previous writer exited. The atomic replacement leaves a complete store.
-            }
-
-            try
-            {
-                var folders = ReadLocal(store);
+                var folders = ReadLocal(store, strict: true);
                 Add(folders, folder, DateTime.UtcNow);
                 WriteLocal(store, Sort(folders).Take(HistoryLimit));
-            }
-            finally
-            {
-                mutex.ReleaseMutex();
-            }
+                return true;
+            });
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
             // History is optional. A read-only profile must not block launching Claude.
         }
+    }
+
+    internal static RecentFolder[] SnapshotProjects(IReadOnlyList<string> paths)
+    {
+        if (paths.Count == 0)
+            return [];
+        var store = StorePath;
+        return WithHistoryLock(store, () =>
+        {
+            var folders = ReadLocal(store, strict: true);
+            return paths.Where(folders.ContainsKey).Select(path => folders[path]).ToArray();
+        });
+    }
+
+    internal static void ForgetProjects(IReadOnlyList<string> paths, DateTime removedUtc)
+    {
+        if (paths.Count == 0)
+            return;
+        var store = StorePath;
+        WithHistoryLock(store, () =>
+        {
+            var folders = ReadLocal(store, strict: true);
+            if (paths.Any(path => folders.TryGetValue(path, out var row) && row.LastUsedUtc > removedUtc))
+                throw new IOException("A project was opened after removal was prepared.");
+            var count = folders.Count;
+            foreach (var path in paths)
+                folders.Remove(path);
+            if (count != folders.Count)
+                WriteLocal(store, Sort(folders));
+            return true;
+        });
+    }
+
+    internal static void RestoreProjects(IReadOnlyList<RecentFolder> previous)
+    {
+        if (previous.Count == 0)
+            return;
+        var store = StorePath;
+        WithHistoryLock(store, () =>
+        {
+            var folders = ReadLocal(store, strict: true);
+            foreach (var row in previous)
+                Add(folders, row.Path, row.LastUsedUtc);
+            WriteLocal(store, Sort(folders));
+            return true;
+        });
+    }
+
+    private static T WithHistoryLock<T>(string store, Func<T> action)
+    {
+        var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(store.ToUpperInvariant())));
+        using var mutex = new Mutex(false, $"Local\\BlsLab.ClaudeLauncher.History.{key}");
+        try
+        {
+            if (!mutex.WaitOne(TimeSpan.FromSeconds(1)))
+                throw new IOException("The recent folder store is busy.");
+        }
+        catch (AbandonedMutexException) { }
+        try { return action(); }
+        finally { mutex.ReleaseMutex(); }
     }
 
     private static void Add(Dictionary<string, RecentFolder> folders, string? path, DateTime timestamp)
@@ -82,13 +125,16 @@ public static class FolderHistory
         folders.Values.OrderByDescending(folder => folder.LastUsedUtc)
             .ThenBy(folder => folder.Path, StringComparer.OrdinalIgnoreCase);
 
-    private static Dictionary<string, RecentFolder> ReadLocal(string store)
+    private static Dictionary<string, RecentFolder> ReadLocal(string store, bool strict = false)
     {
         var folders = new Dictionary<string, RecentFolder>(StringComparer.OrdinalIgnoreCase);
         try
         {
             using var file = File.Open(store, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            foreach (var entry in JsonSerializer.Deserialize<RecentFolder[]>(file) ?? [])
+            var entries = JsonSerializer.Deserialize<RecentFolder[]>(file);
+            if (strict && entries is null)
+                throw new IOException("The recent folder store is unreadable.");
+            foreach (var entry in entries ?? [])
             {
                 if (entry is not null)
                 {
@@ -96,7 +142,9 @@ public static class FolderHistory
                 }
             }
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException) { }
+        catch (JsonException error) when (strict) { throw new IOException("The recent folder store is unreadable.", error); }
+        catch (Exception error) when (!strict && error is (IOException or UnauthorizedAccessException or JsonException))
         {
             // Continue with the Claude records when the app's store is unavailable.
         }
@@ -113,6 +161,7 @@ public static class FolderHistory
             using (var file = File.Open(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
                 JsonSerializer.Serialize(file, folders);
+                file.Flush(flushToDisk: true);
             }
 
             File.Move(temporary, store, overwrite: true);

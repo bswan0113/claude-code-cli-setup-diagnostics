@@ -27,11 +27,18 @@ public partial class MainWindow
     private async Task<SessionIndex> RefreshHistoriesAsync()
     {
         var version = ++_historyVersion;
-        var sessions = LoadSessionsAsync();
-        var local = LoadFoldersAsync();
-        await Task.WhenAll(sessions, local);
-        var index = await sessions;
-        var folders = await local;
+        SessionIndex index;
+        IReadOnlyList<RecentFolder>? folders;
+        try
+        {
+            (index, folders) = await ProjectRemoval.LoadVisibleAsync();
+        }
+        catch (Exception error)
+        {
+            Debug.WriteLine(error.GetType().Name);
+            index = _sessions is { } previousIndex ? previousIndex with { HasReadErrors = true } : new([], true);
+            folders = null;
+        }
         if (_closing || version != _historyVersion)
             return index;
 
@@ -49,36 +56,6 @@ public partial class MainWindow
         RefreshHistoryView();
         ScheduleUsageRead(liveOnly: false);
         return index;
-    }
-
-    private async Task<SessionIndex> LoadSessionsAsync()
-    {
-        try
-        {
-            return await SessionHistory.LoadAsync();
-        }
-        catch (Exception exception)
-        {
-            Debug.WriteLine(exception.GetType().Name);
-            return new SessionIndex(_sessions?.Sessions ?? [], HasReadErrors: true)
-            {
-                FallbackFolders = _sessions?.FallbackFolders ?? [],
-                SubagentIds = _sessions?.SubagentIds ?? new HashSet<Guid>()
-            };
-        }
-    }
-
-    private static async Task<IReadOnlyList<RecentFolder>?> LoadFoldersAsync()
-    {
-        try
-        {
-            return await FolderHistory.LoadAsync();
-        }
-        catch (Exception exception)
-        {
-            Debug.WriteLine(exception.GetType().Name);
-            return null;
-        }
     }
 
     private async void ActivityTimer_Tick(object? sender, EventArgs e)

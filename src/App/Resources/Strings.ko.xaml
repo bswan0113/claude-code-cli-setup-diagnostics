@@ -247,4 +247,8 @@
     <sys:String x:Key="UsageUnknown">미확인</sys:String>
     <sys:String x:Key="UsageLoading">사용량 읽는 중…</sys:String>
     <sys:String x:Key="UsageContextUnknown">컨텍스트 미확인</sys:String>
+    <sys:String x:Key="SidebarExitLabel">런처 종료</sys:String>
+    <sys:String x:Key="SidebarResizeWidth">사이드바 너비 조절</sys:String>
+    <sys:String x:Key="SidebarResizeHeight">사이드바 높이 조절</sys:String>
+    <sys:String x:Key="SidebarResizeBoth">사이드바 크기 조절</sys:String>
 </ResourceDictionary>

@@ -1,0 +1,32 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="SessionTrashActions">More actions</sys:String>
+    <sys:String x:Key="SessionTrashMove">Move session to trash…</sys:String>
+    <sys:String x:Key="SessionTrashProject">Remove project from launcher…</sys:String>
+    <sys:String x:Key="SessionTrashManageShort">Manage</sys:String>
+    <sys:String x:Key="SessionTrashManage">Manage projects and sessions</sys:String>
+    <sys:String x:Key="SessionTrashSelectTab">Projects and sessions</sys:String>
+    <sys:String x:Key="SessionTrashTitle">Launcher trash</sys:String>
+    <sys:String x:Key="SessionTrashSelectionHint">Check a project to include every saved session in that folder. Expand it to pick individual sessions. This list includes results hidden by the launcher search.</sys:String>
+    <sys:String x:Key="SessionTrashProjectLine">{0} · {1} sessions</sys:String>
+    <sys:String x:Key="SessionTrashReviewCount">{0} projects · {1} sessions</sys:String>
+    <sys:String x:Key="SessionTrashRecoveryGroup">Recovery needed · {0} projects · {1} sessions</sys:String>
+    <sys:String x:Key="SessionTrashScope">Move the selected local session transcripts to the launcher trash? You can restore them here later. Project files, separate subagent logs, prompt history and cloud data stay in place.</sys:String>
+    <sys:String x:Key="SessionTrashProjectScope">Remove the selected project entries from the launcher and move their local session transcripts and any individually selected transcripts to the launcher trash? Your working folders and files stay on disk. Subfolders listed as separate projects are included only if you checked them too.</sys:String>
+    <sys:String x:Key="SessionTrashReview">Review removal</sys:String>
+    <sys:String x:Key="SessionTrashConfirm">Move to trash</sys:String>
+    <sys:String x:Key="SessionTrashRestore">Restore selection</sys:String>
+    <sys:String x:Key="SessionTrashRestoreHint">Restore the selected entry to its original location. A group is restored together. Existing files are kept.</sys:String>
+    <sys:String x:Key="SessionTrashAttention">Check the selection</sys:String>
+    <sys:String x:Key="SessionTrashActive">A selected session or project is open or starting in a terminal. Close it and try again.</sys:String>
+    <sys:String x:Key="SessionTrashConflict">A session ID or destination is already in use. Check the current list before trying again.</sys:String>
+    <sys:String x:Key="SessionTrashChanged">The selected records changed. Reopen the list and check the selection again.</sys:String>
+    <sys:String x:Key="SessionTrashUnavailable">The launcher could not complete this operation. Check access to the local records and the launcher trash.</sys:String>
+    <sys:String x:Key="SessionTrashRemoved">Moved to the launcher trash.</sys:String>
+    <sys:String x:Key="SessionTrashRestored">Restored to the launcher.</sys:String>
+    <sys:String x:Key="SessionTrashLoading">Reading local records…</sys:String>
+    <sys:String x:Key="SessionTrashEmpty">The launcher trash is empty.</sys:String>
+    <sys:String x:Key="SessionTrashCancel">Cancel</sys:String>
+    <sys:String x:Key="SessionTrashClose">Close</sys:String>
+</ResourceDictionary>

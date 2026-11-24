@@ -30,7 +30,7 @@ The launcher checks `downloads.claude.ai` and `claude.ai`. It adds an anonymous 
 
 ### Settings files, Defender and repair history
 
-Step 6 checks `~/.claude.json` and `~/.claude/settings.json` as UTF-8 JSON. A missing file is allowed. An invalid file gets a line and column. The launcher can remove one trailing comma if that makes the entire file valid. Otherwise it looks for a compatible backup and tries to restore the damaged section. If the whole file needs replacing, the preview says so. Review the masked changes and the path where the original will be kept before approving.
+Step 6 checks `~/.claude.json` and `~/.claude/settings.json` as UTF-8 JSON. A missing file is allowed. An invalid file gets a line and column. The launcher can insert one missing comma or remove one trailing comma if that makes the entire file valid. Otherwise it looks for a compatible backup and tries to restore the damaged section. If the whole file needs replacing, the preview says so. Review the masked changes and the path where the original will be kept before approving.
 
 If you undo a settings repair, the launcher restores the original file, including its JSON error. It first checks that both the repaired file and the saved original still match their recorded hashes. If either has changed, undo stops.
 
@@ -71,6 +71,14 @@ Session titles and folders come from JSONL files under `projects` in the Claude 
 
 The sort menu beside **Folders and sessions** orders folders by last use, name or full path in either direction. The default is newest first. Your selection is saved for the next launch. In the sidebar, each folder shows its path on a second line. Hover over a shortened path to see it in full.
 
+### Remove and restore local history
+
+Open **Manage** beside the folder sort menu to check projects or individual sessions. Expand a project to pick individual conversations. Checking the project includes every saved session in that exact folder, including ones hidden by search. For one item, use its **⋯** menu or press **Delete** on the focused row. The confirmation lists the full paths and counts. Close any selected session or project that is open or starting in a terminal before proceeding.
+
+Removing a project takes its entry out of the launcher and moves its local transcripts to **Launcher trash**. You can also remove a project with no sessions. Working folders and files, separately listed subfolders, prompt history, separate subagent logs and cloud data stay in place. Open **Manage → Launcher trash** to restore an entry after restarting the launcher. Items moved together are restored together. The launcher stops if an existing file would be overwritten.
+
+The session list omits Claude’s per-session temporary `scratchpad` workspaces and records identified as subagent sessions.
+
 ### Token usage
 
 Each folder shows the sum of the recorded tokens for its sessions, including sessions hidden by a search. Each session shows its total input (including cache reads and writes) and output combined. These figures come from the main local transcript. Separate subagent logs and provider billing are outside that total.
@@ -78,6 +86,8 @@ Each folder shows the sum of the recorded tokens for its sessions, including ses
 **Context** shows the most recent recorded context size and the percentage of the model’s window it uses. A percentage marked `≈` uses the model’s default window size. A dash means the value is unknown, and `≥` marks a partial total. The compaction count appears only after a recorded compaction. Hover over a usage line for exact counts. Short labels use K for thousands and M for millions.
 
 ## Appearance
+
+On restart the launcher restores the sidebar’s side, monitor, width and height. Drag the inner edge to change the width, the bottom edge to change the height, or the inner bottom corner to change both. Use the sidebar’s close button to exit the launcher.
 
 Dock the window to the left or right edge to use it as a sidebar. In **Appearance**, choose dark mode, adjust text size (85–125%) or change window opacity (60–100%). The main window and sidebar share these settings across launches. The interface supports English, Korean, Simplified Chinese and Japanese.
 
