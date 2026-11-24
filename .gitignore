@@ -1,0 +1,6 @@
+artifacts/
+**/bin/
+**/obj/
+완성본/
+.vs/
+*.user
