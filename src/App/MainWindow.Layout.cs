@@ -1,8 +1,6 @@
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -16,8 +14,6 @@ public partial class MainWindow
     private Rect _desktopBounds;
     private WindowState _desktopState;
     private bool _sidebarRight;
-    private Point _dragStartScreen;
-    private Size _dragStartSize;
     private double _sidebarWidth;
     private double? _sidebarHeight;
     private bool _layoutQueued;
@@ -47,12 +43,10 @@ public partial class MainWindow
 
     private void PinSidebar(bool right, string? preferredMonitor = null)
     {
+        if (IsSidebar) SaveSidebar();
         _sidebarRight = right;
         MoveSidebarButton.SetResourceReference(ContentControl.ContentProperty, right ? "MoveLeft" : "MoveRight");
         AutomationProperties.SetAutomationId(MoveSidebarButton, right ? "DockLeftButton" : "DockRightButton");
-        SidebarWidthGrip.HorizontalAlignment = SidebarCornerGrip.HorizontalAlignment =
-            right ? HorizontalAlignment.Left : HorizontalAlignment.Right;
-        SidebarCornerGrip.Cursor = right ? Cursors.SizeNESW : Cursors.SizeNWSE;
         if (IsSidebar)
         {
             MoveSidebarToEdge(right);
@@ -65,31 +59,41 @@ public partial class MainWindow
             ? new Rect(Left, Top, ActualWidth, ActualHeight) : RestoreBounds;
         IsSidebar = true;
         WindowState = WindowState.Normal;
-        WindowStyle = WindowStyle.None;
-        ResizeMode = ResizeMode.NoResize;
-        MinWidth = 0;
-        MinHeight = 0;
+        // Keep the native caption and sizing frame active, including while an overlay owns the client area.
+        var work = DesktopSidebar.WorkSize(this);
+        MinWidth = Math.Min(300, work.Width);
+        MinHeight = Math.Min(460, work.Height);
         _sidebarWidth = _appearance.SidebarWidth;
         _sidebarHeight = _appearance.SidebarHeight;
-        MoveSidebarToEdge(right, preferredMonitor);
+        MoveSidebarToEdge(right, preferredMonitor, restore: preferredMonitor is not null);
         SaveSidebar();
         UpdateLayoutMode();
         ApplyWindowAppearance();
     }
 
-    private void MoveSidebarToEdge(bool right, string? preferredMonitor = null)
+    private void MoveSidebarToEdge(bool right, string? preferredMonitor = null, bool restore = false)
     {
-        if (!DesktopSidebar.MoveToEdge(this, right, _sidebarWidth, preferredMonitor, _sidebarHeight))
+        WindowState = WindowState.Normal;
+        double inset = restore ? _appearance.SidebarInset : 0;
+        double top = restore ? _appearance.SidebarTop : 0;
+        if (!DesktopSidebar.MoveToEdge(this, right, _sidebarWidth, preferredMonitor, _sidebarHeight, inset, top))
         {
             var work = SystemParameters.WorkArea;
             Width = Math.Min(_sidebarWidth, work.Width);
             Height = Math.Min(_sidebarHeight ?? work.Height, work.Height);
-            Left = right ? work.Right - Width : work.Left;
-            Top = work.Top;
+            inset = Math.Clamp(inset, 0, Math.Max(0, work.Width - Width));
+            Left = right ? work.Right - Width - inset : work.Left + inset;
+            Top = work.Top + Math.Clamp(top, 0, Math.Max(0, work.Height - Height));
         }
     }
 
-    private void CloseSidebar_Click(object sender, RoutedEventArgs e) => Close();
+    private nint SidebarWindowMessage(nint hwnd, int message, nint wParam, nint lParam, ref bool handled)
+    {
+        const int exitSizeMove = 0x0232;
+        if (message == exitSizeMove && IsSidebar && WindowState == WindowState.Normal)
+            SaveSidebar();
+        return 0;
+    }
 
     private void SaveSidebar()
     {
@@ -99,6 +103,14 @@ public partial class MainWindow
             SidebarMonitor = IsSidebar ? DesktopSidebar.MonitorName(this) : _appearance.SidebarMonitor,
             SidebarWidth = _sidebarWidth, SidebarHeight = _sidebarHeight
         };
+        if (IsSidebar && WindowState == WindowState.Normal &&
+            DesktopSidebar.TryReadPlacement(this, _sidebarRight, out var size, out var offset, out var fillsHeight))
+        {
+            _sidebarWidth = size.Width;
+            _sidebarHeight = fillsHeight ? null : size.Height;
+            next = next with { SidebarWidth = _sidebarWidth, SidebarHeight = _sidebarHeight,
+                SidebarInset = offset.X, SidebarTop = offset.Y };
+        }
         if (next == _appearance)
             return;
         _appearance = next;
@@ -106,50 +118,11 @@ public partial class MainWindow
             SetStatus("AppearanceSaveFailed");
     }
 
-    private void SidebarGrip_Started(object sender, DragStartedEventArgs e)
-    {
-        _dragStartScreen = PointToScreen(Mouse.GetPosition(this));
-        _dragStartSize = new Size(ActualWidth, ActualHeight);
-    }
-
-    private void SidebarGrip_Delta(object sender, DragDeltaEventArgs e)
-    {
-        var delta = PointToScreen(Mouse.GetPosition(this)) - _dragStartScreen;
-        var dpi = VisualTreeHelper.GetDpi(this);
-        ResizeSidebar(sender, _dragStartSize, delta.X / dpi.DpiScaleX, delta.Y / dpi.DpiScaleY);
-    }
-
-    private void SidebarGrip_Completed(object sender, DragCompletedEventArgs e) => SaveSidebar();
-
-    private void SidebarGrip_KeyDown(object sender, KeyEventArgs e)
-    {
-        var dx = e.Key switch { Key.Left => -16, Key.Right => 16, _ => 0 };
-        var dy = e.Key switch { Key.Up => -16, Key.Down => 16, _ => 0 };
-        if ((dx == 0 || sender == SidebarHeightGrip) && (dy == 0 || sender == SidebarWidthGrip))
-            return;
-        ResizeSidebar(sender, new Size(ActualWidth, ActualHeight), dx, dy);
-        SaveSidebar();
-        e.Handled = true;
-    }
-
-    private void ResizeSidebar(object grip, Size start, double dx, double dy)
-    {
-        var limit = DesktopSidebar.WorkSize(this);
-        if (grip != SidebarHeightGrip)
-            _sidebarWidth = Math.Clamp(start.Width + (_sidebarRight ? -dx : dx), Math.Min(300, limit.Width), limit.Width);
-        if (grip != SidebarWidthGrip)
-        {
-            var height = Math.Clamp(start.Height + dy, Math.Min(460, limit.Height), limit.Height);
-            _sidebarHeight = height >= limit.Height - 0.5 ? null : height;
-        }
-        MoveSidebarToEdge(_sidebarRight);
-    }
-
     private void Unpin_Click(object sender, RoutedEventArgs e)
     {
+        SaveSidebar();
         IsSidebar = false;
-        WindowStyle = WindowStyle.SingleBorderWindow;
-        ResizeMode = ResizeMode.CanResize;
+        WindowState = WindowState.Normal;
         var work = SystemParameters.WorkArea;
         MinWidth = Math.Min(760, work.Width);
         MinHeight = Math.Min(540, work.Height);
@@ -234,7 +207,6 @@ public partial class MainWindow
         UnpinButton.Margin = new Thickness(0, wrappedSidebar ? 5 : 0, 0, 0);
         AppearanceButton.Margin = new Thickness(8, wrappedSidebar ? 5 : 0, 0, 0);
         UnpinButton.Visibility = sidebar ? Visibility.Visible : Visibility.Collapsed;
-        SidebarExit.Visibility = UnpinButton.Visibility;
         DesktopFooter.Visibility = sidebar ? Visibility.Collapsed : Visibility.Visible;
         SidebarFooter.Visibility = sidebar ? Visibility.Visible : Visibility.Collapsed;
         AutomationProperties.SetAutomationId(PinLeftButton, sidebar ? "MainDockLeftButton" : "DockLeftButton");

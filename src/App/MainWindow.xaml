@@ -7,28 +7,6 @@
         Foreground="{DynamicResource Ink}" Background="{DynamicResource Canvas}"
         Closing="Window_Closing" SizeChanged="Window_SizeChanged">
     <Window.Resources>
-        <Style x:Key="SidebarResizeGrip" TargetType="Thumb">
-            <Setter Property="Focusable" Value="True" />
-            <Setter Property="Visibility" Value="Collapsed" />
-            <Setter Property="Template">
-                <Setter.Value><ControlTemplate TargetType="Thumb">
-                    <Border x:Name="Area" Background="Transparent" />
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Area" Property="Background" Value="{DynamicResource Line}" /></Trigger>
-                        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Area" Property="Background" Value="{DynamicResource Line}" /></Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate></Setter.Value>
-            </Setter>
-            <EventSetter Event="DragStarted" Handler="SidebarGrip_Started" />
-            <EventSetter Event="DragDelta" Handler="SidebarGrip_Delta" />
-            <EventSetter Event="DragCompleted" Handler="SidebarGrip_Completed" />
-            <EventSetter Event="KeyDown" Handler="SidebarGrip_KeyDown" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsSidebar, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                    <Setter Property="Visibility" Value="Visible" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
         <ContextMenu x:Key="SavedSessionMenu" x:Shared="False" Opened="SavedSessionMenu_Opened">
             <MenuItem Header="{DynamicResource SessionTrashMove}" InputGestureText="Del" Click="MoveSavedSession_Click" />
         </ContextMenu>
@@ -101,7 +79,6 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <WrapPanel x:Name="MainToolbar" Grid.Column="1" VerticalAlignment="Center">
                         <Button x:Name="PinLeftButton" Style="{StaticResource ToolbarAction}" Margin="0,0,8,0"
@@ -126,10 +103,6 @@
                     <Button x:Name="AppearanceButton" AutomationProperties.AutomationId="AppearanceButton" Grid.Column="2"
                             Margin="8,0,0,0" VerticalAlignment="Center" Style="{StaticResource ToolbarAction}"
                             Content="{DynamicResource AppearanceTitle}" Click="Appearance_Click" />
-                    <Button x:Name="SidebarExit" Grid.Column="3" Margin="5,0,0,0" Content="×"
-                            AutomationProperties.Name="{DynamicResource SidebarExitLabel}" ToolTip="{DynamicResource SidebarExitLabel}"
-                            Style="{StaticResource ToolbarAction}" Padding="7,3" VerticalAlignment="Center"
-                            Visibility="Collapsed" Click="CloseSidebar_Click" />
                     <TextBlock x:Name="WindowTitle" Text="{DynamicResource AppTitle}" Foreground="{DynamicResource HeaderInk}"
                                Margin="0,0,10,0"
                                VerticalAlignment="Center" FontSize="{DynamicResource Font28}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
@@ -429,12 +402,6 @@
                 <TextBlock x:Name="StatusText" Grid.Row="3" Visibility="Collapsed" Margin="0,6,0,0"
                            Style="{StaticResource BodyText}" FontSize="{DynamicResource Font13}" AutomationProperties.LiveSetting="Polite" />
             </Grid>
-            <Thumb x:Name="SidebarWidthGrip" Grid.RowSpan="3" Style="{StaticResource SidebarResizeGrip}" Width="7"
-                   HorizontalAlignment="Right" Cursor="SizeWE" ToolTip="{DynamicResource SidebarResizeWidth}" AutomationProperties.Name="{DynamicResource SidebarResizeWidth}" />
-            <Thumb x:Name="SidebarHeightGrip" Grid.RowSpan="3" Style="{StaticResource SidebarResizeGrip}" Height="7"
-                   VerticalAlignment="Bottom" Cursor="SizeNS" ToolTip="{DynamicResource SidebarResizeHeight}" AutomationProperties.Name="{DynamicResource SidebarResizeHeight}" />
-            <Thumb x:Name="SidebarCornerGrip" Grid.RowSpan="3" Style="{StaticResource SidebarResizeGrip}" Height="13" Width="13"
-                   VerticalAlignment="Bottom" HorizontalAlignment="Right" Cursor="SizeNWSE" ToolTip="{DynamicResource SidebarResizeBoth}" AutomationProperties.Name="{DynamicResource SidebarResizeBoth}" />
         </Grid>
         <Grid x:Name="SetupOverlay" Visibility="Collapsed" Background="{DynamicResource Overlay}">
             <ContentControl x:Name="SetupHost" MaxWidth="660" Margin="14" HorizontalAlignment="Center"

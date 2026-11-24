@@ -247,8 +247,5 @@
     <sys:String x:Key="UsageUnknown">Unknown</sys:String>
     <sys:String x:Key="UsageLoading">Reading usage…</sys:String>
     <sys:String x:Key="UsageContextUnknown">Context unknown</sys:String>
-    <sys:String x:Key="SidebarExitLabel">Exit launcher</sys:String>
-    <sys:String x:Key="SidebarResizeWidth">Resize sidebar width</sys:String>
-    <sys:String x:Key="SidebarResizeHeight">Resize sidebar height</sys:String>
-    <sys:String x:Key="SidebarResizeBoth">Resize sidebar</sys:String>
+    <sys:String x:Key="ClosingAfterWork">Closing the launcher when the current operation finishes</sys:String>
 </ResourceDictionary>

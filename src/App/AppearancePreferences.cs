@@ -15,6 +15,8 @@ internal sealed record AppearancePreferences(bool DarkMode = false, int FontPerc
     public string? SidebarMonitor { get; init; }
     public double SidebarWidth { get; init; } = 450;
     public double? SidebarHeight { get; init; }
+    public double SidebarInset { get; init; }
+    public double SidebarTop { get; init; }
 
     private static readonly string Store = Path.Combine(
         ProfileDataPaths.LocalData,
@@ -38,6 +40,8 @@ internal sealed record AppearancePreferences(bool DarkMode = false, int FontPerc
         FolderOrder = Enum.IsDefined(FolderOrder) ? FolderOrder : FolderSortOrder.RecentDescending,
         SidebarWidth = double.IsFinite(SidebarWidth) && SidebarWidth > 0 ? Math.Max(300, SidebarWidth) : 450,
         SidebarHeight = SidebarHeight is > 0 and < double.PositiveInfinity ? Math.Max(460, SidebarHeight.Value) : null,
+        SidebarInset = double.IsFinite(SidebarInset) ? Math.Max(0, SidebarInset) : 0,
+        SidebarTop = double.IsFinite(SidebarTop) ? Math.Max(0, SidebarTop) : 0,
         FontPercent = NearestStep(FontPercent, 85, 125),
         OpacityPercent = NearestStep(OpacityPercent, 60, 100)
     };

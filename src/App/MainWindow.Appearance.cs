@@ -23,6 +23,8 @@ public partial class MainWindow
 
     private void ChangeAppearance(AppearancePreferences next)
     {
+        next = _appearance with { DarkMode = next.DarkMode, FontPercent = next.FontPercent,
+            OpacityPercent = next.OpacityPercent };
         _appearance = next;
         AppearanceResources.Apply(next);
         ApplyWindowAppearance();

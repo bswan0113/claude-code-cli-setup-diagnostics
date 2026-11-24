@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -21,6 +22,8 @@ public partial class MainWindow : Window
     private IInputElement? _returnFocus;
     private bool _initialized;
     private bool _closing;
+    private bool _closeRequested;
+    private bool BusyBeforeClose => _setup?.IsBusy == true || _changingSessions || _profileSigningIn || _profileSwitching;
     private int _nextTerminal;
     private string? _status;
 
@@ -29,7 +32,11 @@ public partial class MainWindow : Window
         _appearance = AppearancePreferences.Load();
         AppearanceResources.Apply(_appearance);
         InitializeComponent();
-        SourceInitialized += (_, _) => ApplyWindowAppearance();
+        SourceInitialized += (_, _) =>
+        {
+            HwndSource.FromHwnd(new WindowInteropHelper(this).Handle)?.AddHook(SidebarWindowMessage);
+            ApplyWindowAppearance();
+        };
         _activityTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         _activityTimer.Tick += ActivityTimer_Tick;
         RunningTerminals.ItemsSource = _liveRows;
@@ -460,12 +467,21 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
-        if (_setup?.IsBusy == true || _changingSessions || _profileSigningIn || _profileSwitching)
+        if (BusyBeforeClose)
         {
             e.Cancel = true;
+            if (!_closeRequested)
+            {
+                _closeRequested = true;
+                SetResourceReference(TitleProperty, "ClosingAfterWork");
+                _profileLoginCancellation?.Cancel();
+                _setup?.CancelPendingReadOrLogin();
+            }
             return;
         }
         _closing = true;
+        if (IsSidebar && WindowState == WindowState.Normal)
+            SaveSidebar();
         _usageRead?.Cancel();
         _activityTimer.Stop();
     }

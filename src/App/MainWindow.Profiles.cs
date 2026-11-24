@@ -111,7 +111,7 @@ public partial class MainWindow
 
     private bool CanUseProfileAction()
     {
-        if (_closing || _profileSwitching || _profileSigningIn)
+        if (_closing || _closeRequested || _profileSwitching || _profileSigningIn)
             return false;
         if (_setup is not null || _changingSessions)
         {

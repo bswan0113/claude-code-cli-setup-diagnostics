@@ -97,6 +97,11 @@ public partial class MainWindow
 
     private async void ActivityTimer_Tick(object? sender, EventArgs e)
     {
+        if (_closeRequested)
+        {
+            if (!BusyBeforeClose && !_closing) Close();
+            return;
+        }
         var profile = LauncherProfiles.Selected;
         using var scope = LauncherProfiles.Bind(profile);
         foreach (var op in _operations.Where(op => op.Profile.Id != profile.Id))

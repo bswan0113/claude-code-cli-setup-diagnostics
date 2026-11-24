@@ -99,7 +99,7 @@ Each folder shows the sum of the recorded tokens for its sessions, including ses
 
 ## Appearance
 
-On restart the launcher restores the sidebar’s side, monitor, width and height. Drag the inner edge to change the width, the bottom edge to change the height, or the inner bottom corner to change both. Use the sidebar’s close button to exit the launcher.
+Drag the Windows title bar to move the sidebar, or drag any edge or corner to resize it. Use the title bar’s × button or Alt+F4 to close the launcher. On restart it restores the sidebar’s monitor, position and size.
 
 Dock the window to the left or right edge to use it as a sidebar. In **Appearance**, choose dark mode, adjust text size (85–125%) or change window opacity (60–100%). The main window and sidebar share these settings across launches. The interface supports English, Korean, Simplified Chinese and Japanese.
 

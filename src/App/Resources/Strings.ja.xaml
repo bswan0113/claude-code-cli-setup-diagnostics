@@ -247,8 +247,5 @@
     <sys:String x:Key="UsageUnknown">不明</sys:String>
     <sys:String x:Key="UsageLoading">使用量を読み込み中…</sys:String>
     <sys:String x:Key="UsageContextUnknown">コンテキスト不明</sys:String>
-    <sys:String x:Key="SidebarExitLabel">ランチャーを終了</sys:String>
-    <sys:String x:Key="SidebarResizeWidth">サイドバーの幅を調整</sys:String>
-    <sys:String x:Key="SidebarResizeHeight">サイドバーの高さを調整</sys:String>
-    <sys:String x:Key="SidebarResizeBoth">サイドバーのサイズを調整</sys:String>
+    <sys:String x:Key="ClosingAfterWork">処理が完了するとランチャーを終了します</sys:String>
 </ResourceDictionary>

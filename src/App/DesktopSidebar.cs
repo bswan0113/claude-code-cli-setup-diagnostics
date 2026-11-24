@@ -7,7 +7,7 @@ namespace ClaudeLauncher;
 internal static class DesktopSidebar
 {
     public static bool MoveToEdge(Window window, bool right, double widthDip,
-        string? preferredMonitor = null, double? heightDip = null)
+        string? preferredMonitor, double? heightDip, double insetDip, double topDip)
     {
         var hwnd = new WindowInteropHelper(window).Handle;
         if (hwnd == 0 || !double.IsFinite(widthDip) || widthDip <= 0 ||
@@ -35,7 +35,7 @@ internal static class DesktopSidebar
         if (target != current && GetAwarenessFromDpiAwarenessContext(GetWindowDpiAwarenessContext(hwnd)) == 2 &&
             GetScaleFactorForMonitor(target, out var percent) == 0 && percent > 0)
             dpi = (uint)Math.Round(96.0 * percent / 100.0);
-        if (!Place(hwnd, monitor.Work, dpi, right, widthDip, heightDip))
+        if (!Place(hwnd, monitor.Work, dpi, right, widthDip, heightDip, insetDip, topDip))
             return false;
         if (target == current) return true;
 
@@ -44,8 +44,27 @@ internal static class DesktopSidebar
         var destination = MonitorFromWindow(hwnd, 2);
         if (destination == target || !TryReadMonitor(target, out monitor))
             return TryReadMonitor(destination, out monitor) &&
-                Place(hwnd, monitor.Work, GetDpiForWindow(hwnd), right, widthDip, heightDip);
-        return Place(hwnd, monitor.Work, dpi, right, widthDip, heightDip);
+                Place(hwnd, monitor.Work, GetDpiForWindow(hwnd), right, widthDip, heightDip, insetDip, topDip);
+        return Place(hwnd, monitor.Work, dpi, right, widthDip, heightDip, insetDip, topDip);
+    }
+
+    public static bool TryReadPlacement(Window window, bool right, out Size size, out Point offset, out bool fillsHeight)
+    {
+        size = default;
+        offset = default;
+        fillsHeight = false;
+        var hwnd = new WindowInteropHelper(window).Handle;
+        if (hwnd == 0 || !GetWindowRect(hwnd, out var bounds) ||
+            !TryReadMonitor(MonitorFromWindow(hwnd, 2), out var monitor)) return false;
+        var dpi = GetDpiForWindow(hwnd);
+        if (dpi == 0 || bounds.Right <= bounds.Left || bounds.Bottom <= bounds.Top) return false;
+        double scale = 96d / dpi;
+        var work = monitor.Work;
+        size = new Size((bounds.Right - bounds.Left) * scale, (bounds.Bottom - bounds.Top) * scale);
+        offset = new Point(Math.Max(0, right ? work.Right - bounds.Right : bounds.Left - work.Left) * scale,
+            Math.Max(0, bounds.Top - work.Top) * scale);
+        fillsHeight = bounds.Top == work.Top && bounds.Bottom == work.Bottom;
+        return true;
     }
 
     public static string? MonitorName(Window window)
@@ -70,23 +89,26 @@ internal static class DesktopSidebar
             info.Work.Right > info.Work.Left && info.Work.Bottom > info.Work.Top;
     }
 
-    private static bool Place(nint hwnd, NativeRect work, uint dpi, bool right, double widthDip, double? heightDip)
+    private static bool Place(nint hwnd, NativeRect work, uint dpi, bool right, double widthDip, double? heightDip,
+        double insetDip, double topDip)
     {
         if (dpi == 0) return false;
         var width = (int)Math.Clamp(Math.Round(widthDip * dpi / 96.0), 1, work.Right - work.Left);
-        var x = right ? work.Right - width : work.Left;
         var height = heightDip is double h
             ? (int)Math.Clamp(Math.Round(h * dpi / 96.0), 1, work.Bottom - work.Top)
             : work.Bottom - work.Top;
+        var inset = (int)Math.Clamp(Math.Round(insetDip * dpi / 96d), 0, work.Right - work.Left - width);
+        var x = right ? work.Right - width - inset : work.Left + inset;
+        var y = work.Top + (int)Math.Clamp(Math.Round(topDip * dpi / 96d), 0, work.Bottom - work.Top - height);
         const uint noSize = 0x0001, noZOrder = 0x0004, noActivate = 0x0010;
         var flags = noZOrder | noActivate;
         if (GetWindowRect(hwnd, out var bounds) && bounds.Right - bounds.Left == width && bounds.Bottom - bounds.Top == height)
         {
-            if (bounds.Left == x && bounds.Top == work.Top)
+            if (bounds.Left == x && bounds.Top == y)
                 return true;
             flags |= noSize;
         }
-        return SetWindowPos(hwnd, 0, x, work.Top, width, height, flags);
+        return SetWindowPos(hwnd, 0, x, y, width, height, flags);
     }
 
     [StructLayout(LayoutKind.Sequential)]

@@ -247,8 +247,5 @@
     <sys:String x:Key="UsageUnknown">未知</sys:String>
     <sys:String x:Key="UsageLoading">正在读取用量…</sys:String>
     <sys:String x:Key="UsageContextUnknown">上下文未知</sys:String>
-    <sys:String x:Key="SidebarExitLabel">退出启动器</sys:String>
-    <sys:String x:Key="SidebarResizeWidth">调整侧边栏宽度</sys:String>
-    <sys:String x:Key="SidebarResizeHeight">调整侧边栏高度</sys:String>
-    <sys:String x:Key="SidebarResizeBoth">调整侧边栏大小</sys:String>
+    <sys:String x:Key="ClosingAfterWork">当前操作完成后将关闭启动器</sys:String>
 </ResourceDictionary>

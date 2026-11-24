@@ -30,6 +30,12 @@ public partial class SetupPanel : UserControl
     internal event Action<LaunchIntent?>? Finished;
     internal bool IsBusy => _work is not null;
 
+    internal void CancelPendingReadOrLogin()
+    {
+        _scanCancellation?.Cancel();
+        _loginCancellation?.Cancel();
+    }
+
     internal async Task OpenAsync(bool examine, DiagnosticNotice? launchFailure)
     {
         if (examine || (launchFailure is not null && launchFailure.Code != "InvalidFolder" && Directory.Exists(_cwd)))
