@@ -14,8 +14,15 @@
     <ProjectReference Include="../UnsignedCli/UnsignedCli.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <Target Name="CopyUnsignedCli" AfterTargets="Build">
+    <MSBuild Projects="../UnsignedCli/UnsignedCli.csproj" Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration);TargetFramework=net10.0">
+      <Output TaskParameter="TargetOutputs" ItemName="UnsignedFixtureAssembly" />
+    </MSBuild>
+    <PropertyGroup>
+      <UnsignedFixtureDirectory>@(UnsignedFixtureAssembly->'%(RootDir)%(Directory)')</UnsignedFixtureDirectory>
+    </PropertyGroup>
     <ItemGroup>
-      <FixtureOutput Include="../UnsignedCli/bin/$(Configuration)/net10.0/claude.*" />
+      <FixtureOutput Include="$(UnsignedFixtureDirectory)claude.*" />
     </ItemGroup>
     <Copy SourceFiles="@(FixtureOutput)" DestinationFolder="$(OutDir)unsigned-cli" />
   </Target>

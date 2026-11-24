@@ -52,6 +52,7 @@ internal static partial class Program
         {
             Console.Error.WriteLine("Usage: Acceptance [--release <published-exe> [--captures <evidence-directory>]]");
             Console.Error.WriteLine("       Acceptance --diagnostics-only <published-exe>");
+            Console.Error.WriteLine("       Acceptance --profile-tabs-only");
             Console.Error.WriteLine("       Acceptance --guided-only <capture-directory>");
             Console.Error.WriteLine("       Acceptance --languages-only <published-exe>");
             Console.Error.WriteLine("       Acceptance --language-resources-only");
