@@ -1,0 +1,280 @@
+<UserControl x:Class="ClaudeLauncher.SetupPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             AutomationProperties.AutomationId="SetupModal"
+             AutomationProperties.Name="{DynamicResource InstallRepairTitle}"
+             Foreground="{DynamicResource Ink}"
+             PreviewKeyDown="Panel_PreviewKeyDown" KeyboardNavigation.TabNavigation="Cycle">
+    <UserControl.Resources>
+        <Style x:Key="CheckLabel" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="{DynamicResource Font13}" />
+            <Setter Property="Foreground" Value="{DynamicResource Ink}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="CheckStatusBadge" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource FolderFill}" />
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Ink}" />
+            <Setter Property="Padding" Value="8,3" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding State}" Value="Pass">
+                    <Setter Property="Background" Value="{DynamicResource WorkingFill}" />
+                    <Setter Property="TextElement.Foreground" Value="{DynamicResource WorkingInk}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding State}" Value="Info">
+                    <Setter Property="Background" Value="{DynamicResource WaitingFill}" />
+                    <Setter Property="TextElement.Foreground" Value="{DynamicResource WaitingInk}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding State}" Value="Warning">
+                    <Setter Property="Background" Value="{DynamicResource ApprovalFill}" />
+                    <Setter Property="TextElement.Foreground" Value="{DynamicResource ApprovalInk}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding State}" Value="Failed">
+                    <Setter Property="Background" Value="{DynamicResource AnswerFill}" />
+                    <Setter Property="TextElement.Foreground" Value="{DynamicResource AnswerInk}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CheckStageExpander" TargetType="Expander">
+            <Setter Property="Foreground" Value="{DynamicResource Ink}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Expander">
+                        <StackPanel>
+                            <ToggleButton x:Name="HeaderSite" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                          HorizontalContentAlignment="Stretch" Foreground="{TemplateBinding Foreground}"
+                                          Content="{TemplateBinding Header}" ContentTemplate="{TemplateBinding HeaderTemplate}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="HeaderBorder" Background="{DynamicResource FolderFill}"
+                                                BorderBrush="{DynamicResource Line}" BorderThickness="2" Padding="8,7">
+                                            <DockPanel>
+                                                <TextBlock x:Name="DisclosureArrow" DockPanel.Dock="Left" Text="▸" FontWeight="SemiBold"
+                                                           Margin="0,0,9,0" VerticalAlignment="Center" />
+                                                <ContentPresenter />
+                                            </DockPanel>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="DisclosureArrow" Property="Text" Value="▾" />
+                                            </Trigger>
+                                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                                <Setter TargetName="HeaderBorder" Property="BorderBrush" Value="{DynamicResource FocusLine}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter x:Name="ExpandSite" Margin="0,6,0,0" Visibility="Collapsed" />
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter TargetName="ExpandSite" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    <Border Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line}" BorderThickness="1" Padding="22">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel>
+                <DockPanel Margin="0,0,0,10">
+                    <Button x:Name="CloseButton" DockPanel.Dock="Right" Style="{StaticResource LinkAction}"
+                            MinWidth="34" MinHeight="32" Content="×" FontSize="{DynamicResource Font22}" Click="Close_Click"
+                            AutomationProperties.Name="{DynamicResource CloseSetup}" />
+                    <TextBlock Style="{StaticResource SectionLabel}" Text="{DynamicResource InstallRepairTitle}"
+                               VerticalAlignment="Center" />
+                </DockPanel>
+                <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Margin="0,0,0,12" />
+            </StackPanel>
+            <ScrollViewer x:Name="BodyScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
+                    <StackPanel x:Name="ProgressPanel" Margin="0,0,0,10" Visibility="Collapsed">
+                        <TextBlock x:Name="ProgressText" Style="{StaticResource BodyText}" Focusable="True"
+                                   AutomationProperties.LiveSetting="Polite" />
+                        <ProgressBar IsIndeterminate="True" Height="4" Margin="0,5,0,0" Foreground="{DynamicResource Primary}" />
+                    </StackPanel>
+                    <TextBlock x:Name="FeedbackText" Style="{StaticResource BodyText}" Visibility="Collapsed"
+                               AutomationProperties.LiveSetting="Polite" Margin="0,0,0,9" />
+                    <StackPanel x:Name="QuickView">
+                        <StackPanel x:Name="ResultPanel">
+                            <TextBlock x:Name="ResultTitle" FontSize="{DynamicResource Font21}" Foreground="{DynamicResource Ink}"
+                                       FontWeight="SemiBold" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                            <TextBlock x:Name="ResultBody" Style="{StaticResource BodyText}" Margin="0,8,0,0" />
+                            <Border x:Name="ResultDetailPanel" Background="{DynamicResource RepairFill}" BorderBrush="{DynamicResource Accent}"
+                                    BorderThickness="3,0,0,0" Padding="10,8" Margin="0,12,0,0" Visibility="Collapsed">
+                                <StackPanel>
+                                    <TextBlock x:Name="ResultDetailLabel" Style="{StaticResource CheckLabel}"
+                                               Foreground="{DynamicResource RepairInk}" Margin="0,0,0,3" />
+                                    <TextBlock x:Name="ResultDetail" Foreground="{DynamicResource RepairInk}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                            <StackPanel x:Name="ResultFolderPanel" Margin="0,8,0,0" Visibility="Collapsed">
+                                <TextBlock Text="{DynamicResource TargetFolder}" Style="{StaticResource CheckLabel}" />
+                                <TextBlock x:Name="ResultFolder" Foreground="{DynamicResource Muted}" FontSize="{DynamicResource Font13}"
+                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                                <TextBlock x:Name="ResultIntent" Style="{StaticResource BodyText}" FontSize="{DynamicResource Font13}" />
+                            </StackPanel>
+                        </StackPanel>
+                        <WrapPanel x:Name="SecondaryActions" Margin="0,12,0,0">
+                            <Button x:Name="LoginCommandButton" Style="{StaticResource LinkAction}" Click="LoginCommand_Click"
+                                    Content="{DynamicResource CopyLoginCommand}" Margin="0,0,8,0" />
+                            <Button Style="{StaticResource LinkAction}" Click="CopySummary_Click"
+                                    Content="{DynamicResource CopySummary}" Margin="0,0,8,0" />
+                            <Button Style="{StaticResource LinkAction}" Click="Help_Click" Content="{DynamicResource OfficialHelp}" />
+                        </WrapPanel>
+                    </StackPanel>
+                    <StackPanel x:Name="FullView" Visibility="Collapsed">
+                        <TextBlock x:Name="FullHeading" Style="{StaticResource SectionLabel}" Text="{DynamicResource FullCheckTitle}"
+                                   FontSize="{DynamicResource Font21}" Focusable="True" />
+                        <TextBlock Style="{StaticResource BodyText}" FontSize="{DynamicResource Font13}"
+                                   Text="{DynamicResource FullCheckInstructions}" Margin="0,3,0,6" />
+                        <TextBlock x:Name="ComparisonText" Style="{StaticResource BodyText}" Visibility="Collapsed"
+                                   AutomationProperties.LiveSetting="Polite" Margin="0,0,0,9" />
+                        <ItemsControl x:Name="FullStages" AutomationProperties.AutomationId="FullDiagnosticStages">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Expander Style="{StaticResource CheckStageExpander}" IsExpanded="{Binding Expanded, Mode=TwoWay}"
+                                              Header="{Binding}" AutomationProperties.Name="{Binding AutomationName}" Margin="0,0,0,7">
+                                        <Expander.HeaderTemplate>
+                                            <DataTemplate>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                                    <TextBlock Text="{Binding Status}" Foreground="{DynamicResource Muted}"
+                                                               FontSize="{DynamicResource Font13}" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </Expander.HeaderTemplate>
+                                        <StackPanel>
+                                            <TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource FullStageNoResults}" Margin="8,4">
+                                                <TextBlock.Visibility>
+                                                    <Binding Path="IsEmpty">
+                                                        <Binding.Converter>
+                                                            <BooleanToVisibilityConverter />
+                                                        </Binding.Converter>
+                                                    </Binding>
+                                                </TextBlock.Visibility>
+                                            </TextBlock>
+                                            <ItemsControl ItemsSource="{Binding Items}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border BorderBrush="{DynamicResource RowLine}" BorderThickness="1" Padding="9"
+                                                                Margin="0,0,0,6" Background="{DynamicResource Surface}">
+                                                            <StackPanel>
+                                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                                                <Border Style="{StaticResource CheckStatusBadge}" Margin="0,4,0,6">
+                                                                    <TextBlock Text="{Binding Status}" FontSize="{DynamicResource Font13}"
+                                                                               TextWrapping="Wrap" />
+                                                                </Border>
+                                                                <TextBlock Text="{DynamicResource FullCause}" Style="{StaticResource CheckLabel}" />
+                                                                <TextBlock Text="{Binding Cause}" Style="{StaticResource BodyText}" />
+                                                                <TextBlock Text="{DynamicResource FullSolution}" Style="{StaticResource CheckLabel}" Margin="0,6,0,0" />
+                                                                <TextBlock Text="{Binding Solution}" Style="{StaticResource BodyText}" />
+                                                                <StackPanel Margin="0,6,0,0">
+                                                                    <StackPanel.Style>
+                                                                        <Style TargetType="StackPanel">
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding HasEvidence}" Value="False">
+                                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </StackPanel.Style>
+                                                                    <TextBlock Text="{DynamicResource FullEvidence}" Style="{StaticResource CheckLabel}" />
+                                                                    <TextBlock Text="{Binding Evidence}" Style="{StaticResource BodyText}" />
+                                                                </StackPanel>
+                                                                <StackPanel Margin="0,6,0,0">
+                                                                    <StackPanel.Style>
+                                                                        <Style TargetType="StackPanel">
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding HasTarget}" Value="False">
+                                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </StackPanel.Style>
+                                                                    <TextBlock Text="{Binding TargetLabel}" Style="{StaticResource CheckLabel}" />
+                                                                    <TextBlock Text="{Binding Target}" Style="{StaticResource BodyText}" />
+                                                                </StackPanel>
+                                                                <Button HorizontalAlignment="Left" Margin="0,8,0,0" Click="ReviewCheck_Click"
+                                                                        AutomationProperties.AutomationId="ReviewCheckAction"
+                                                                        AutomationProperties.Name="{Binding ActionName}"
+                                                                        AutomationProperties.HelpText="{Binding Target}">
+                                                                    <Button.Style>
+                                                                        <Style TargetType="Button" BasedOn="{StaticResource Action}">
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding CanReview}" Value="False">
+                                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </Button.Style>
+                                                                    <TextBlock Text="{Binding ActionLabel}" TextWrapping="Wrap" />
+                                                                </Button>
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Expander>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                    <StackPanel x:Name="ApprovalView" Visibility="Collapsed" AutomationProperties.AutomationId="RepairApproval">
+                        <TextBlock Style="{StaticResource SectionLabel}" Text="{DynamicResource ApprovalTitle}" />
+                        <TextBlock x:Name="ApprovalActionText" FontWeight="SemiBold" TextWrapping="Wrap"
+                                   FontSize="{DynamicResource Font18}" Margin="0,8,0,0" />
+                        <TextBlock x:Name="ApprovalAboutText" Style="{StaticResource BodyText}" Margin="0,4,0,10" />
+                        <Border Background="{DynamicResource RepairFill}" BorderBrush="{DynamicResource Accent}"
+                                BorderThickness="3,0,0,0" Padding="9">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource FullChangeTarget}" Style="{StaticResource CheckLabel}"
+                                           Foreground="{DynamicResource RepairInk}" />
+                                <TextBlock x:Name="ApprovalTargetText" TextWrapping="Wrap" Foreground="{DynamicResource RepairInk}"
+                                           AutomationProperties.AutomationId="ApprovalTarget" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <TextBlock x:Name="ApprovalEvidenceText" Style="{StaticResource BodyText}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+            <WrapPanel Grid.Row="2" HorizontalAlignment="Right" Margin="0,10,0,0">
+                <Button x:Name="FullScanButton" Style="{StaticResource PrimaryAction}" Margin="0,4,8,0" Click="FullScan_Click">
+                    <TextBlock Text="{DynamicResource FullCheckStart}" TextWrapping="Wrap" />
+                </Button>
+                <Button x:Name="BackToQuickButton" Style="{StaticResource LinkAction}" Margin="0,4,8,0"
+                        Content="{DynamicResource FullBackToQuick}" Click="BackToQuick_Click" />
+                <Button x:Name="RescanFullButton" Style="{StaticResource Action}" Margin="0,4,8,0"
+                        Content="{DynamicResource CheckAgain}" Click="FullScan_Click" />
+                <Button x:Name="CancelFullScanButton" Style="{StaticResource Action}" Margin="0,4,8,0"
+                        Content="{DynamicResource FullCancelScan}" Click="CancelFullScan_Click" />
+                <Button x:Name="RetryIntentButton" Style="{StaticResource PrimaryAction}" Margin="0,4,0,0"
+                        Content="{DynamicResource FullRetryIntent}" Click="RetryIntent_Click" />
+                <Button x:Name="CancelButton" Style="{StaticResource Action}" MinWidth="88" Margin="0,4,8,0"
+                        Content="{DynamicResource CancelSetup}" Click="Close_Click" />
+                <Button x:Name="DiagnoseButton" Style="{StaticResource Action}" MinWidth="110" Margin="0,4,8,0"
+                        Click="Diagnose_Click">
+                    <TextBlock x:Name="DiagnoseLabel" TextWrapping="Wrap" />
+                </Button>
+                <Button x:Name="RepairButton" Style="{StaticResource PrimaryAction}" MinWidth="146"
+                        Margin="0,4,0,0" Click="Repair_Click">
+                    <TextBlock x:Name="RepairLabel" TextWrapping="Wrap" />
+                </Button>
+                <Button x:Name="CancelApprovalButton" Style="{StaticResource Action}" Margin="0,4,8,0"
+                        Content="{DynamicResource CancelSetup}" Click="CancelApproval_Click" />
+                <Button x:Name="ConfirmApprovalButton" Style="{StaticResource PrimaryAction}" Margin="0,4,0,0"
+                        Content="{DynamicResource ApprovalApply}" Click="ConfirmApproval_Click" />
+            </WrapPanel>
+        </Grid>
+    </Border>
+</UserControl>

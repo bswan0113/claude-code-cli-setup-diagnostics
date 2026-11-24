@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaudeLauncher.csproj" />
+    <ProjectReference Include="../SettingsIsolationHook/SettingsIsolationHook.csproj" />
     <ProjectReference Include="../UnsignedCli/UnsignedCli.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <Target Name="CopyUnsignedCli" AfterTargets="Build">

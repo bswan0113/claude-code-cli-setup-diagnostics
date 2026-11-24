@@ -11,6 +11,7 @@ internal static class UiLanguage
         "ClaudeCodeSetupDiagnostics", "language.txt");
 
     private static ResourceDictionary? _translation;
+    private static ResourceDictionary? _english;
 
     public static string Current { get; private set; } = "en";
 
@@ -44,8 +45,11 @@ internal static class UiLanguage
     public static void Apply(string language)
     {
         var dictionaries = Application.Current.Resources.MergedDictionaries;
-        if (dictionaries.Count == 0)
-            dictionaries.Add(Load("en"));
+        if (_english is null)
+        {
+            _english = Load("en");
+            dictionaries.Add(_english);
+        }
 
         if (_translation is not null)
         {
@@ -80,8 +84,16 @@ internal static class UiLanguage
 
     public static string? TryText(string key) => Application.Current.TryFindResource(key) as string;
 
-    private static ResourceDictionary Load(string language) => new()
+    private static ResourceDictionary Load(string language)
     {
-        Source = new Uri($"pack://application:,,,/App/Resources/Strings.{language}.xaml")
-    };
+        var resources = new ResourceDictionary();
+        foreach (var family in new[] { "Strings", "CoreChecks", "InstallChecks", "EnvChecks" })
+        {
+            resources.MergedDictionaries.Add(new ResourceDictionary
+            {
+                Source = new Uri($"pack://application:,,,/App/Resources/{family}.{language}.xaml")
+            });
+        }
+        return resources;
+    }
 }

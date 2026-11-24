@@ -95,6 +95,41 @@ internal static partial class Program
         }
     }
 
+    private static string TestTitlePrecedence(string root)
+    {
+        var config = MakeDirectory(root, "title-metadata-config");
+        var project = MakeDirectory(config, Path.Combine("projects", "fixture-project"));
+        var cwd = MakeDirectory(root, "제목 우선순위 [폴더] & 확인");
+        var renamed = Guid.NewGuid();
+        var aiOnly = Guid.NewGuid();
+        var promptOnly = Guid.NewGuid();
+
+        WriteSession(project, renamed, Latest,
+            UserLine(renamed, cwd, "QA first prompt for renamed session", Older),
+            SessionTitleLine(renamed, "ai-title", "aiTitle", "QA generated before rename"),
+            SessionTitleLine(renamed, "custom-title", "customTitle", "QA outdated custom name"),
+            SessionTitleLine(renamed, "custom-title", "customTitle", "QA current custom name"),
+            SessionTitleLine(renamed, "ai-title", "aiTitle", "QA generated after rename"));
+        WriteSession(project, aiOnly, Newer,
+            UserLine(aiOnly, cwd, "QA first prompt for generated title", Older),
+            SessionTitleLine(aiOnly, "ai-title", "aiTitle", "QA generated session name"));
+        WriteSession(project, promptOnly, Older,
+            UserLine(promptOnly, cwd, "QA first prompt title", Older));
+
+        var before = Fingerprint(config);
+        var index = LoadSessionFixture(config);
+        var titles = index.Sessions.ToDictionary(session => session.Id, session => session.Title);
+        Require(!index.HasReadErrors && titles.Count == 3, "Title metadata prevented indexing a healthy session.");
+        Require(titles[renamed] == "QA current custom name" && titles[aiOnly] == "QA generated session name" &&
+            titles[promptOnly] == "QA first prompt title",
+            "Expected the latest custom title to take priority over AI title, then the first actual user message.");
+        Require(before.SequenceEqual(Fingerprint(config)), "Title indexing modified fixture files.");
+        return "Late title metadata resolved as most recent custom title, AI title, then first actual user prompt.";
+    }
+
+    private static string SessionTitleLine(Guid id, string type, string field, string value) =>
+        JsonSerializer.Serialize(new Dictionary<string, object> { ["type"] = type, ["sessionId"] = id, [field] = value });
+
     private static string WriteSession(string project, Guid id, DateTime fileTime, params string[] lines)
     {
         var file = Path.Combine(project, $"{id:D}.jsonl");

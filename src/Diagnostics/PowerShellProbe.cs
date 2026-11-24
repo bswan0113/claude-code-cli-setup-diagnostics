@@ -61,9 +61,10 @@ internal static class PowerShellProbe
                     $global:LASTEXITCODE = $null
                     $version = (& $path --version 2>$null) -join "`n"
                     $result.VerifiedVersion = $LASTEXITCODE -eq 0 -and
-                        $version -match '^\s*\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?\s+\(Claude Code\)\s*$'
+                        $version -match '^\s*(?<Version>\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)\s+\(Claude Code\)\s*$'
 
                     if ($result.VerifiedVersion) {
+                        $result.Version = $Matches['Version']
                         $result.Issue = $null
                         if ($checkAuth) {
                             $result.Issue = 'AuthStatusUnverified'
@@ -88,12 +89,18 @@ internal static class PowerShellProbe
 
     internal sealed record Result(string Kind, string? Path, bool VerifiedVersion, bool? LoggedIn, string? Issue)
     {
+        public string? Version { get; init; }
         internal static Result Failure(string issue) => new("ProbeError", null, false, null, issue);
     }
 
-    internal static async Task<Result> RunAsync(
-        string cwd, string? pathOverride = null, string? executable = null, bool checkAuth = false)
+    internal static Task<Result> RunAsync(
+        string cwd, string? pathOverride = null, string? executable = null, bool checkAuth = false) =>
+        RunWithCancellationAsync(cwd, CancellationToken.None, pathOverride, executable, checkAuth);
+
+    internal static async Task<Result> RunWithCancellationAsync(string cwd, CancellationToken cancellationToken,
+        string? pathOverride = null, string? executable = null, bool checkAuth = false)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var startInfo = new ProcessStartInfo(Executable)
         {
             WorkingDirectory = cwd,
@@ -119,7 +126,8 @@ internal static class PowerShellProbe
             if (process is null)
                 return Result.Failure("PowerShellStartFailed");
 
-            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(25));
             var stdout = process.StandardOutput.ReadToEndAsync(timeout.Token);
             var stderr = process.StandardError.BaseStream.CopyToAsync(Stream.Null, timeout.Token);
             try
@@ -131,6 +139,7 @@ internal static class PowerShellProbe
                 try { process.Kill(entireProcessTree: true); }
                 catch (InvalidOperationException) { }
                 catch (Win32Exception) { }
+                cancellationToken.ThrowIfCancellationRequested();
                 return Result.Failure("PowerShellTimeout");
             }
 

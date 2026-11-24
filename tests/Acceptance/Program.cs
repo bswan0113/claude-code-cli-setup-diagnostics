@@ -19,21 +19,36 @@ internal static partial class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        if (args.Length is not (0 or 2) || args.Length == 2 && args[0] != "--release")
+        if (args is ["--focus-child", var focusRoot])
+            return RunFocusChild(focusRoot);
+
+        var diagnosticsOnly = args is ["--diagnostics-only", _];
+        if (diagnosticsOnly)
+            args = ["--release", args[1]];
+        var processChain = args is ["--process-chain", _, _];
+        if (!processChain && (args.Length is not (0 or 2 or 4) || args.Length >= 2 && args[0] != "--release" ||
+            args.Length == 4 && args[2] != "--captures"))
         {
-            Console.Error.WriteLine("Usage: Acceptance [--release <path-to-published-exe>]");
+            Console.Error.WriteLine("Usage: Acceptance [--release <published-exe> [--captures <evidence-directory>]]");
+            Console.Error.WriteLine("       Acceptance --diagnostics-only <published-exe>");
+            Console.Error.WriteLine("       Acceptance --process-chain <published-exe> <installed-claude-exe>");
             return 2;
         }
 
         var root = Directory.CreateTempSubdirectory("ClaudeLauncherAcceptance-");
         try
         {
+            if (processChain)
+                return RunProcessChain(root.FullName, Path.GetFullPath(args[1]), Path.GetFullPath(args[2]));
+
             var failed = 0;
             var passed = 0;
             var blocked = 0;
 
             void Run(string id, Func<string> test)
             {
+                if (diagnosticsOnly && !id.StartsWith("QA-DIA-", StringComparison.Ordinal))
+                    return;
                 try
                 {
                     Console.WriteLine($"PASS {id} | {test()}");
@@ -53,19 +68,64 @@ internal static partial class Program
 
             Run("QA-HIS-01", () => TestHistoryMerge(root.FullName));
             Run("QA-HIS-02", () => TestDamagedHistory(root.FullName));
-            Run("QA-RUN-01", () => TestDirectInput(root.FullName));
+            var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+            try
+            {
+                Run("QA-I18N-01", () => TestLanguageResources(app));
+                Run("QA-RUN-01", () => TestDirectInput(root.FullName, app));
+            }
+            finally
+            {
+                app.Shutdown();
+            }
             Run("QA-DIA-01", () => TestReadOnlyDiagnosis(root.FullName));
             Run("QA-DIA-02", () => TestMissingCommand(root.FullName));
+            Run("QA-DIA-03", () => TestFullDiagnosticsScan(root.FullName));
+            Run("QA-DIA-04", () => TestFullDiagnosticsInvalidApproval(root.FullName));
+            Run("QA-DIA-06", TestDiagnosticNetworkResponses);
+            Run("QA-DIA-07", () => TestDiagnosticNpmPolicy(root.FullName));
+            Run("QA-DIA-08", () => TestDiagnosticInstallFiles(root.FullName));
+            Run("QA-DIA-09", () => TestDiagnosticCommandOrder(root.FullName));
+            Run("QA-DIA-10", () => TestDiagnosticProcessTargets(root.FullName));
             Run("QA-SES-01", () => TestSessionMetadata(root.FullName));
             Run("QA-SES-02", () => TestSessionDamage(root.FullName));
             Run("QA-SES-03", () => TestResumeArguments(root.FullName));
             Run("QA-SES-04", () => TestResumeWithUnsignedCli(root.FullName));
+            Run("QA-SES-05", () => TestTitlePrecedence(root.FullName));
+            Run("QA-LIVE-01", () => TestIndependentTerminals(root.FullName));
+            Run("QA-LIVE-02", () => TestLiveActivity(root.FullName));
+            Run("QA-LIVE-03", () => TestTerminalFocus(root.FullName));
             Run("QA-EXE-01", () => args.Length == 0
                 ? throw new BlockedException("No published EXE was specified.")
                 : TestPublishedWindow(root.FullName, Path.GetFullPath(args[1])));
+            Run("QA-UI-01", () => args.Length == 0
+                ? throw new BlockedException("No integrated EXE was specified.")
+                : TestDashboardWindow(root.FullName, Path.GetFullPath(args[1]),
+                    args.Length == 4 ? Path.GetFullPath(args[3]) : null));
+            Run("QA-APPEAR-01", () => args.Length == 0
+                ? throw new BlockedException("No appearance EXE was specified.")
+                : TestAppearanceWindow(root.FullName, Path.GetFullPath(args[1]),
+                    args.Length == 4 ? Path.GetFullPath(args[3]) : null));
+            Run("QA-DIA-05", () => args.Length == 0
+                ? throw new BlockedException("No full diagnostics EXE was specified.")
+                : TestFullDiagnosticsWindow(root.FullName, Path.GetFullPath(args[1]),
+                    args.Length == 4 ? Path.GetFullPath(args[3]) : null));
+            Run("QA-DIA-11", () => args.Length == 0
+                ? throw new BlockedException("No localized diagnostics EXE was specified.")
+                : TestDiagnosticStartupLanguages(root.FullName, Path.GetFullPath(args[1])));
 
             Console.WriteLine($"SUMMARY passed={passed} failed={failed} blocked={blocked}");
-            return failed > 0 ? 1 : blocked > 0 && args.Length == 2 ? 3 : 0;
+            return failed > 0 ? 1 : blocked > 0 && args.Length >= 2 ? 3 : 0;
+        }
+        catch (BlockedException exception) when (processChain)
+        {
+            Console.WriteLine($"BLOCKED process-chain | {exception.Message}");
+            return 3;
+        }
+        catch (Exception exception) when (processChain)
+        {
+            Console.WriteLine($"FAIL process-chain | {exception.GetBaseException().Message}");
+            return 1;
         }
         finally
         {
@@ -125,44 +185,115 @@ internal static partial class Program
         return ((IEnumerable<RecentFolder>)Call(history, "Sort", folders)!).ToArray();
     }
 
-    private static string TestDirectInput(string root)
+    private static string TestDirectInput(string root, Application app)
     {
         var folder = MakeDirectory(root, "한글 공백 [검증] & 프로젝트");
-        var app = new Application();
+        AddFixtureStyles(app);
+        app.Resources.MergedDictionaries.Add(LoadResourceDictionary("Strings.en.xaml"));
+        var window = new MainWindow();
         try
         {
-            app.Resources.MergedDictionaries.Add(new ResourceDictionary
-            {
-                Source = new Uri("/ClaudeLauncher;component/App/Resources/Strings.en.xaml", UriKind.Relative),
-            });
-            var window = new MainWindow();
-            try
-            {
-                var input = (TextBox)window.FindName("FolderInput");
-                var open = (Button)window.FindName("OpenButton");
-                var parse = typeof(MainWindow).GetMethod("TryGetFolder", BindingFlags.NonPublic | BindingFlags.Instance)
-                    ?? throw new MissingMethodException(typeof(MainWindow).FullName, "TryGetFolder");
+            var input = (TextBox)window.FindName("FolderInput");
+            var open = (Button)window.FindName("OpenButton");
 
-                input.Text = $"  \"{folder}\"  ";
-                object?[] values = [null];
-                Require(open.IsEnabled && parse.Invoke(window, values) is true && (string?)values[0] == folder,
-                    "The direct-input WPF handler changed or rejected the exact absolute folder.");
-                input.Text = "relative-folder";
-                values[0] = null;
-                Require(parse.Invoke(window, values) is false && values[0] is null,
-                    "The direct-input WPF handler accepted a relative folder.");
-            }
-            finally
+            input.Text = $"  \"{folder}\"  ";
+            Require(open.IsEnabled && (string?)Call(typeof(MainWindow), "FullFolderPath", input.Text) == folder,
+                "The direct-input WPF handler changed or rejected the exact absolute folder.");
+            input.Text = "relative-folder";
+            Require(Call(typeof(MainWindow), "FullFolderPath", input.Text) is null,
+                "The direct-input WPF handler accepted a relative folder.");
+        }
+        finally
+        {
+            window.Close();
+        }
+
+        return "Real WPF input preserved the quoted special-character path and rejected relative input.";
+    }
+
+    private static ResourceDictionary LoadResourceDictionary(string file) => new()
+    {
+        Source = new Uri($"/ClaudeLauncher;component/App/Resources/{file}", UriKind.Relative),
+    };
+
+    private static void AddFixtureStyles(Application app)
+    {
+        app.Resources.MergedDictionaries.Add(LoadResourceDictionary("MainWindowStyles.xaml"));
+        var palette = LoadResourceDictionary("Palette.Light.xaml");
+        app.Resources.MergedDictionaries.Add(palette);
+        var fonts = new ResourceDictionary();
+        foreach (var size in new[] { 12, 13, 14, 15, 16, 18, 19, 21, 22, 23, 25, 28 })
+            fonts[$"Font{size}"] = (double)size;
+        app.Resources.MergedDictionaries.Add(fonts);
+        var styles = typeof(MainWindow).Assembly.GetType("ClaudeLauncher.AppearanceResources", throwOnError: true)!;
+        // The unit runner's entry assembly differs from the WPF EXE's pack URI root.
+        styles.GetField("_darkMode", AnyStatic)!.SetValue(null, false);
+        styles.GetField("_fontPercent", AnyStatic)!.SetValue(null, 100);
+        styles.GetField("_palette", AnyStatic)!.SetValue(null, palette);
+        styles.GetField("_fonts", AnyStatic)!.SetValue(null, fonts);
+    }
+
+    private static string TestLanguageResources(Application app)
+    {
+        string[] languages = ["ko", "en", "zh-Hans", "ja"];
+        var dictionaries = languages.Select(language => LoadResourceDictionary($"Strings.{language}.xaml")).ToArray();
+        var referenceKeys = dictionaries[1].Keys.Cast<string>().Order(StringComparer.Ordinal).ToArray();
+        foreach (var dictionary in dictionaries)
+        {
+            Require(dictionary.Keys.Cast<string>().Order(StringComparer.Ordinal).SequenceEqual(referenceKeys),
+                "The packaged language dictionaries have different key sets.");
+            Require(referenceKeys.All(key => dictionary[key] is string value && !string.IsNullOrWhiteSpace(value)),
+                "A packaged UI string is absent or blank.");
+        }
+        foreach (var key in new[] { "FolderLabel", "InstallRepairTitle", "CancelSetup", "AppearanceTitle", "DarkModeLabel", "FontScaleLabel", "OpacityLabel" })
+        {
+            Require(dictionaries.Select(dictionary => dictionary[key] as string).Distinct().Count() == languages.Length,
+                $"The four resource files do not provide distinct localized text for {key}.");
+        }
+        Require(dictionaries[2]["MoveRight"] is string moveRight && moveRight.Contains("右侧", StringComparison.Ordinal) &&
+            !moveRight.Contains('側'), "The Simplified Chinese move-right label must use 侧.");
+
+        var product = typeof(MainWindow).Assembly;
+        var languageState = product.GetType("ClaudeLauncher.UiLanguage", throwOnError: true)!;
+        var selectedLanguage = languageState.GetProperty("Current", AnyStatic)!;
+        var noticeType = product.GetType("ClaudeLauncher.DiagnosticNotice", throwOnError: true)!;
+        var dictionariesInUse = app.Resources.MergedDictionaries;
+        var initialLanguage = selectedLanguage.GetValue(null);
+        try
+        {
+            AddFixtureStyles(app);
+            for (var index = 0; index < languages.Length; index++)
             {
-                window.Close();
+                var dictionary = dictionaries[index];
+                dictionariesInUse.Add(dictionary);
+                selectedLanguage.SetValue(null, languages[index]);
+                var window = new MainWindow();
+                try
+                {
+                    var setup = (Button)window.FindName("SetupButton");
+                    var notice = Activator.CreateInstance(noticeType, "Unknown", null, false, null);
+                    var panel = (SetupPanel)Activator.CreateInstance(typeof(SetupPanel), BindingFlags.Instance | BindingFlags.NonPublic,
+                        binder: null, args: [string.Empty, null, notice], culture: null)!;
+                    var result = (TextBlock)panel.FindName("ResultTitle");
+                    var cancel = (Button)panel.FindName("CancelButton");
+                    Require(Equals(setup.Content, dictionary["InstallRepairTitle"]) &&
+                        Equals(cancel.Content, dictionary["CancelSetup"]) && result.Text == (string)dictionary["UnknownTitle"],
+                        $"The launcher and repair panel did not display localized labels for {languages[index]}.");
+                }
+                finally
+                {
+                    window.Close();
+                    dictionariesInUse.Remove(dictionary);
+                }
             }
         }
         finally
         {
-            app.Shutdown();
+            dictionariesInUse.Clear();
+            selectedLanguage.SetValue(null, initialLanguage);
         }
 
-        return "Real WPF input preserved the quoted special-character path and rejected relative input.";
+        return $"Four packaged WPF languages provide {referenceKeys.Length} nonempty keys each and label the real launcher and repair controls.";
     }
 
     private static string TestReadOnlyDiagnosis(string root)
@@ -249,6 +380,7 @@ internal static partial class Program
             throw new BlockedException("The specified published EXE is missing.");
         if (!Environment.UserInteractive)
             throw new BlockedException("No interactive desktop is available.");
+        VerifyFixtureOnlyProfile(recencyIsolated: true);
 
         var isolated = MakeDirectory(root, "smoke-package");
         var config = MakeDirectory(root, "smoke-claude-config");
@@ -272,8 +404,10 @@ internal static partial class Program
         start.Environment["DOTNET_BUNDLE_EXTRACT_BASE_DIR"] = MakeDirectory(root, "smoke-extract");
         start.Environment["Path"] = bin;
         start.Environment[MarkerName] = marker;
+        var settings = MakeDirectory(root, "smoke-settings");
+        ConfigureFixtureSettings(start, settings);
 
-        using var process = Process.Start(start) ?? throw new InvalidOperationException("Could not start the published EXE.");
+        using var process = StartAppearanceFixture(start, Path.Combine(settings, "isolated.ready"));
         try
         {
             var deadline = Stopwatch.StartNew();
@@ -287,7 +421,8 @@ internal static partial class Program
                 {
                     var window = AutomationElement.FromHandle(process.MainWindowHandle);
                     var input = FindControl(window, "FolderInput");
-                    var picker = FindControl(window, "SessionPickerButton");
+                    if (!clicked && FindControl(window, "FolderTree") is { } tree)
+                        ExpandFixtureFolders(tree);
                     var buttons = window.FindAll(TreeScope.Descendants,
                         new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Button))
                         .Cast<AutomationElement>().ToArray();
@@ -295,9 +430,16 @@ internal static partial class Program
                     var knownFallback = buttons.FirstOrDefault(button => string.Equals(button.Current.Name, fallback, StringComparison.OrdinalIgnoreCase));
                     var hasDamagedTitle = buttons.Any(button => button.Current.Name.Contains("qa-damaged-title", StringComparison.Ordinal));
                     if (!clicked && input is not null && hasHealthyTitle && knownFallback is not null && !hasDamagedTitle &&
-                        picker is not null && !picker.Current.IsOffscreen &&
                         knownFallback.TryGetCurrentPattern(InvokePattern.Pattern, out var invoke))
                     {
+                        Require(FindControl(window, "SessionPickerButton") is not { } picker || picker.Current.IsOffscreen,
+                            "The global session picker was still visible on the home screen.");
+                        string[] oldWarnings = ["일부 세션을 읽지 못했습니다.", "Some sessions could not be read.",
+                            "部分会话无法读取。", "一部のセッションを読み込めませんでした。"];
+                        var warning = new OrCondition(oldWarnings.Select(text =>
+                            new PropertyCondition(AutomationElement.NameProperty, text)).ToArray());
+                        Require(window.FindFirst(TreeScope.Descendants, warning) is null,
+                            "The global unreadable-session warning was still visible on the home screen.");
                         ((InvokePattern)invoke).Invoke();
                         clicked = true;
                     }
@@ -307,14 +449,14 @@ internal static partial class Program
                         string.Equals(result.Current.Name, fallback, StringComparison.OrdinalIgnoreCase))
                     {
                         Require(!File.Exists(marker), "The EXE executed the unsigned CLI while validating the fallback folder.");
-                        return $"Single copied EXE showed both fallback options and routed the known folder without a dialog; SHA-256={sha256}.";
+                        return $"Single copied EXE omitted the global picker and routed the damaged session's known folder; SHA-256={sha256}.";
                     }
                 }
                 Thread.Sleep(100);
             }
             throw new InvalidOperationException(clicked
                 ? "The selected fallback folder was not confirmed in the result within 25 seconds."
-                : "WPF home, healthy title and both fallback options were not all observed within 25 seconds.");
+                : "WPF home, healthy title and known-folder fallback were not all observed within 25 seconds.");
         }
         finally
         {
@@ -328,6 +470,20 @@ internal static partial class Program
 
     private static AutomationElement? FindControl(AutomationElement window, string id) =>
         window.FindFirst(TreeScope.Descendants, new PropertyCondition(AutomationElement.AutomationIdProperty, id));
+
+    private static void ExpandFixtureFolders(AutomationElement tree)
+    {
+        var items = tree.FindAll(TreeScope.Children,
+            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TreeItem));
+        foreach (AutomationElement item in items)
+        {
+            if (item.TryGetCurrentPattern(ExpandCollapsePattern.Pattern, out var pattern) &&
+                ((ExpandCollapsePattern)pattern).Current.ExpandCollapseState == ExpandCollapseState.Collapsed)
+            {
+                ((ExpandCollapsePattern)pattern).Expand();
+            }
+        }
+    }
 
     private static string CopyUnsignedCli(string root)
     {

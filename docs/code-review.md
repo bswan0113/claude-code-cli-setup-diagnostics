@@ -72,3 +72,74 @@ P0 네 건은 해당 기능을 통합하기 전에 공통 계약으로 정한다
 ## 헤드가 전달한 E2E 증거
 
 헤드는 Windows x64 단일 EXE에 합성 세션 기록을 연결해 실제 Claude 프로세스에 `claude --resume <GUID>`의 정확한 GUID와 `claude -r`이 각각 전달되는 것을 확인했다. 독립 검토에서는 이 실행을 직접 반복하지 않았다. 위 코드 지적과 사전 검사는 정적 증거다. 설치·PATH 변경과 깨끗한 Windows에서의 전체 배포 인수는 이번 재검토의 실행 범위에 포함되지 않았다. [세션 재개와 손상 폴백 인수 기준](acceptance-tests.md#L49) · [세션과 런처 인수 코드](../tests/Acceptance/SessionChecks.cs) · [인자 전달 인수 코드](../tests/Acceptance/LaunchChecks.cs)
+
+# 승인 시안 WPF 구현 검토
+
+2026-11-24 · 기본 화면, 좌우 사이드바와 설치·복구 모달의 통합 소스를 검토했다. 실행 요청별 세션 ID·폴더·종료 결과, 정확한 터미널 창 식별, 최근 5개와 실행 중 목록의 분리, 키보드 포커스 경로를 중점 확인했다.
+
+## 수정본 재검토
+
+| 지적 | 최종 소스 확인 |
+|---|---|
+| P1 · 외부 세션 조회 사이의 같은 GUID 중복 실행 | **해결 반영.** 세션별 예약을 먼저 잡고, 실제 실행 직전에 외부 상태를 다시 조회한다. 같은 GUID가 관측되면 새 프로세스 대신 확인된 터미널로 이동한다. CLI가 아직 활성 세션을 등록하지 않았거나 다른 앱이 동시에 시작하는 경우까지 잠글 수 있는 구조는 아니다. [예약과 실행 직전 확인](../src/App/MainWindow.xaml.cs#L227) · [이동 대상 재조회](../src/App/MainWindow.xaml.cs#L349) · [동일 GUID 동시 실행의 기록 영향](https://code.claude.com/docs/en/sessions#branch-a-session) |
+| P2 · 같은 콘솔 안에서 대화를 바꾼 뒤 이전 GUID가 열리는 중으로 남음 | **해결 반영.** 콜백 전에는 최초 요청 GUID를 예약하고, 콜백 후에는 실행 중 터미널에서 관측한 현재 GUID를 사용한다. 최근 목록은 시작 예약과 현재 실행 ID를 각각 제외한다. [시작 예약 수명](../src/App/MainWindow.xaml.cs#L469) · [실행 중 ID](../src/App/MainWindow.History.cs#L131) · [최근 목록 제외](../src/App/MainWindow.History.cs#L196) |
+| P2 · 진단 중 복구 패널의 초기 키보드 포커스 | **해결 반영.** 진행 문구에 초기 포커스를 주고 검사 결과가 나오면 닫기 버튼으로 이동한다. 모달이 닫힐 때 기존 포커스가 유효하지 않으면 사이드바의 새 대화 버튼 또는 기본 창의 폴더 입력으로 이동한다. [검사 시작·완료 포커스](../src/App/SetupPanel.xaml.cs#L107) · [포커스 가능한 진행 문구](../src/App/SetupPanel.xaml#L36) · [모달 종료 후 포커스](../src/App/MainWindow.xaml.cs#L414) |
+
+## 해결 및 통합 확인
+
+- **실행 요청 분리.** 전역 터미널 잠금 대신 요청 목록을 사용한다. 복구 큐는 각 요청의 원래 또는 실제 폴백 폴더와 실행 의도를 전달한다. 늦게 온 시작 콜백은 요청의 생존 여부와 시도 번호를 확인한다. CLI 오류 종료는 시작 실패와 다른 경로에서 표시된다. 활동 관측 작업의 예외도 실제 셸 종료 결과와 분리됐다. [요청별 실행](../src/App/MainWindow.xaml.cs#L227) · [종료 처리와 콜백](../src/App/MainWindow.xaml.cs#L292) · [관측 예외 분리](../src/Launcher/TerminalLauncher.cs#L161)
+- **시각 단위.** 초기 코드의 Windows FILETIME과 Unix 밀리초 직접 비교는 해결됐다. 현재는 상태 파일의 프로세스 시작 문자열 토큰을 FILETIME과 비교한다. 토큰이 없으면 둘을 Unix 밀리초로 맞춘다. 설치 PC 메타데이터에서 이 단위와 형식만 확인했다. [상태의 프로세스 식별](../src/Launcher/LiveTerminal.cs#L217) · [공식 상태 필드](https://code.claude.com/docs/en/agent-view#list-sessions-as-json)
+- **포커스.** 제품과 같은 콘솔 호스트와 프로세스 생성 플래그를 사용한 숨김 합성 검사에서 HWND 소유자는 PowerShell 자식이었다. 수정본은 직접 실행과 외부 발견 모두 확인된 Claude PID의 콘솔로 연결해 표시되는 HWND를 찾는다. 해당 창으로 이동할 수 없을 때 런처는 실패를 표시한다. ConPTY의 숨은 핸들만 있는 외부 Windows Terminal 탭은 이동 불가로 처리한다. 이 검토에서 실제 전경 전환은 재현하지 않았다. [콘솔 창 탐색](../src/Launcher/LiveTerminal.cs#L72) · [이동 실패 피드백](../src/App/MainWindow.xaml.cs#L203) · [ConPTY 핸들 동작](https://learn.microsoft.com/en-us/windows/console/getconsolewindow)
+- **최근 실행과 실행 중의 분리.** 실행 중 목록은 PID와 GUID 중복을 제거하고, 최근 목록은 관측된 실행 중 ID와 시작 예약 ID를 제외한 뒤 최대 5건을 표시한다. 저장된 실행 시각이 파일 수정 시각보다 우선하도록 초기 정렬 P2도 해결됐다. 위의 이전 ID 문제는 동일한 콘솔 안에서 세션을 전환하는 경우에 남는다. [실행 중 목록](../src/App/MainWindow.History.cs#L131) · [최근 목록](../src/App/MainWindow.History.cs#L196) · [실행 시각 우선](../src/History/SessionRecency.cs#L12)
+- **사이드바와 접근성.** 좌우 고정과 원래 창 모드 복원에 각각 버튼이 있고, 기본 화면의 카드와 트리를 재사용한다. 버튼 접근성 이름에 제목·동작·경로가 추가됐고 실행 중 카드에는 활동 상태도 포함된다. 모달 배경 비활성화, Tab 순환, Escape 처리는 확인했다. 네 언어 사전의 키 집합과 5개 XAML의 XML 구조, 이벤트 핸들러 참조를 정적으로 대조했다. [좌우 고정과 해제](../src/App/MainWindow.Layout.cs#L32) · [접근성 이름](../src/App/LauncherRows.cs#L24) · [트리의 접근성 이름](../src/App/LauncherRows.cs#L142) · [모달의 키보드 탐색](../src/App/SetupPanel.xaml#L1)
+- **제목.** CLI 2.1.330 로컬 기록을 사용자가 제시한 예시 3건과 대조했다. 한 예시는 `custom-title.customTitle` 기록, 두 예시는 `ai-title.aiTitle` 기록에서 일치했고, 세 예시 모두 첫 사용자 기록 이후에 저장된 제목이었다. 개인 제목과 본문은 문서와 결과에 싣지 않았다. 구현은 지정 이름·AI 제목·요약·프롬프트 순으로 제목을 찾는다. [제목 선택](../src/History/SessionHistory.cs#L184) · [공식 선택기 표시 규칙](https://code.claude.com/docs/en/sessions#use-the-session-picker)
+
+## 실행 증거와 범위
+
+- 독립 검토에서는 숨김 합성 콘솔로 HWND의 소유 프로세스를 확인했다. 로컬 상태 메타데이터에서 시각 형식을 확인했고 대화 본문과 사용자 제목은 출력하지 않았다.
+- 최신 XAML에서 네 언어의 159개 키 집합이 일치한다. `MoveLeft`·`MoveRight`를 포함한 참조 48개, `ToolbarCombo`를 포함한 정적 리소스 연결 35개, 이벤트 핸들러 이름 28개를 확인했다. 이 확인은 빌드된 리소스의 실제 로드나 UI 포커스 전환을 입증하지 않는다. [앱의 사전 병합](../src/App/App.xaml#L5) · [정적 스타일 선언](../src/App/Resources/MainWindowStyles.xaml#L3)
+- QA의 0.2.0 중간 기록은 두 독립 테스트 콘솔의 작업 경로·종료와 상태 시각 비교를 통과로 적었다. 초기 EXE의 리소스 누락은 후속 소스에서 반영된 것을 확인했다. QA 환경은 HWND 전경 활성화까지 확인하지 못했고, 이 검토에서 최신 EXE의 실제 전경 전환과 키보드·스크린리더 인수를 반복하지 않았다. [별도 QA 중간 기록](acceptance-tests.md#L145)
+
+# 테마·글자 크기·창 불투명도 최종 재검토
+
+2026-11-24 · [Windows x64 최종 후보 EXE](../artifacts/publish/launcher-0.3.0-final/ClaudeLauncher.exe)의 SHA-256을 직접 계산해 `C5D32F02AB87E0140B89660C3D87E4E07C100F54E7205F72411AC1325FF6895D`와 일치함을 확인했다.
+
+| 기존 P2 | 최종 상태와 증거 |
+|---|---|
+| 후보 EXE에 화면 보정 미포함 | **해소.** 검증 후보는 폴더명 전경색, 압축 제목, 버튼 포커스 테두리, 트리 선택 막대와 후속 콤보·메뉴 보정을 포함한 소스로 게시됐다. [폴더명](../src/App/MainWindow.xaml#L214) · [압축 제목](../src/App/MainWindow.Layout.cs#L98) · [포커스·선택 표식](../src/App/Resources/LauncherStyles.xaml#L3) |
+| 콤보·수동 선택 메뉴 키보드 대비 | **해소.** 언어 콤보에 이중 포커스 테두리를 적용하고, 언어 목록과 수동 선택 메뉴에 4 DIP 항목 표식을 추가했다. GUI 담당의 합성 WPF 검사에서 두 테마의 키보드 진입과 방향키 강조를 통과했다. 불투명 팔레트의 표식과 강조 배경 대비는 라이트 4.96:1, 다크 5.89:1이다. [콤보 포커스](../src/App/Resources/MainWindowStyles.xaml#L70) · [목록 강조](../src/App/Resources/MainWindowStyles.xaml#L37) · [수동 메뉴 강조](../src/App/Resources/LauncherStyles.xaml#L162) |
+| 두 목록이 찬 사이드바에서 트리가 0 DIP로 줄어듦 | **P2 해소.** 카드 높이 상한을 사이드바 전체 높이 범위에 적용한다. 같은 독립 격리 WPF 재현기에서 폭 450 DIP·글자 125%·목록 각 3건으로 높이 420·560·620 DIP의 트리를 각각 36.0·34.4·36.0 DIP로 실측했다. 세 높이 모두 하단 조작부가 창 안에 들어왔다. 560 DIP의 트리 내부 표시 높이는 32.8 DIP로, 33.6 DIP인 첫 행의 하단 0.8 DIP가 경계에 걸렸다. 420·620 DIP에서는 첫 행 전체가 들어왔다. [사이드바 간격](../src/App/MainWindow.Layout.cs#L100) · [카드 높이 상한](../src/App/MainWindow.Layout.cs#L148) |
+
+처음 화면에서 공통 경고가 제거됐고, 손상 cwd가 알려진 폴더의 복구 버튼과 트리 메뉴의 수동 폴더 선택은 유지됐다. 네 언어 사전의 167개 키가 일치한다. 이전 독립 네이티브 검사에서 단일 모니터의 Windows 배율 125%로 좌우 고정·해제 후 80% 알파가 유지됐다. 이번 후보 EXE의 직접 확인은 해시 비교였으며, 위 레이아웃과 키보드 수치는 소스로 빌드한 격리 WPF 검사 결과다. 여러 배율의 모니터 간 이동은 미검증이다. [수동 폴더 선택](../src/App/MainWindow.xaml.cs#L122) · [폴더별 복구](../src/App/MainWindow.xaml#L252) · [고정·해제 시 불투명도 재적용](../src/App/MainWindow.Layout.cs#L36)
+
+# 8단계 설치·복구 검토
+
+2026-11-24 · 첨부 원본 `붙여넣은 텍스트.txt`와 WPF, 진단 및 복구 공급자, 네 언어 리소스를 대조했다. 원본 스크립트는 실행하지 않았다.
+
+## 마지막 P2 재검토
+
+| 우선순위 | 근거와 해결 기준 |
+|---|---|
+| P2 · 실행 정책의 서명 판정과 최종 승인 재확인 | **해소.** 고정된 Windows PowerShell 보안 모듈에서 `Get-AuthenticodeSignature`로 실제 서명 상태를 읽는다. 쓰기를 맡은 PowerShell이 승인 당시의 명령 경로·유효 정책·범위, 스크립트 SHA-256, `Zone.Identifier`의 영역 번호·SHA-256, 서명 상태를 모두 다시 대조한다. 하나라도 다르거나 그룹·프로세스 정책이 우선하면 쓰기를 중단한다. [서명과 파일 정보 수집](../src/Diagnostics/EnvironmentChecks.Policy.cs#L49) · [쓰기 직전 대조](../src/Diagnostics/EnvironmentChecks.Policy.cs#L96) · [승인 지문](../src/Diagnostics/EnvironmentChecks.Policy.cs#L228) |
+
+## 원본 대조
+
+| 원본 | 통합 소스 확인 |
+|---|---|
+| 1 · 환경 (234행) | Windows 빌드·아키텍처, 런처가 사용하는 Windows PowerShell의 실제 버전, 사용자 경로의 공백·비ASCII를 보고한다. [환경 검사](../src/Diagnostics/FullDiagnostics.cs#L51) |
+| 2 · 실행 파일 (257행) | 기본 EXE와 WinGet 경로, 서명과 버전, `.new`·`.old`·버전 폴더의 서명된 백업을 확인한다. 백업 선택과 WinGet 사용자 설치가 분리돼 있다. 복원은 교체 전 임시 파일을 검사하고, 교체 직전 대상·파일 지문·활성 프로세스를 다시 대조한다. 종료는 PID·경로가 표시되는 별도 조치이며 동일 계정·세션·시작 시각과 실제 종료를 확인한다. [백업과 WinGet](../src/Diagnostics/InstallChecks.Files.cs#L14) · [복원 및 실패 후 복구](../src/Diagnostics/InstallChecks.Files.cs#L139) · [프로세스 종료](../src/Diagnostics/InstallChecks.Processes.cs#L108) |
+| 3 · PATH (342행) | 시스템·사용자·프로세스 PATH의 명령 우선순위, 등록 누락과 오래된 프로세스 환경을 구분한다. 초기 검토에서 지적한 프로세스 PATH 전체 교체가 수정됐다. 저장 값과 프로세스 후보를 분리하고, 실제 상속 PATH에서 Claude 경로만 앞으로 옮긴 뒤 두 경로의 명령을 검증한다. [PATH 분기](../src/Diagnostics/InstallChecks.Environment.cs#L53) · [프로세스 항목 보존](../src/Diagnostics/InstallChecks.Environment.cs#L193) |
+| 4 · 충돌 (367행) | 실제 PowerShell 검색 순서와 WindowsApps 별칭, npm 전역 설치를 표시한다. npm 제거는 승인된 prefix·패키지·shim을 확인하고 스크립트 실행을 끈다. 구형 `.claude\local`은 승인 목록의 일반 파일을 지우고 디렉터리와 재분석 지점은 보존한다. [검색 순서](../src/Diagnostics/InstallChecks.Environment.cs#L102) · [npm 제거](../src/Diagnostics/InstallChecks.Npm.cs#L31) · [구형 파일 정리](../src/Diagnostics/InstallChecks.Files.cs#L283) |
+| 5 · 실행 정책 (447행) | 실제로 선택된 npm 스크립트와 유효 정책·범위를 대조한다. 그룹 정책이 우선하면 수동 안내를 표시하며 사용자 조치에서만 `CurrentUser → RemoteSigned`를 제안한다. 이 조치는 승인한 스크립트와 적용 직전에 확인한 스크립트의 서명·해시·영역 정보가 같은 경우에만 진행된다. [정책 분류](../src/Diagnostics/EnvironmentChecks.Policy.cs#L158) · [승인 재검사](../src/Diagnostics/EnvironmentChecks.Policy.cs#L200) |
+| 6 · 환경변수 (479행) | API 키·토큰·API 주소의 설정 범위, CA·Git Bash 경로, Git 및 프록시를 확인한다. 사용자 값 수정은 정해진 변수만 대상으로 하고 원문 자격 증명·프록시 주소 없이 이름과 범위만 표시한다. 로컬 관리 설정에 같은 변수가 지정되면 수동 안내로 처리한다. [변수 검사·조치](../src/Diagnostics/EnvironmentChecks.cs#L35) · [로컬 관리 설정](../src/Diagnostics/EnvironmentChecks.cs#L190) · [Claude Code의 관리 설정 범위](https://code.claude.com/docs/en/managed-settings) |
+| 7 · 네트워크 (558행) | 원본의 다운로드·API·로그인 세 호스트를 각각 검사한다. TLS·DNS·프록시·시간 초과와 HTTP 응답을 구분한다. 다운로드 HTML과 지역 제한 표시를 따로 판정하고 API와 로그인 응답은 도달 여부로 표시한다. [호스트와 판정](../src/Diagnostics/EnvironmentChecks.Network.cs#L22) |
+| 8 · 정리 (601행) | 대상 목록과 용량을 표시한다. 정상 기본 EXE가 확인돼야 업데이트 잔여 파일을 정리하며 최신 `.old`를 보존한다. 다운로드 캐시와 자동 업데이트 변경은 별도 승인 항목이다. [잔여 파일과 캐시](../src/Diagnostics/InstallChecks.Files.cs#L208) · [업데이트 설정](../src/Diagnostics/InstallChecks.Environment.cs#L195) · [설치 방식별 업데이트](https://code.claude.com/docs/en/setup#update-claude-code) |
+| 최종 확인 (645행) | 전체 조치 뒤 8단계를 새로 검사하고 빠른 결과도 재관측한다. 기존 실행 요청이 있고 빠른 검사까지 통과했을 때만 그 요청을 다시 열 수 있다. 실행 요청 없이 전체 조치를 한 뒤 빠른 화면에 이전 상태가 남던 초기 지적은 수정됐다. [재검사와 재시도](../src/App/SetupPanel.FullDiagnostics.cs#L137) |
+
+## 승인과 검증 범위
+
+- 기존 설치·PATH 세 조치와 전체 검사 조치는 별도 확인 화면에서 대상과 해결 방법을 표시한다. 취소는 적용을 호출하지 않는다. 진단과 빠른 조치가 같은 사용자별 잠금을 사용하며, 공급자가 승인 시점의 상태를 다시 읽어 조치를 결정한다. 입력 cwd는 절대 경로·존재 여부를 확인한다. [빠른 조치 확인](../src/App/SetupPanel.xaml.cs#L74) · [확정 호출](../src/App/SetupPanel.FullDiagnostics.cs#L64) · [잠금과 공급자 호출](../src/Diagnostics/FullDiagnostics.cs#L99)
+- 화면에는 손으로 확인할 경로와 코드가 표시된다. 환경변수의 원문은 승인 비교용으로만 사용하고 공유용 요약에는 제목·본문·결과 코드·CLI 종료 코드만 넣는다. 전체 검사에서는 원본의 바탕화면 PowerShell transcript를 생성하지 않는다. [변수 승인 지문](../src/Diagnostics/EnvironmentChecks.cs#L154) · [공유 요약](../src/App/SetupPanel.xaml.cs#L169)
+- 독립 검토에서 임시 출력 경로로 WPF 프로젝트 빌드 경고·오류 0개를 확인했다. 초기 설치 사전의 빈 해결 문구는 네 언어에서 채워졌다. 최신 소스의 공용·진단 리소스는 언어별 478개이며 빈 값·중복이 없고 설치·복구 XAML의 동적 참조 44개가 연결된다. [설치 사전](../src/App/Resources/InstallChecks.ko.xaml#L4) · [언어 사전 로드](../src/App/UiLanguage.cs#L90)
+- 최신 WPF 빌드는 경고·오류 0개였다. 후속 독립 검사는 제품 PowerShell 코드에서 정책 조회를 합성 값으로 고정하고 정책 쓰기를 테스트 신호로 대체했다. 실제 Windows PowerShell에서 미서명 합성 파일의 `NotSigned`를 확인했다. 파일 바이트 변경, Zone 스트림 추가, 같은 ZoneId에서 스트림 내용 변경, 승인 지문의 서명 상태 불일치를 각각 거부했다. 영역 3도 쓰기 단계에 진입하지 않았으며, 변경이 없는 로컬 파일만 테스트 신호에 도달했다. 실제 사용자 정책은 변경하지 않았다.
+- 구현 담당의 격리 WPF 검사는 기존 조치 3개의 확인·취소, 같은 키의 서로 다른 대상, 오래된 승인 거부, 450×420 DIP 화면의 스크롤을 확인했다. 환경 검사 담당은 합성 네트워크 응답과 비밀값 비노출을 확인했다. 이 독립 검토에서는 실제 사용자 정책·PATH·설치·파일 삭제를 실행하지 않았다. [인수 매트릭스](acceptance-tests.md#L220)

@@ -119,6 +119,7 @@ public static class SessionHistory
         var reader = new SessionRecordReader(id);
         var readFailed = false;
         DateTime modifiedUtc = default;
+        string? title = null;
         try
         {
             using var file = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
@@ -164,6 +165,11 @@ public static class SessionHistory
             {
                 readFailed |= !reader.Read(record.AsMemory(0, length));
             }
+
+            if (!readFailed && reader.Cwd is not null)
+            {
+                title = ReadResumeTitle(file, id, chunk, reader.Title);
+            }
         }
         catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException)
         {
@@ -174,11 +180,108 @@ public static class SessionHistory
             readFailed = true;
         }
 
-        readFailed |= reader.Title is not null && reader.Cwd is null;
+        readFailed |= reader.HasUserMessage && (reader.Cwd is null || title is null);
         hasErrors |= readFailed;
-        return readFailed || reader.HasSession
-            ? new Transcript(path, readFailed ? null : reader.Title, reader.Cwd, modifiedUtc)
+        return readFailed || (reader.HasUserMessage && title is not null)
+            ? new Transcript(path, readFailed ? null : title, reader.Cwd, modifiedUtc)
             : null;
+    }
+
+    private static string? ReadResumeTitle(FileStream file, Guid id, byte[] buffer, string? firstPrompt)
+    {
+        // The CLI's JSONL display metadata comes from the transcript ends.
+        var length = file.Length;
+        var head = ReadTitleWindow(file, id, buffer, 0, length);
+        var tail = length <= ChunkSize ? head : ReadTitleWindow(file, id, buffer, length - ChunkSize, length);
+        return tail.Custom ?? head.Custom ?? tail.Automatic ?? head.Automatic ??
+            tail.Summary ?? tail.LastPrompt ?? firstPrompt;
+    }
+
+    private static TitleMetadata ReadTitleWindow(FileStream file, Guid id, byte[] buffer, long offset, long length)
+    {
+        file.Position = Math.Max(0, offset - 1);
+        var startsOnLine = offset == 0 || file.ReadByte() == '\n';
+        var size = (int)Math.Min(ChunkSize, length - offset);
+        var remaining = buffer.AsMemory(0, file.ReadAtLeast(buffer.AsSpan(0, size), size, false));
+        var metadata = new TitleMetadata();
+        if (!startsOnLine)
+        {
+            var newline = remaining.Span.IndexOf((byte)'\n');
+            remaining = newline < 0 ? Memory<byte>.Empty : remaining[(newline + 1)..];
+        }
+        else if (offset == 0 && remaining.Span.StartsWith("\uFEFF"u8))
+        {
+            remaining = remaining[3..];
+        }
+
+        while (!remaining.IsEmpty)
+        {
+            var newline = remaining.Span.IndexOf((byte)'\n');
+            if (newline < 0)
+            {
+                if (offset + size == length)
+                {
+                    metadata.Read(remaining, id);
+                }
+
+                break;
+            }
+
+            metadata.Read(remaining[..newline], id);
+            remaining = remaining[(newline + 1)..];
+        }
+
+        return metadata;
+    }
+
+    private static string? ReadText(JsonElement row, string property)
+    {
+        var text = row.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()?.Trim()
+            : null;
+        return string.IsNullOrEmpty(text) ? null : text;
+    }
+
+    private sealed class TitleMetadata
+    {
+        public string? Custom { get; private set; }
+        public string? Automatic { get; private set; }
+        public string? Summary { get; private set; }
+        public string? LastPrompt { get; private set; }
+
+        public void Read(ReadOnlyMemory<byte> line, Guid id)
+        {
+            if (line.Span.IndexOf("\"customTitle\""u8) < 0 && line.Span.IndexOf("\"aiTitle\""u8) < 0 &&
+                line.Span.IndexOf("\"summary\""u8) < 0 && line.Span.IndexOf("\"lastPrompt\""u8) < 0)
+            {
+                return;
+            }
+
+            try
+            {
+                using var json = JsonDocument.Parse(line);
+                var row = json.RootElement;
+                if (row.ValueKind != JsonValueKind.Object ||
+                    (row.TryGetProperty("isSidechain", out var sidechain) && sidechain.ValueKind == JsonValueKind.True) ||
+                    (row.TryGetProperty("sessionId", out var session) && (session.ValueKind != JsonValueKind.String ||
+                    !session.TryGetGuid(out var parsed) || parsed != id)))
+                {
+                    return;
+                }
+
+                switch (ReadText(row, "type"))
+                {
+                    case "custom-title": Custom = ReadText(row, "customTitle") ?? Custom; break;
+                    case "ai-title": Automatic = ReadText(row, "aiTitle") ?? Automatic; break;
+                    case "summary": Summary = ReadText(row, "summary") ?? Summary; break;
+                    case "last-prompt": LastPrompt = ReadText(row, "lastPrompt") ?? LastPrompt; break;
+                }
+            }
+            catch (Exception error) when (error is JsonException or InvalidOperationException)
+            {
+                // An incomplete or malformed title entry leaves the other display candidates available.
+            }
+        }
     }
 
     private sealed record Transcript(string FilePath, string? Title, string? Cwd, DateTime ModifiedUtc)
@@ -199,7 +302,8 @@ public static class SessionHistory
     {
         public string? Title { get; private set; }
         public string? Cwd { get; private set; }
-        public bool HasSession => Title is not null && Cwd is not null;
+        public bool HasUserMessage { get; private set; }
+        public bool HasSession => HasUserMessage && Cwd is not null;
 
         public bool Read(ReadOnlyMemory<byte> line)
         {
@@ -235,8 +339,9 @@ public static class SessionHistory
                 if (!hasSessionId)
                 {
                     // A complete user row can use the UUID from its main transcript filename.
-                    if (cwd is not null && TryReadPrompt(row) is { } prompt)
+                    if (cwd is not null && TryReadUserMessage(row, out var prompt))
                     {
+                        HasUserMessage = true;
                         Title ??= prompt;
                         Cwd = cwd;
                     }
@@ -245,8 +350,9 @@ public static class SessionHistory
                 }
 
                 Cwd ??= cwd;
-                if (Title is null && TryReadPrompt(row) is { } title)
+                if (!HasUserMessage && TryReadUserMessage(row, out var title))
                 {
+                    HasUserMessage = true;
                     Title = title;
                     Cwd = cwd ?? Cwd;
                 }
@@ -259,28 +365,31 @@ public static class SessionHistory
             }
         }
 
-        private static string? TryReadPrompt(JsonElement row)
+        private static bool TryReadUserMessage(JsonElement row, out string? title)
         {
+            title = null;
             if (!IsText(row, "type", "user") || IsTrue(row, "isMeta") ||
                 IsTrue(row, "isVisibleInTranscriptOnly") || row.TryGetProperty("toolUseResult", out _) ||
                 !row.TryGetProperty("message", out var message) || message.ValueKind != JsonValueKind.Object ||
                 (message.TryGetProperty("role", out _) && !IsText(message, "role", "user")) ||
                 !message.TryGetProperty("content", out var content))
             {
-                return null;
+                return false;
             }
 
             if (content.ValueKind == JsonValueKind.String)
             {
-                return ReadUserText(content);
+                title = ReadUserText(content);
+                return title is not null;
             }
 
             if (content.ValueKind != JsonValueKind.Array)
             {
-                return null;
+                return false;
             }
 
             var parts = new List<string>();
+            var hasAttachment = false;
             foreach (var block in content.EnumerateArray())
             {
                 if (block.ValueKind != JsonValueKind.Object)
@@ -290,7 +399,7 @@ public static class SessionHistory
 
                 if (IsText(block, "type", "tool_result"))
                 {
-                    return null;
+                    return false;
                 }
 
                 if (IsText(block, "type", "text") && block.TryGetProperty("text", out var text) &&
@@ -298,9 +407,12 @@ public static class SessionHistory
                 {
                     parts.Add(part);
                 }
+
+                hasAttachment |= IsText(block, "type", "image") || IsText(block, "type", "document");
             }
 
-            return parts.Count == 0 ? null : string.Join(' ', parts);
+            title = parts.Count == 0 ? null : string.Join(' ', parts);
+            return title is not null || hasAttachment;
         }
 
         private static string? ReadUserText(JsonElement item)

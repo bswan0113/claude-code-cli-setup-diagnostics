@@ -166,9 +166,19 @@ public static class Diagnostics
     private static string? Describe(string? issue, string? path) =>
         issue is null ? path : path is null ? issue : $"{issue}\n{path}";
 
-    private static async Task<DiagnosticResult> InstallAsync(string cwd)
+    internal static string UserWinGetClaude => LocalAppPath("Microsoft", "WinGet", "Packages",
+        PortablePackageDirectory, "claude.exe");
+
+    internal static string MachineWinGetClaude => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "WinGet", "Packages",
+        PortablePackageDirectory, "claude.exe");
+
+    internal static string UserWinGetExecutable => LocalAppPath("Microsoft", "WindowsApps", "winget.exe");
+
+    internal static async Task<DiagnosticResult> InstallAsync(string cwd, bool reinstall = false,
+        CancellationToken token = default)
     {
-        var executable = LocalAppPath("Microsoft", "WindowsApps", "winget.exe");
+        var executable = UserWinGetExecutable;
         if (!File.Exists(executable))
             return InstallFailure($"WinGetUnavailable\n{executable}");
 
@@ -183,7 +193,7 @@ public static class Diagnostics
         };
 
         foreach (var argument in new[] { "install", "--id", PackageId, "--exact", "--source", "winget",
-            "--scope", "user", "--installer-type", "portable", "--no-upgrade", "--disable-interactivity" })
+            "--scope", "user", "--installer-type", "portable", reinstall ? "--force" : "--no-upgrade", "--disable-interactivity" })
         {
             startInfo.ArgumentList.Add(argument);
         }
@@ -191,11 +201,13 @@ public static class Diagnostics
         int exitCode;
         try
         {
+            token.ThrowIfCancellationRequested();
             using var installer = Process.Start(startInfo);
             if (installer is null)
                 return InstallFailure("WinGetStartFailed");
 
-            using var timeout = new CancellationTokenSource(InstallerTimeout);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+            timeout.CancelAfter(InstallerTimeout);
             try
             {
                 await installer.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
@@ -206,6 +218,7 @@ public static class Diagnostics
                 if (!await StopInstallerAsync(installer).ConfigureAwait(false))
                     return InstallFailure("WinGetTimeoutTerminationUnverified");
 
+                token.ThrowIfCancellationRequested();
                 var installedPath = KnownExecutables().FirstOrDefault(File.Exists);
                 return InstallFailure(installedPath is null ? "WinGetTimeout" : $"WinGetTimeout\n{installedPath}");
             }
@@ -219,6 +232,13 @@ public static class Diagnostics
         if (exitCode != 0)
             return InstallFailure(DescribeWinGetExitCode(exitCode));
 
+        if (reinstall)
+        {
+            var installed = await PowerShellProbe.RunWithCancellationAsync(cwd, token, executable: UserWinGetClaude)
+                .ConfigureAwait(false);
+            return installed.VerifiedVersion ? new("Ready", UserWinGetClaude) : InstallFailure("WinGetVerificationFailed");
+        }
+
         var verified = await InspectAsync(cwd).ConfigureAwait(false);
         if (verified.Code == "StalePath" && verified.Detail is { } directory)
             return await ActivatePathAsync(cwd, directory, persist: false).ConfigureAwait(false);
@@ -227,7 +247,7 @@ public static class Diagnostics
         return verified.Code == "Missing" ? InstallFailure("WinGetVerificationFailed") : verified;
     }
 
-    private static bool IsWinGetRunningInCurrentSession()
+    internal static bool IsWinGetRunningInCurrentSession()
     {
         using var current = Process.GetCurrentProcess();
         var session = current.SessionId;

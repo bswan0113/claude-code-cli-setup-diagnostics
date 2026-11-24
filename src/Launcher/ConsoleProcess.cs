@@ -11,7 +11,13 @@ internal sealed class ConsoleProcess : WaitHandle
     private const uint CreateNewConsole = 0x00000010;
     private const uint CreateUnicodeEnvironment = 0x00000400;
 
-    private ConsoleProcess(IntPtr handle) => SafeWaitHandle = new SafeWaitHandle(handle, ownsHandle: true);
+    private ConsoleProcess(IntPtr handle, uint id)
+    {
+        SafeWaitHandle = new SafeWaitHandle(handle, ownsHandle: true);
+        Id = id;
+    }
+
+    internal uint Id { get; }
 
     internal static ConsoleProcess Start(string executable, string arguments, string cwd,
         IReadOnlyDictionary<string, string> overrides)
@@ -46,7 +52,7 @@ internal sealed class ConsoleProcess : WaitHandle
             }
 
             using var primaryThread = new SafeWaitHandle(process.Thread, ownsHandle: true);
-            return new ConsoleProcess(process.Process);
+            return new ConsoleProcess(process.Process, process.ProcessId);
         }
         finally
         {
