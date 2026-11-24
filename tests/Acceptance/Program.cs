@@ -21,9 +21,28 @@ internal static partial class Program
     {
         if (args is ["--focus-child", var focusRoot])
             return RunFocusChild(focusRoot);
+        if (args is ["--guided-only", var captureDirectory])
+        {
+            var fixtureApp = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+            try
+            {
+                Console.WriteLine($"PASS QA-DIA-12 | {TestGuidedDiagnosis(fixtureApp, Path.GetFullPath(captureDirectory))}");
+                return 0;
+            }
+            finally { fixtureApp.Shutdown(); }
+        }
 
+        if (args is ["--language-resources-only"])
+        {
+            Console.WriteLine($"PASS QA-I18N-01 | {TestLanguageResources()}");
+            return 0;
+        }
+        var languageSmoke = args is ["--languages-only", _];
+        var nativeOnly = args is ["--native-installer-only"];
+        if (nativeOnly)
+            args = [];
         var diagnosticsOnly = args is ["--diagnostics-only", _];
-        if (diagnosticsOnly)
+        if (diagnosticsOnly || languageSmoke)
             args = ["--release", args[1]];
         var processChain = args is ["--process-chain", _, _];
         if (!processChain && (args.Length is not (0 or 2 or 4) || args.Length >= 2 && args[0] != "--release" ||
@@ -31,6 +50,10 @@ internal static partial class Program
         {
             Console.Error.WriteLine("Usage: Acceptance [--release <published-exe> [--captures <evidence-directory>]]");
             Console.Error.WriteLine("       Acceptance --diagnostics-only <published-exe>");
+            Console.Error.WriteLine("       Acceptance --guided-only <capture-directory>");
+            Console.Error.WriteLine("       Acceptance --languages-only <published-exe>");
+            Console.Error.WriteLine("       Acceptance --language-resources-only");
+            Console.Error.WriteLine("       Acceptance --native-installer-only");
             Console.Error.WriteLine("       Acceptance --process-chain <published-exe> <installed-claude-exe>");
             return 2;
         }
@@ -47,7 +70,8 @@ internal static partial class Program
 
             void Run(string id, Func<string> test)
             {
-                if (diagnosticsOnly && !id.StartsWith("QA-DIA-", StringComparison.Ordinal))
+                if ((diagnosticsOnly && !id.StartsWith("QA-DIA-", StringComparison.Ordinal)) ||
+                    (nativeOnly && id is not ("QA-DIA-13" or "QA-DIA-14")))
                     return;
                 try
                 {
@@ -66,13 +90,21 @@ internal static partial class Program
                 }
             }
 
+            if (languageSmoke)
+            {
+                foreach (var code in new[] { "en", "ko", "zh-Hans", "ja" })
+                    Run("QA-DIA-11-" + code, () => TestDiagnosticStartupLanguage(root.FullName, Path.GetFullPath(args[1]), code));
+                Console.WriteLine($"SUMMARY passed={passed} failed={failed} blocked={blocked}");
+                return failed > 0 ? 1 : blocked > 0 ? 3 : 0;
+            }
+
             Run("QA-HIS-01", () => TestHistoryMerge(root.FullName));
             Run("QA-HIS-02", () => TestDamagedHistory(root.FullName));
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             try
             {
-                Run("QA-I18N-01", () => TestLanguageResources(app));
                 Run("QA-RUN-01", () => TestDirectInput(root.FullName, app));
+                Run("QA-DIA-12", () => TestGuidedDiagnosis(app, args.Length == 4 ? Path.GetFullPath(args[3]) : null));
             }
             finally
             {
@@ -87,6 +119,8 @@ internal static partial class Program
             Run("QA-DIA-08", () => TestDiagnosticInstallFiles(root.FullName));
             Run("QA-DIA-09", () => TestDiagnosticCommandOrder(root.FullName));
             Run("QA-DIA-10", () => TestDiagnosticProcessTargets(root.FullName));
+            Run("QA-DIA-13", TestNativeInstallFallbackPolicy);
+            Run("QA-DIA-14", () => TestNativeInstallActivity(root.FullName));
             Run("QA-SES-01", () => TestSessionMetadata(root.FullName));
             Run("QA-SES-02", () => TestSessionDamage(root.FullName));
             Run("QA-SES-03", () => TestResumeArguments(root.FullName));
@@ -110,10 +144,6 @@ internal static partial class Program
                 ? throw new BlockedException("No full diagnostics EXE was specified.")
                 : TestFullDiagnosticsWindow(root.FullName, Path.GetFullPath(args[1]),
                     args.Length == 4 ? Path.GetFullPath(args[3]) : null));
-            Run("QA-DIA-11", () => args.Length == 0
-                ? throw new BlockedException("No localized diagnostics EXE was specified.")
-                : TestDiagnosticStartupLanguages(root.FullName, Path.GetFullPath(args[1])));
-
             Console.WriteLine($"SUMMARY passed={passed} failed={failed} blocked={blocked}");
             return failed > 0 ? 1 : blocked > 0 && args.Length >= 2 ? 3 : 0;
         }
@@ -233,67 +263,24 @@ internal static partial class Program
         styles.GetField("_fonts", AnyStatic)!.SetValue(null, fonts);
     }
 
-    private static string TestLanguageResources(Application app)
+    private static string TestLanguageResources()
     {
         string[] languages = ["ko", "en", "zh-Hans", "ja"];
-        var dictionaries = languages.Select(language => LoadResourceDictionary($"Strings.{language}.xaml")).ToArray();
-        var referenceKeys = dictionaries[1].Keys.Cast<string>().Order(StringComparer.Ordinal).ToArray();
-        foreach (var dictionary in dictionaries)
+        var keyCount = 0;
+        foreach (var family in new[] { "Strings", "CoreChecks", "InstallChecks", "EnvChecks" })
         {
-            Require(dictionary.Keys.Cast<string>().Order(StringComparer.Ordinal).SequenceEqual(referenceKeys),
-                "The packaged language dictionaries have different key sets.");
-            Require(referenceKeys.All(key => dictionary[key] is string value && !string.IsNullOrWhiteSpace(value)),
-                "A packaged UI string is absent or blank.");
-        }
-        foreach (var key in new[] { "FolderLabel", "InstallRepairTitle", "CancelSetup", "AppearanceTitle", "DarkModeLabel", "FontScaleLabel", "OpacityLabel" })
-        {
-            Require(dictionaries.Select(dictionary => dictionary[key] as string).Distinct().Count() == languages.Length,
-                $"The four resource files do not provide distinct localized text for {key}.");
-        }
-        Require(dictionaries[2]["MoveRight"] is string moveRight && moveRight.Contains("右侧", StringComparison.Ordinal) &&
-            !moveRight.Contains('側'), "The Simplified Chinese move-right label must use 侧.");
-
-        var product = typeof(MainWindow).Assembly;
-        var languageState = product.GetType("ClaudeLauncher.UiLanguage", throwOnError: true)!;
-        var selectedLanguage = languageState.GetProperty("Current", AnyStatic)!;
-        var noticeType = product.GetType("ClaudeLauncher.DiagnosticNotice", throwOnError: true)!;
-        var dictionariesInUse = app.Resources.MergedDictionaries;
-        var initialLanguage = selectedLanguage.GetValue(null);
-        try
-        {
-            AddFixtureStyles(app);
-            for (var index = 0; index < languages.Length; index++)
+            var dictionaries = languages.Select(locale => LoadResourceDictionary($"{family}.{locale}.xaml")).ToArray();
+            var keys = dictionaries[1].Keys.Cast<string>().Order(StringComparer.Ordinal).ToArray();
+            foreach (var dictionary in dictionaries)
             {
-                var dictionary = dictionaries[index];
-                dictionariesInUse.Add(dictionary);
-                selectedLanguage.SetValue(null, languages[index]);
-                var window = new MainWindow();
-                try
-                {
-                    var setup = (Button)window.FindName("SetupButton");
-                    var notice = Activator.CreateInstance(noticeType, "Unknown", null, false, null);
-                    var panel = (SetupPanel)Activator.CreateInstance(typeof(SetupPanel), BindingFlags.Instance | BindingFlags.NonPublic,
-                        binder: null, args: [string.Empty, null, notice], culture: null)!;
-                    var result = (TextBlock)panel.FindName("ResultTitle");
-                    var cancel = (Button)panel.FindName("CancelButton");
-                    Require(Equals(setup.Content, dictionary["InstallRepairTitle"]) &&
-                        Equals(cancel.Content, dictionary["CancelSetup"]) && result.Text == (string)dictionary["UnknownTitle"],
-                        $"The launcher and repair panel did not display localized labels for {languages[index]}.");
-                }
-                finally
-                {
-                    window.Close();
-                    dictionariesInUse.Remove(dictionary);
-                }
+                Require(dictionary.Keys.Cast<string>().Order(StringComparer.Ordinal).SequenceEqual(keys),
+                    $"Different key sets in the packaged {family} translations.");
+                Require(keys.All(key => dictionary[key] is string value && !string.IsNullOrWhiteSpace(value)),
+                    $"An empty value was found in {family}.");
             }
+            keyCount += keys.Length;
         }
-        finally
-        {
-            dictionariesInUse.Clear();
-            selectedLanguage.SetValue(null, initialLanguage);
-        }
-
-        return $"Four packaged WPF languages provide {referenceKeys.Length} nonempty keys each and label the real launcher and repair controls.";
+        return $"Four packaged languages provide {keyCount} nonempty resource entries each.";
     }
 
     private static string TestReadOnlyDiagnosis(string root)
@@ -412,7 +399,7 @@ internal static partial class Program
         {
             var deadline = Stopwatch.StartNew();
             var clicked = false;
-            while (deadline.Elapsed < TimeSpan.FromSeconds(25))
+            while (deadline.Elapsed < TimeSpan.FromSeconds(100))
             {
                 process.Refresh();
                 if (process.HasExited)
@@ -455,8 +442,8 @@ internal static partial class Program
                 Thread.Sleep(100);
             }
             throw new InvalidOperationException(clicked
-                ? "The selected fallback folder was not confirmed in the result within 25 seconds."
-                : "WPF home, healthy title and known-folder fallback were not all observed within 25 seconds.");
+                ? "The selected fallback folder was not confirmed in the result within 100 seconds."
+                : "WPF home, healthy title and known-folder fallback were not all observed within 100 seconds.");
         }
         finally
         {

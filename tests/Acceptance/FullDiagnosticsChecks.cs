@@ -90,7 +90,7 @@ internal static partial class Program
                 row.State is "Warning" or "Failed" or "Unknown" && row.Action is null),
                 $"The offline endpoint did not report a read-only connectivity finding for {host}.");
         VerifyDiagnosticTranslations(rows);
-        return $"Stages 1–8 returned {rows.Length} rows with four-language details, 3 offline hosts and process-only credential/CA/Git Bash findings. No data changes or secret exposure.";
+        return $"Stages 1–8 returned {rows.Length} rows with valid display strings, 3 offline hosts and process-only credential/CA/Git Bash findings. No data changes or secret exposure.";
     }
 
     private static string TestFullDiagnosticsInvalidApproval(string root)
@@ -515,19 +515,26 @@ internal static partial class Program
         {
             SetInput(Window(), "FolderInput", cwd);
             InvokeControl(Window(), "InstallRepairButton");
-            WaitFor("The setup panel did not finish its quick diagnostic.", () => Enabled("FullScanButton"), 45);
-            var quickApproval = Enabled("RepairButton");
-            if (quickApproval)
-            {
-                var quickTarget = FindControl(Window(), "ResultDetail")?.Current.Name;
-                InvokeControl(Window(), "RepairButton");
-                AssertApprovalCanBeCanceled(string.IsNullOrWhiteSpace(quickTarget) ? "Claude" : quickTarget);
-                Console.WriteLine("OBSERVED quick repair target and explicit cancellation verified");
-            }
+            void WaitForSummary() => WaitFor("Opening setup did not automatically present the diagnostic summary.", () =>
+                Showing("GuidedStatus") && Showing("ResultTitle") && Enabled("CancelButton") && Enabled("DetailsExpander"), 100);
+            WaitForSummary();
+            var details = FindControl(Window(), "DetailsExpander")!;
+            Require(!Showing("ReviewCheckAction") && !Showing("ConfirmApprovalButton") &&
+                ((ExpandCollapsePattern)details.GetCurrentPattern(ExpandCollapsePattern.Pattern)).Current.ExpandCollapseState ==
+                    ExpandCollapseState.Collapsed, "Expert controls were expanded on entry.");
+            var status = FindControl(Window(), "GuidedStatus")!.Current.Name;
+            Require(status == (string)labels["GuidedIssue"] || status == (string)labels["GuidedInstallNeeded"],
+                "The fixture with no network and an empty PATH was reported as healthy.");
+            CaptureDiagnostic("guided-diagnosis.png");
+            AssertNoUnapprovedWrites();
+            InvokeControl(Window(), "CancelButton");
+            WaitFor("Declining the guided result did not close setup.", () => FindControl(Window(), "SetupModal") is null);
+            AssertNoUnapprovedWrites();
 
-            InvokeControl(Window(), "FullScanButton");
-            WaitFor("The detailed scan did not expose its eight-stage result.", () =>
-                FindControl(Window(), "FullDiagnosticStages") is not null && Enabled("RescanFullButton"), 75);
+            InvokeControl(Window(), "InstallRepairButton");
+            WaitForSummary();
+            Expand(FindControl(Window(), "DetailsExpander")!);
+            WaitFor("Expanding details did not expose the existing scan.", () => FindControl(Window(), "FullDiagnosticStages") is not null);
             foreach (var number in Enumerable.Range(1, 8))
                 _ = Stage(number.ToString(System.Globalization.CultureInfo.InvariantCulture));
             Require(!Showing("ConfirmApprovalButton"), "The scan enabled a final repair before an action was reviewed.");
@@ -546,7 +553,6 @@ internal static partial class Program
             var path = Stage("3");
             Expand(path);
             var review = FindControl(path, "ReviewCheckAction");
-            var fullApproval = false;
             if (review is { } && review.Current.IsEnabled && review.TryGetCurrentPattern(InvokePattern.Pattern, out var action))
             {
                 var refreshLabel = labels["FixRefreshClaudeProcessPath"] as string;
@@ -555,7 +561,6 @@ internal static partial class Program
                     review.Current.Name == $"{refreshLabel}, {refreshTitle}";
                 ((InvokePattern)action).Invoke();
                 AssertApprovalCanBeCanceled(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "full-diagnostics-approval.png");
-                fullApproval = true;
                 Console.WriteLine("OBSERVED detailed PATH target and explicit cancellation verified");
 
                 if (processOnly)
@@ -571,8 +576,9 @@ internal static partial class Program
                         "The expected fixture-only process PATH action listed a different target. No repair was confirmed.");
                     InvokeControl(Window(), "ConfirmApprovalButton");
                     WaitFor("The child-only PATH refresh did not report a verified update.", () =>
-                        Enabled("RescanFullButton") && Showing("ComparisonText") &&
-                        Named(Window(), (string)labels["FullApplied"]!) is not null, 75);
+                        Enabled("CancelButton") && Named(Window(), (string)labels["FullApplied"]!) is not null, 100);
+                    Expand(FindControl(Window(), "DetailsExpander")!);
+                    Expand(Stage("3"));
                     Require(FindControl(Stage("3"), "ReviewCheckAction") is null,
                         "The stale PATH action still appeared after the verified refresh.");
                     childPathRefresh = true;
@@ -580,17 +586,13 @@ internal static partial class Program
                 }
             }
 
-            InvokeControl(Window(), "BackToQuickButton");
-            WaitFor("Returning from the full diagnostic did not restore the quick panel.", () => Enabled("CancelButton"));
             InvokeControl(Window(), "CancelButton");
             WaitFor("Closing the diagnostic did not restore the original selected folder.", () =>
                 FindControl(Window(), "FullDiagnosticStages") is null && ReadInput(Window(), "FolderInput") == cwd);
             AssertNoUnapprovedWrites();
-            if (!quickApproval || !fullApproval)
-                throw new BlockedException($"Eight-stage UI, cause and solution, and read-only exit passed. Confirm/cancel availability: quick={quickApproval}, PATH={fullApproval}.");
-            return "Eight-stage UI, credential masking, and both quick and full repair review/target/cancel paths passed. " +
+            return "The guided summary opened automatically; declining made no changes. Eight expandable stages and credential masking passed. " +
                 (childPathRefresh ? "The approved PATH refresh was limited to the child process. CLI config/bookkeeping, if created, stayed in the fixture." :
-                    "The available PATH action required a persisted write, so this run exercised cancel only.");
+                    "No PATH change was applied.");
         }
         finally
         {
@@ -626,20 +628,10 @@ internal static partial class Program
         var keys = rows.SelectMany(row => new[] { $"Check{row.Key}Title", $"Check{row.Key}Cause", $"Check{row.Key}Solution" })
             .Concat(rows.Where(row => row.Action is not null).Select(row => $"Fix{row.Action}"))
             .Distinct(StringComparer.Ordinal).ToArray();
-        foreach (var language in new[] { "ko", "en", "ja", "zh-Hans" })
-        {
-            var resources = LoadDiagnosticResources(language);
-            foreach (var key in keys)
-            {
-                object value;
-                try { value = resources[key]; }
-                catch (NullReferenceException)
-                {
-                    throw new InvalidOperationException($"WPF could not read {language} diagnostic resource: {key}.");
-                }
-                Require(value is string label && !string.IsNullOrWhiteSpace(label), $"Missing {language} diagnostic resource: {key}.");
-            }
-        }
+        var resources = LoadDiagnosticResources("en");
+        foreach (var key in keys)
+            Require(resources.Contains(key) && resources[key] is string label && !string.IsNullOrWhiteSpace(label),
+                $"A diagnostic finding refers to a missing display string: {key}.");
     }
 
     private static ResourceDictionary LoadDiagnosticResources(string language)

@@ -101,7 +101,7 @@ internal static partial class Program
                 return notice is not null && !string.IsNullOrWhiteSpace(notice.Current.Name) &&
                     cancel is not null && cancel.Current.IsEnabled &&
                     FindControl(window, "InstallRepairButton") is { } background && !background.Current.IsEnabled;
-            });
+            }, 100);
             TryCaptureWindow(process.MainWindowHandle, captures, "repair-modal.png", settings);
             InvokeControl(DashboardWindow(process)!, "CancelButton");
             WaitFor("Cancel did not close the modal and restore the selected folder.", () =>

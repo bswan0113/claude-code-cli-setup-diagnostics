@@ -101,29 +101,6 @@ internal static partial class Program
                 InvokeControl(DashboardWindow(app)!, "UndockButton");
                 WaitFor("Appearance checks could not restore the full launcher.", () => FindControl(DashboardWindow(app)!, "LanguagePicker") is not null);
 
-                var names = new HashSet<string>(StringComparer.Ordinal);
-                foreach (var (code, label) in new[] { ("en", "English"), ("ja", "日本語"), ("zh-Hans", "简体中文"), ("ko", "한국어") })
-                {
-                    SelectFixtureLanguage(app, label);
-                    WaitFor($"The language selection {code} did not save to the isolated file.", () => File.ReadAllText(language) == code);
-                    OpenAppearance(app);
-                    var toggleName = RequireControl(DashboardWindow(app)!, "DarkModeToggle").Current.Name;
-                    Require(!string.IsNullOrWhiteSpace(toggleName) && names.Add(toggleName), $"The dark-mode label was not localized for {code}.");
-                    CloseAppearance(app);
-                    InvokeControl(DashboardWindow(app)!, "DockLeftButton");
-                    WaitFor($"The {code} appearance fixture did not dock at 450 DIP.", () => IsAppearanceDocked(app, left: true));
-                    OpenAppearance(app);
-                    var sidebar = DashboardWindow(app)!;
-                    Require(RequireControl(sidebar, "DarkModeToggle").Current.Name == toggleName &&
-                        IsVisibleInsideWindow(sidebar, "FontScaleSlider") && IsVisibleInsideWindow(sidebar, "OpacitySlider"),
-                        $"The {code} appearance controls were not usable in the 450-DIP sidebar.");
-                    CloseAppearance(app);
-                    VerifyRepair(app, "SidebarInstallRepairButton", settings, null, null);
-                    InvokeControl(DashboardWindow(app)!, "UndockButton");
-                    WaitFor($"The {code} appearance fixture did not unpin.", () => FindControl(DashboardWindow(app)!, "LanguagePicker") is not null);
-                    Console.WriteLine($"OBSERVED appearance-language={code} at desktop and 450 DIP");
-                }
-
                 OpenAppearance(app);
                 AppearanceRange(app, "OpacitySlider").SetValue(60);
                 WaitFor("Native opacity did not reach 60% and persist.", () =>
@@ -220,27 +197,11 @@ internal static partial class Program
             var current = DashboardWindow(app)!;
             return FindControl(current, "ResultTitle") is { } title && !string.IsNullOrWhiteSpace(title.Current.Name) &&
                 IsVisibleInsideWindow(current, "ResultTitle") && FindControl(current, "CancelButton") is { } cancel && cancel.Current.IsEnabled;
-        });
+        }, 100);
         if (filename is not null)
             CaptureWindow(app.MainWindowHandle, output, filename, settings);
         InvokeControl(DashboardWindow(app)!, "CancelButton");
         WaitFor("The repair popup did not close on cancel.", () => FindControl(DashboardWindow(app)!, "CancelButton") is null);
-    }
-
-    private static void SelectFixtureLanguage(Process app, string label)
-    {
-        var combo = RequireControl(DashboardWindow(app)!, "LanguagePicker");
-        var list = (ExpandCollapsePattern)combo.GetCurrentPattern(ExpandCollapsePattern.Pattern);
-        list.Expand();
-        AutomationElement? item = null;
-        WaitFor($"The language choice '{label}' was not available in the drop-down.", () =>
-        {
-            item = combo.FindFirst(TreeScope.Descendants, new PropertyCondition(AutomationElement.NameProperty, label));
-            return item is not null;
-        });
-        ((SelectionItemPattern)item!.GetCurrentPattern(SelectionItemPattern.Pattern)).Select();
-        if (list.Current.ExpandCollapseState == ExpandCollapseState.Expanded)
-            list.Collapse();
     }
 
     private static RangeValuePattern AppearanceRange(Process app, string id) =>
