@@ -38,6 +38,18 @@ internal sealed record UsageText(string Line, string Detail)
             Format("UsageContextDetail", Exact(context), Exact(usage?.ContextWindowTokens), percent);
         if (usage?.IsWindowEstimated == true)
             detail += Environment.NewLine + UiLanguage.Text("UsageEstimatedWindow");
+        var owner = usage?.OwnerKind switch
+        {
+            SessionOwnerKind.Recorded when usage.OwnerHint is { } masked && usage.OwnerMatchKey is { } key &&
+                SessionOwnerProfiles.Find(key) is { } profile => Format("SessionOwnerMatched", masked,
+                    profile.Id == "default" ? UiLanguage.Text("ProfileDefault") : profile.Label),
+            SessionOwnerKind.Recorded when usage.OwnerHint is { } id => Format("SessionOwnerRecorded", id),
+            SessionOwnerKind.ArtifactOnly => UiLanguage.Text("SessionOwnerArtifact"),
+            SessionOwnerKind.Conflict => UiLanguage.Text("SessionOwnerConflict"),
+            SessionOwnerKind.None => UiLanguage.Text("SessionOwnerNone"),
+            _ => UiLanguage.Text("SessionOwnerIncomplete"),
+        };
+        detail += Environment.NewLine + owner;
         return Finish(line, detail, usage?.Compactions, partial);
     }
 

@@ -6,10 +6,17 @@ using System.Text.Json;
 
 namespace ClaudeLauncher;
 
+public enum SessionOwnerKind { None, Recorded, ArtifactOnly, Conflict, Incomplete }
+
 public sealed record SessionUsage(long? TotalTokens, long? ContextTokens, long? ContextWindowTokens,
     double? ContextPercent, int? Compactions, bool IsPartial, bool IsWindowEstimated, string? Model)
 {
-    internal static SessionUsage Unavailable { get; } = new(null, null, null, null, null, true, false, null);
+    public SessionOwnerKind OwnerKind { get; init; }
+    public string? OwnerHint { get; init; }
+    internal string? OwnerMatchKey { get; init; }
+    internal static string AccountKey(Guid id) => Convert.ToHexString(SHA256.HashData(id.ToByteArray()));
+    internal static SessionUsage Unavailable { get; } = new(null, null, null, null, null, true, false, null)
+        { OwnerKind = SessionOwnerKind.Incomplete };
 }
 
 /// <summary>Reads usage from the selected main transcript without retaining conversation text.</summary>
@@ -154,6 +161,7 @@ public static class SessionUsageReader
                 data.MarkGap();
                 return;
             }
+            bool accountRecord = false;
             while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
             {
                 var type = reader.ValueTextEquals("type"u8);
@@ -163,6 +171,8 @@ public static class SessionUsageReader
                 {
                     if (reader.ValueTextEquals("user"u8) || reader.ValueTextEquals("progress"u8))
                         return;
+                    accountRecord = reader.ValueTextEquals("session-owner"u8) ||
+                        reader.ValueTextEquals("artifact-autoreact-ledger"u8);
                     break;
                 }
                 if (!reader.TrySkip())
@@ -173,7 +183,7 @@ public static class SessionUsageReader
                 data.MarkGap();
                 return;
             }
-            if (row.Span.IndexOf("\"assistant\""u8) < 0 && row.Span.IndexOf("\"compact_boundary\""u8) < 0 &&
+            if (!accountRecord && row.Span.IndexOf("\"assistant\""u8) < 0 && row.Span.IndexOf("\"compact_boundary\""u8) < 0 &&
                 row.Span.IndexOf("\"context_window\""u8) < 0)
                 return;
             using var document = JsonDocument.Parse(row);

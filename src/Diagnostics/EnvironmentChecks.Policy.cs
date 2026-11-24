@@ -125,6 +125,7 @@ internal static partial class EnvironmentChecks
         foreach (var arg in new[] { "-NoProfile", "-NoLogo", "-NonInteractive", "-EncodedCommand", ShellScript })
             start.ArgumentList.Add(arg);
         start.Environment[ExpectedPolicyVariable] = expected ?? "";
+        LauncherProfiles.ApplyCliEnvironment(start.Environment);
 
         try
         {

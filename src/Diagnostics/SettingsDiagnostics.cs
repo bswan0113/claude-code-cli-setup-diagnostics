@@ -24,7 +24,7 @@ internal static partial class SettingsDiagnostics
 
     private static string Profile => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
     private static string[] Targets() =>
-        [Path.Combine(Profile, ".claude.json"), Path.Combine(Profile, ".claude", "settings.json")];
+        [ProfileDataPaths.AccountState, Path.Combine(ProfileDataPaths.Config, "settings.json")];
 
     private static (CheckItem Item, Plan? Plan) Inspect(string path, CancellationToken token)
     {
@@ -79,6 +79,8 @@ internal static partial class SettingsDiagnostics
 
     private static void CheckPath(string path)
     {
+        if (!Path.IsPathFullyQualified(path))
+            throw new IOException("Invalid Claude configuration directory.");
         var home = Path.GetFullPath(Profile);
         var current = Path.GetFullPath(path);
         var relative = Path.GetRelativePath(home, current);

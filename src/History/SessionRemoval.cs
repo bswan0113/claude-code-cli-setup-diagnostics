@@ -31,11 +31,7 @@ internal static class SessionRemoval
 
     internal static string ProjectsRoot()
     {
-        var configured = Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR");
-        var profile = string.IsNullOrWhiteSpace(configured)
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude")
-            : configured;
-        if (WorkingFolder.Normalize(profile) is not { } root || root.StartsWith(@"\\?\") || root.StartsWith(@"\\.\"))
+        if (WorkingFolder.Normalize(ProfileDataPaths.Config) is not { } root || root.StartsWith(@"\\?\") || root.StartsWith(@"\\.\"))
             throw new IOException("Invalid Claude configuration directory.");
         return Path.Combine(root, "projects");
     }

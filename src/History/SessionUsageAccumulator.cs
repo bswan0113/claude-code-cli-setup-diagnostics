@@ -13,10 +13,13 @@ internal sealed class SessionUsageAccumulator(Guid sessionId)
     private long? _context, _capacity;
     private double? _percentage;
     private string? _model, _requestedModel;
+    private Guid? _ownerId;
+    private bool _conflictingOwners, _artifactAccount, _ownerIncomplete;
 
-    internal void MarkGap()
+    internal void MarkGap(bool unreadableRecord = true)
     {
         _partial = true;
+        _ownerIncomplete |= unreadableRecord;
         _latest = null;
         _context = _capacity = null;
         _percentage = null;
@@ -29,6 +32,11 @@ internal sealed class SessionUsageAccumulator(Guid sessionId)
              !MatchesSession(id)) || (row.TryGetProperty("session_id", out var sid) && !MatchesSession(sid)))
             return;
         var type = Text(row, "type");
+        if (type is "session-owner" or "artifact-autoreact-ledger")
+        {
+            ObserveOwner(row, type);
+            return;
+        }
         if (type == "system" && Text(row, "subtype") == "compact_boundary")
         {
             var uuid = Text(row, "uuid");
@@ -51,6 +59,31 @@ internal sealed class SessionUsageAccumulator(Guid sessionId)
     private bool MatchesSession(JsonElement id) =>
         id.ValueKind == JsonValueKind.String && id.TryGetGuid(out var actual) && actual == sessionId;
 
+    private void ObserveOwner(JsonElement row, string type)
+    {
+        if (!MatchesSession(Child(row, "sessionId"))) return;
+        var account = Child(row, "accountUuid");
+        if (account.ValueKind != JsonValueKind.String || !account.TryGetGuid(out var id) || id == Guid.Empty)
+        {
+            _ownerIncomplete |= type == "session-owner";
+            return;
+        }
+        if (type == "artifact-autoreact-ledger")
+        {
+            _artifactAccount = true;
+            return;
+        }
+        var organization = Child(row, "organizationUuid");
+        if (organization.ValueKind is not (JsonValueKind.Undefined or JsonValueKind.Null) &&
+            (organization.ValueKind != JsonValueKind.String || !organization.TryGetGuid(out var org) || org == Guid.Empty))
+        {
+            _ownerIncomplete = true;
+            return;
+        }
+        if (_ownerId is { } previous && previous != id) _conflictingOwners = true;
+        _ownerId ??= id;
+    }
+
     private void ObserveAssistant(JsonElement row)
     {
         var message = Child(row, "message");
@@ -68,7 +101,7 @@ internal sealed class SessionUsageAccumulator(Guid sessionId)
         {
             // Distinct JSONL UUIDs can be blocks of the same API reply. A row UUID alone
             // cannot establish a billable response; don't silently sum ambiguous blocks.
-            MarkGap();
+            MarkGap(unreadableRecord: false);
             SetLatest(values, model, Text(row, "requestedModel"), null);
             return;
         }
@@ -153,8 +186,15 @@ internal sealed class SessionUsageAccumulator(Guid sessionId)
             capacity = null; // The observed usage already rules out the inferred default.
         var percent = _percentage ?? (_context.HasValue && capacity is > 0 && _context <= capacity
             ? 100d * _context.Value / capacity.Value : (double?)null);
+        var owner = _conflictingOwners ? SessionOwnerKind.Conflict : _ownerIncomplete ? SessionOwnerKind.Incomplete :
+            _ownerId.HasValue ? SessionOwnerKind.Recorded : _artifactAccount ? SessionOwnerKind.ArtifactOnly : SessionOwnerKind.None;
         return new(total, _context, capacity, percent, _partial && _compactions == 0 ? null : _compactions, partial,
-            _capacity is null && capacity.HasValue && _percentage is null, _model);
+            _capacity is null && capacity.HasValue && _percentage is null, _model)
+        {
+            OwnerKind = owner,
+            OwnerHint = owner == SessionOwnerKind.Recorded ? _ownerId!.Value.ToString("N")[..8] + "…" : null,
+            OwnerMatchKey = owner == SessionOwnerKind.Recorded ? SessionUsage.AccountKey(_ownerId!.Value) : null,
+        };
     }
 
     // These are model defaults, not account/session limits. A provider or Claude Code setting

@@ -30,7 +30,7 @@ internal static partial class EnvironmentChecks
         // The GET is anonymous. Never attach the key or call a configured third-party endpoint.
         const string api = "https://api.anthropic.com";
         var baseUrl = Environment.GetEnvironmentVariable("ANTHROPIC_BASE_URL");
-        if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")) &&
+        if (!LauncherProfiles.IsAdditional && !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")) &&
             (string.IsNullOrWhiteSpace(baseUrl) || string.Equals(baseUrl.Trim().TrimEnd('/'), api, StringComparison.OrdinalIgnoreCase)))
             probes.Add(CheckHostAsync(client, new(api), false, token));
         return Task.WhenAll(probes);

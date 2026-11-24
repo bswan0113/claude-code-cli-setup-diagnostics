@@ -1,0 +1,23 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="ProfileStripLabel">Account profiles</sys:String>
+    <sys:String x:Key="ProfileDefault">Default account</sys:String>
+    <sys:String x:Key="ProfileCurrent">Current profile</sys:String>
+    <sys:String x:Key="ProfileAdd">Add an account profile</sys:String>
+    <sys:String x:Key="ProfileLogin">Sign in</sys:String>
+    <sys:String x:Key="ProfileAddHint">Choose a name for this tab. The launcher will switch to the new profile and open Claude Code’s official sign-in flow. Choose the account in your browser.</sys:String>
+    <sys:String x:Key="ProfileLabel">Tab name</sys:String>
+    <sys:String x:Key="ProfileCreate">Create and sign in</sys:String>
+    <sys:String x:Key="ProfileCancel">Cancel</sys:String>
+    <sys:String x:Key="ProfileListFailed">Could not read the account profiles. Check access to the launcher’s local settings.</sys:String>
+    <sys:String x:Key="ProfileCreateFailed">Could not create this profile. Check the tab name and access to the local settings.</sys:String>
+    <sys:String x:Key="ProfileSwitchFailed">Could not open the selected profile. The current profile is still open.</sys:String>
+    <sys:String x:Key="ProfileBusy">Wait for the current operation or terminal startup to finish, then try again.</sys:String>
+    <sys:String x:Key="ProfileSigningIn">Sign in to Claude Code in PowerShell and your browser.</sys:String>
+    <sys:String x:Key="ProfileLoginDone">Sign-in confirmed for the current profile.</sys:String>
+    <sys:String x:Key="ProfileLoginCanceled">Sign-in could not be confirmed. Use Sign in on this tab to try again.</sys:String>
+    <sys:String x:Key="ProfileInvalidName">Use up to 80 characters with no control characters.</sys:String>
+    <sys:String x:Key="ProfileSwitching">Opening the selected profile…</sys:String>
+    <sys:String x:Key="ProfileDuplicateName">This tab name is already in use. Choose another name.</sys:String>
+</ResourceDictionary>

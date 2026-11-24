@@ -3,9 +3,9 @@ namespace ClaudeLauncher;
 /// <summary>Orders saved sessions by the last observed launch, using transcript time for older history.</summary>
 public static class SessionRecency
 {
-    private static readonly string Store = Path.Combine(
+    private static readonly string Store = ProfileDataPaths.LocalStore(Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "BlsLab", "ClaudeLauncher", "session-launches");
+        "BlsLab", "ClaudeLauncher", "session-launches"));
     private static readonly Lazy<Dictionary<Guid, DateTime>> Launches = new(ReadHistory);
     private static readonly object Gate = new();
 

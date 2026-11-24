@@ -11,9 +11,9 @@ public static class FolderHistory
 {
     private const int HistoryLimit = 100;
 
-    private static string StorePath => Path.Combine(
+    private static string StorePath => ProfileDataPaths.LocalStore(Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "BlsLab", "ClaudeLauncher", "recent-folders.json");
+        "BlsLab", "ClaudeLauncher", "recent-folders.json"));
 
     public static Task<IReadOnlyList<RecentFolder>> LoadAsync() => Task.Run<IReadOnlyList<RecentFolder>>(() =>
     {

@@ -74,9 +74,24 @@
         <Grid x:Name="LauncherSurface">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <Border x:Name="Toolbar" Background="{DynamicResource Header}" Padding="36,0" MinHeight="64">
+            <Border Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="12,3">
+                <DockPanel>
+                    <Button x:Name="ProfileLoginButton" DockPanel.Dock="Right" Style="{StaticResource LinkAction}"
+                            Content="{DynamicResource ProfileLogin}" Click="ProfileLogin_Click" />
+                    <Button x:Name="AddProfileButton" DockPanel.Dock="Right" Content="＋" Padding="7,1" Margin="4,0"
+                            Style="{StaticResource Action}" AutomationProperties.Name="{DynamicResource ProfileAdd}"
+                            ToolTip="{DynamicResource ProfileAdd}" Click="AddProfile_Click" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl x:Name="ProfileTabs" AutomationProperties.Name="{DynamicResource ProfileStripLabel}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+            <Border x:Name="Toolbar" Grid.Row="1" Background="{DynamicResource Header}" Padding="36,0" MinHeight="64">
                 <Grid VerticalAlignment="Center">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -121,7 +136,7 @@
                 </Grid>
             </Border>
 
-            <Grid x:Name="Workspace" Grid.Row="1" Margin="36,24,36,20">
+            <Grid x:Name="Workspace" Grid.Row="2" Margin="36,24,36,20">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
@@ -414,11 +429,11 @@
                 <TextBlock x:Name="StatusText" Grid.Row="3" Visibility="Collapsed" Margin="0,6,0,0"
                            Style="{StaticResource BodyText}" FontSize="{DynamicResource Font13}" AutomationProperties.LiveSetting="Polite" />
             </Grid>
-            <Thumb x:Name="SidebarWidthGrip" Grid.RowSpan="2" Style="{StaticResource SidebarResizeGrip}" Width="7"
+            <Thumb x:Name="SidebarWidthGrip" Grid.RowSpan="3" Style="{StaticResource SidebarResizeGrip}" Width="7"
                    HorizontalAlignment="Right" Cursor="SizeWE" ToolTip="{DynamicResource SidebarResizeWidth}" AutomationProperties.Name="{DynamicResource SidebarResizeWidth}" />
-            <Thumb x:Name="SidebarHeightGrip" Grid.RowSpan="2" Style="{StaticResource SidebarResizeGrip}" Height="7"
+            <Thumb x:Name="SidebarHeightGrip" Grid.RowSpan="3" Style="{StaticResource SidebarResizeGrip}" Height="7"
                    VerticalAlignment="Bottom" Cursor="SizeNS" ToolTip="{DynamicResource SidebarResizeHeight}" AutomationProperties.Name="{DynamicResource SidebarResizeHeight}" />
-            <Thumb x:Name="SidebarCornerGrip" Grid.RowSpan="2" Style="{StaticResource SidebarResizeGrip}" Height="13" Width="13"
+            <Thumb x:Name="SidebarCornerGrip" Grid.RowSpan="3" Style="{StaticResource SidebarResizeGrip}" Height="13" Width="13"
                    VerticalAlignment="Bottom" HorizontalAlignment="Right" Cursor="SizeNWSE" ToolTip="{DynamicResource SidebarResizeBoth}" AutomationProperties.Name="{DynamicResource SidebarResizeBoth}" />
         </Grid>
         <Grid x:Name="SetupOverlay" Visibility="Collapsed" Background="{DynamicResource Overlay}">

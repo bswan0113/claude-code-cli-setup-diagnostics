@@ -16,7 +16,7 @@ If the launcher can fix the problem, it explains what happened, recommends one a
 | Step | What the launcher checks | What you can do |
 |---|---|---|
 | 1. PC environment | Windows build and architecture, Windows PowerShell version and path, spaces and non-ASCII characters in the user profile path. | Check x64 compatibility and the PowerShell path. Spaces and non-ASCII characters are informational. |
-| 2. Executable | Known install paths, publisher signature, version, `.new.*` and `.old.*` update backups, and saved versions. | Restore a verified backup first. If no usable backup exists, the launcher offers the official PowerShell installer. If a running Claude process blocks replacement, check its PID before closing it. Closing it interrupts that session. |
+| 2. Executable | Known install paths, publisher signature, version, `.new.*` and `.old.*` update backups, and saved versions. | Restore a verified backup first. If the executable is missing and no usable backup exists, the launcher offers the official PowerShell installer. If a running Claude process blocks replacement, check its PID before closing it. Closing it interrupts that session. |
 | 3. PATH | The launcher’s current PATH, the user and system PATH saved by Windows, and the location of the CLI. | Add a verified installation folder to the user PATH. If already registered, refresh the launcher’s PATH for new PowerShell windows. |
 | 4. Duplicate installs and command conflicts | Executables with the same name, the global npm package, WindowsApps aliases and the legacy `.claude\local` folder. | Reorder the user PATH so the working installation runs first. Removing a duplicate npm package and deleting legacy files are separate actions. Legacy cleanup deletes only the regular files listed for approval. |
 | 5. PowerShell execution policy | Whether policy blocks the npm PowerShell script and whether an organization manages the policy. | Set `CurrentUser` to `RemoteSigned` when a user-level change can resolve the issue. For an organization policy, contact the administrator or use the native CLI. |
@@ -25,6 +25,8 @@ If the launcher can fix the problem, it explains what happened, recommends one a
 | 8. Update cleanup | Leftover `claude.exe.old.*`, `.new.*` and `.broken.*` files, the `.claude\downloads` cache and the user’s automatic update setting. | Review leftover files and the download cache separately before deleting them. Cleanup keeps the newest old backup. If a damaged native update leads you to disable automatic updates, install future updates manually. |
 
 **If `~/.local/bin/claude.exe` disappears**, the launcher looks for another working installation and checks its PATH if it finds one. If the executable is missing and a verified backup is available for restoration, the launcher recommends one backup and asks whether to restore it to the original path. If there is no usable backup, it offers to reinstall the CLI with Anthropic’s PowerShell installer.
+
+When `claude.exe` exists, the launcher distinguishes a signature hash mismatch, an unsigned file, a different publisher, an inconclusive trust check, and a correctly signed file that fails its version check. It blocks execution of a file with a missing, mismatched or unconfirmed signature. If the affected file is the user’s native executable and the launcher can safely restore a verified Anthropic backup to that exact path, **Yes** preserves the current file and restores the backup. If no backup is available and the launcher confirms it is safe to set aside the native file, close Claude Code, rename the file to an unused name such as `claude.exe.saved`, and rescan for an official installation. Leave files managed by WinGet or another tool in place and check that tool and PATH. If the checks disagree or cannot establish trust, recheck file access and rescan.
 
 The launcher checks `downloads.claude.ai` and `claude.ai`. It adds an anonymous request to `api.anthropic.com` only when its environment contains a nonempty `ANTHROPIC_API_KEY` and uses the default API URL. If your organization uses a proxy or a private certificate authority, review the results with your network administrator. [Anthropic network configuration](https://code.claude.com/docs/en/network-config)
 
@@ -70,6 +72,16 @@ irm https://claude.ai/install.ps1 | iex
 Session titles and folders come from JSONL files under `projects` in the Claude configuration directory. For a session with no launcher run history, the launcher uses the file’s last modification time to sort it by recency.
 
 The sort menu beside **Folders and sessions** orders folders by last use, name or full path in either direction. The default is newest first. Your selection is saved for the next launch. In the sidebar, each folder shows its path on a second line. Hover over a shortened path to see it in full.
+
+### Account tabs
+
+Use **＋** at the top of the launcher, enter a tab name and choose **Create and sign in**. In the new profile, complete Claude Code’s sign-in in PowerShell and your browser. If you close the sign-in window, **Sign in** lets you try again. The tab name is the label you chose.
+
+Select a tab to reopen the launcher with that profile. The default tab uses your existing Claude Code configuration. Additional profiles use their own `CLAUDE_CONFIG_DIR` for Claude Code settings and local session history. Switching tabs leaves running terminals in their original profile. If a repair, session change or terminal startup is underway, wait for it to finish before switching.
+
+In the default tab, the launcher uses the configuration directory from startup, or `~/.claude`. For an added profile it uses `%LOCALAPPDATA%\BlsLab\ClaudeLauncher\profiles\<ID>\claude`. Claude Code stores the local sign-in there. The CLI installation and Windows user PATH are shared. Project and organization settings still apply. [Signing in with multiple accounts](https://code.claude.com/docs/en/authentication#log-in-with-multiple-accounts)
+
+Hover over a session’s token usage to see its recorded owner ID in masked form. A tab name appears only when exactly one profile matches that ID. An artifact ledger entry alone, missing evidence or conflicting IDs cannot establish the owner.
 
 ### Remove and restore local history
 

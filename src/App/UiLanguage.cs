@@ -88,7 +88,7 @@ internal static class UiLanguage
     {
         var resources = new ResourceDictionary();
         foreach (var family in new[] { "Strings", "CoreChecks", "InstallChecks", "EnvChecks", "SettingsRepair",
-            "InteractiveRepair", "RepairHistory", "SessionRemoval" })
+            "InteractiveRepair", "RepairHistory", "SessionRemoval", "Profiles", "SessionOwner" })
         {
             resources.MergedDictionaries.Add(new ResourceDictionary
             {

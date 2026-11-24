@@ -142,6 +142,7 @@ internal static class PowerShellProbe
 
         startInfo.Environment[ProbePath] = executable ?? "";
         startInfo.Environment[ProbeAuth] = checkAuth ? "1" : "0";
+        LauncherProfiles.ApplyCliEnvironment(startInfo.Environment);
 
         try
         {

@@ -53,6 +53,7 @@ internal static class DefenderDiagnostics
             Path.Combine(Path.GetDirectoryName(PowerShellProbe.Executable)!, "Modules"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "WindowsPowerShell", "Modules"));
         start.Environment["BLSLAB_DEFENDER_TARGETS"] = JsonSerializer.Serialize(paths);
+        LauncherProfiles.ApplyCliEnvironment(start.Environment);
         foreach (var arg in new[] { "-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand",
             Convert.ToBase64String(Encoding.Unicode.GetBytes(Inspect)) })
             start.ArgumentList.Add(arg);

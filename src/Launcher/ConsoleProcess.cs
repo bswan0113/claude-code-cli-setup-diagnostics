@@ -33,7 +33,7 @@ internal sealed class ConsoleProcess : WaitHandle
     internal static ConsoleProcess Start(string executable, string arguments, string cwd,
         IReadOnlyDictionary<string, string> overrides)
     {
-        var variables = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var variables = new SortedDictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (DictionaryEntry entry in Environment.GetEnvironmentVariables())
         {
             variables[(string)entry.Key] = (string)entry.Value!;
@@ -43,6 +43,7 @@ internal sealed class ConsoleProcess : WaitHandle
         {
             variables[name] = value;
         }
+        LauncherProfiles.ApplyCliEnvironment(variables);
 
         var environmentBlock = new StringBuilder();
         foreach (var (name, value) in variables)

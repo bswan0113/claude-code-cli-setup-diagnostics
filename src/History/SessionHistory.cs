@@ -51,11 +51,7 @@ public static class SessionHistory
 
     private static SessionIndex Load()
     {
-        var configured = Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR");
-        var root = string.IsNullOrWhiteSpace(configured)
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude")
-            : configured;
-        if (WorkingFolder.Normalize(root) is not { } configDirectory)
+        if (WorkingFolder.Normalize(ProfileDataPaths.Config) is not { } configDirectory)
         {
             return new([], true);
         }

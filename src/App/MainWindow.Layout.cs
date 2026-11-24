@@ -5,6 +5,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using System.Globalization;
 
 namespace ClaudeLauncher;
 
@@ -39,6 +40,44 @@ public partial class MainWindow
         MinHeight = Math.Min(MinHeight, work.Height);
         Width = Math.Min(Width, work.Width);
         Height = Math.Min(Height, work.Height);
+    }
+
+    private string CaptureSwitchPlacement()
+    {
+        var bounds = IsSidebar ? _desktopBounds : WindowState == WindowState.Normal
+            ? new Rect(Left, Top, ActualWidth, ActualHeight) : RestoreBounds;
+        var state = IsSidebar ? _desktopState : WindowState;
+        return FormattableString.Invariant($"{bounds.X:R}|{bounds.Y:R}|{bounds.Width:R}|{bounds.Height:R}|{(int)state}");
+    }
+
+    private void RestoreSwitchPlacement()
+    {
+        const string key = "BLSLAB_CLAUDE_LAUNCHER_SWITCH_BOUNDS";
+        var value = Environment.GetEnvironmentVariable(key);
+        if (value is null)
+            return;
+        Environment.SetEnvironmentVariable(key, null);
+        var fields = value.Split('|');
+        if (fields.Length != 5)
+            return;
+        var bounds = new double[4];
+        for (int i = 0; i < bounds.Length; i++)
+            if (!double.TryParse(fields[i], NumberStyles.Float, CultureInfo.InvariantCulture, out bounds[i]) ||
+                !double.IsFinite(bounds[i]) || Math.Abs(bounds[i]) > 100000)
+                return;
+        if (bounds[2] < 1 || bounds[3] < 1)
+            return;
+        var desktop = new Rect(SystemParameters.VirtualScreenLeft, SystemParameters.VirtualScreenTop,
+            SystemParameters.VirtualScreenWidth, SystemParameters.VirtualScreenHeight);
+        if (!desktop.IntersectsWith(new Rect(bounds[0], bounds[1], bounds[2], bounds[3])))
+            return;
+        WindowStartupLocation = WindowStartupLocation.Manual;
+        Left = bounds[0];
+        Top = bounds[1];
+        Width = bounds[2];
+        Height = bounds[3];
+        if (fields[4] == ((int)WindowState.Maximized).ToString(CultureInfo.InvariantCulture))
+            WindowState = WindowState.Maximized;
     }
 
     private void PinLeft_Click(object sender, RoutedEventArgs e) => PinSidebar(right: false);
@@ -251,7 +290,7 @@ public partial class MainWindow
         // Deduct the space for chrome and a tree row, including the margins that grow with the sidebar.
         var sidebarMargins = Workspace.Margin.Top + Workspace.Margin.Bottom + Dashboard.Margin.Bottom +
             RunningCaption.Margin.Bottom + RecentCaption.Margin.Bottom + TreeCaption.Margin.Bottom + RecentPanel.Margin.Top;
-        var cardLimit = Math.Max(36, (height - 195 - 82 * fontScale - sidebarMargins) / 2);
+        var cardLimit = Math.Max(36, (height - 195 - ProfileTabs.ActualHeight - 82 * fontScale - sidebarMargins) / 2);
         var listHeight = sidebar ? Math.Min(Math.Clamp(height * 0.23, 70, 207), cardLimit)
             : shortWindow ? Math.Clamp((height - 390) * 0.69, 90, 254)
             : Math.Clamp(height * 0.273, 96, 254);

@@ -152,7 +152,7 @@ internal static partial class SettingsDiagnostics
     {
         var baseName = Path.GetFileName(path);
         var candidates = new List<FileInfo>();
-        foreach (var folder in new[] { Path.GetDirectoryName(path)!, Path.Combine(Profile, ".claude", "backups") })
+        foreach (var folder in new[] { Path.GetDirectoryName(path)!, Path.Combine(ProfileDataPaths.Config, "backups") })
         {
             try
             {

@@ -33,6 +33,7 @@ internal static partial class EnvironmentChecks
             start.ArgumentList.Add(arg);
         start.Environment["PSModulePath"] = Path.Combine(Path.GetDirectoryName(PowerShellProbe.Executable)!, "Modules");
         start.Environment["BLSLAB_RESTORE_USER_POLICY"] = previous;
+        LauncherProfiles.ApplyCliEnvironment(start.Environment);
         token.ThrowIfCancellationRequested();
         using var process = Process.Start(start);
         if (process is null)

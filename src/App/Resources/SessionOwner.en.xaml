@@ -1,0 +1,10 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="SessionOwnerRecorded">Recorded session owner ID {0}</sys:String>
+    <sys:String x:Key="SessionOwnerArtifact">Only the artifact record identifies an account. The session owner is unknown.</sys:String>
+    <sys:String x:Key="SessionOwnerConflict">The session record names multiple owners.</sys:String>
+    <sys:String x:Key="SessionOwnerNone">No owner is recorded for this session.</sys:String>
+    <sys:String x:Key="SessionOwnerIncomplete">The session owner could not be verified from the available records.</sys:String>
+    <sys:String x:Key="SessionOwnerMatched">Recorded session owner ID {0} · Profile with the same saved account {1}</sys:String>
+</ResourceDictionary>

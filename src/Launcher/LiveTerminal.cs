@@ -23,7 +23,7 @@ public sealed class LiveTerminal
 
     internal LiveTerminal(string folder, Guid? sessionId, int claudePid, long processStart)
         : this(folder, claudePid, processStart,
-            Path.Combine(SessionDirectory(folder), claudePid.ToString(CultureInfo.InvariantCulture) + ".json"),
+            Path.Combine(SessionDirectory(), claudePid.ToString(CultureInfo.InvariantCulture) + ".json"),
             new(sessionId, "Unknown"))
     {
         _pendingSessionId = sessionId;
@@ -51,7 +51,7 @@ public sealed class LiveTerminal
         var live = new List<LiveTerminal>();
         try
         {
-            foreach (var path in Directory.EnumerateFiles(SessionDirectory(Environment.CurrentDirectory), "*.json"))
+            foreach (var path in Directory.EnumerateFiles(SessionDirectory(), "*.json"))
             {
                 if (ReadState(path) is not { } state || state.SessionId is null || state.IsSubagent ||
                     state.EntryPoint is "claude-desktop" or "claude-desktop-3p" or "local-agent" or "claude-vscode" ||
@@ -80,7 +80,7 @@ public sealed class LiveTerminal
     {
         try
         {
-            foreach (var path in Directory.EnumerateFiles(SessionDirectory(Environment.CurrentDirectory), "*.json"))
+            foreach (var path in Directory.EnumerateFiles(SessionDirectory(), "*.json"))
             {
                 if (!int.TryParse(Path.GetFileNameWithoutExtension(path), out var pid) || pid <= 0)
                     continue;
@@ -213,12 +213,9 @@ public sealed class LiveTerminal
         Volatile.Write(ref _snapshot, new(SessionId, "Unknown"));
     }
 
-    private static string SessionDirectory(string cwd)
+    private static string SessionDirectory()
     {
-        var configured = Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR");
-        var config = string.IsNullOrWhiteSpace(configured)
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude")
-            : Path.GetFullPath(configured, cwd);
+        var config = WorkingFolder.Normalize(ProfileDataPaths.Config) ?? throw new IOException("Invalid Claude configuration directory.");
         return Path.Combine(config, "sessions");
     }
 

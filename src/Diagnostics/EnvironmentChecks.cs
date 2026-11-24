@@ -50,7 +50,7 @@ internal static partial class EnvironmentChecks
 
         // Scope and variable are generated locally. The approval's display text is never a write input.
         var managed = ReadManagedVariables();
-        foreach (var name in AuthenticationVariables.Concat(PathVariables))
+        foreach (var name in ProfileAuthenticationVariables().Concat(PathVariables))
         {
             token.ThrowIfCancellationRequested();
             var current = ReadVariable(name);
@@ -82,7 +82,7 @@ internal static partial class EnvironmentChecks
         foreach (var name in managed.OrderBy(name => name, StringComparer.Ordinal))
             results.Add(new(6, "EnvManaged", CheckState.Info, name, Target: name));
 
-        foreach (var name in AuthenticationVariables.Concat(PathVariables).Concat(ProxyVariables))
+        foreach (var name in ProfileAuthenticationVariables().Concat(PathVariables).Concat(ProxyVariables))
         {
             var state = ReadVariable(name);
             if (state.User.Value is null && state.Machine.Value is null && state.Process is null)
@@ -104,6 +104,9 @@ internal static partial class EnvironmentChecks
             results.Add(new(6, "ProxyUnset", CheckState.Info, "HTTPS_PROXY · HTTP_PROXY · NO_PROXY"));
         return results;
     }
+
+    private static IEnumerable<string> ProfileAuthenticationVariables() =>
+        LauncherProfiles.IsAdditional ? [] : AuthenticationVariables;
 
     private static CheckItem? VariableItem(string cwd, string name, string scope, VariableState state, bool managed,
         out string? replacement)

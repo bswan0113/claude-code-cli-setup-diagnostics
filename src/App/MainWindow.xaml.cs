@@ -36,14 +36,21 @@ public partial class MainWindow : Window
         LanguagePicker.SelectedValue = UiLanguage.Current;
         Language = XmlLanguage.GetLanguage(UiLanguage.Current);
         FitInitialWindow();
+        RestoreSwitchPlacement();
         _initialized = true;
         UpdateLayoutMode();
         RefreshHistoryView();
         RenderInput();
         Loaded += async (_, _) =>
         {
+            if (!LauncherProfiles.AcceptHandoff())
+            {
+                Close();
+                return;
+            }
             if (_appearance.Sidebar)
                 PinSidebar(_appearance.SidebarRight, _appearance.SidebarMonitor);
+            InitProfileTabs();
             _activityTimer.Start();
             await Task.WhenAll(RefreshHistoriesAsync(), DiscoverAsync());
         };
@@ -55,6 +62,7 @@ public partial class MainWindow : Window
             return;
 
         UiLanguage.Apply(language);
+        InitProfileTabs();
         Language = XmlLanguage.GetLanguage(language);
         SetStatus(!UiLanguage.Save() ? "LanguageSaveFailed" : _status == "LanguageSaveFailed" ? null : _status);
         UpdateLayoutMode();
@@ -438,7 +446,7 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
-        if (_setup?.IsBusy == true || _changingSessions)
+        if (_setup?.IsBusy == true || _changingSessions || _profileSigningIn || _profileSwitching)
         {
             e.Cancel = true;
             return;

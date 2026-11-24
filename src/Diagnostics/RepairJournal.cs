@@ -19,7 +19,7 @@ internal static partial class RepairJournal
     private static readonly AsyncLocal<Operation?> Current = new();
     private static readonly Guid Instance = Guid.NewGuid();
     private static readonly string Base = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-    private static readonly string Folder = Path.Combine(Base, "ClaudeCodeSetupDiagnostics", "repair-history");
+    private static readonly string Folder = ProfileDataPaths.LocalStore(Path.Combine(Base, "ClaudeCodeSetupDiagnostics", "repair-history"));
 
     internal static async Task<T> TrackAsync<T>(string action, Func<Task<T>> execute, Func<T, bool> changed,
         string? subject = null)

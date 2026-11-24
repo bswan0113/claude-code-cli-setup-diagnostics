@@ -78,6 +78,7 @@ internal static class FullDiagnostics
             UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true,
             WorkingDirectory = Environment.SystemDirectory
         };
+        LauncherProfiles.ApplyCliEnvironment(start.Environment);
         foreach (var argument in new[] { "-NoLogo", "-NoProfile", "-NonInteractive", "-Command",
             "$PSVersionTable.PSVersion.ToString()" })
             start.ArgumentList.Add(argument);

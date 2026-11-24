@@ -224,6 +224,7 @@ internal static partial class InstallChecks
         foreach (var argument in arguments)
             start.ArgumentList.Add(argument);
         environment?.Invoke(start.Environment);
+        LauncherProfiles.ApplyCliEnvironment(start.Environment);
 
         using var process = Process.Start(start);
         if (process is null)

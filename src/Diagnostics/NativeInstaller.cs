@@ -61,6 +61,7 @@ internal static class NativeInstaller
         foreach (var argument in new[] { "-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", encoded })
             start.ArgumentList.Add(argument);
         start.Environment["PSModulePath"] = Path.Combine(Path.GetDirectoryName(PowerShellProbe.Executable)!, "Modules");
+        LauncherProfiles.ApplyCliEnvironment(start.Environment);
 
         var started = false;
         try
@@ -178,7 +179,7 @@ internal static class NativeInstaller
                 // Native setup creates and renames these paths during a normal download.
             }
         }
-        Read(Path.Combine(profile, ".claude", "downloads"), "*");
+        Read(Path.Combine(ProfileDataPaths.Config, "downloads"), "*");
         Read(Path.Combine(profile, ".local", "share", "claude", "versions"), "*");
         options.RecurseSubdirectories = false;
         Read(Path.Combine(profile, ".local", "bin"), "claude*");

@@ -277,6 +277,7 @@ public static class Diagnostics
         try
         {
             token.ThrowIfCancellationRequested();
+            LauncherProfiles.ApplyCliEnvironment(startInfo.Environment);
             using var installer = Process.Start(startInfo);
             if (installer is null)
                 return InstallFailure("WinGetStartFailed");
