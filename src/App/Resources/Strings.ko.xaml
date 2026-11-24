@@ -33,7 +33,7 @@
     <sys:String x:Key="ReadyTitle">Claude Code를 열 수 있습니다</sys:String>
     <sys:String x:Key="ReadyBody">작업 폴더를 열어 Claude Code를 시작하세요.</sys:String>
     <sys:String x:Key="MissingTitle">Claude Code 설치를 찾지 못했습니다</sys:String>
-    <sys:String x:Key="MissingBody">WinGet의 공식 패키지(Anthropic.ClaudeCode)를 현재 Windows 계정에 설치할 수 있습니다.</sys:String>
+    <sys:String x:Key="MissingBody">공식 PowerShell 명령으로 현재 Windows 계정에 Claude Code를 설치할 수 있습니다.</sys:String>
     <sys:String x:Key="PathMissingTitle">PowerShell에서 Claude Code를 찾을 수 없어요</sys:String>
     <sys:String x:Key="PathMissingBody">사용자 PATH에 Claude Code 설치 폴더가 빠져 있습니다.</sys:String>
     <sys:String x:Key="StalePathTitle">런처가 이전 PATH를 쓰고 있습니다</sys:String>
@@ -47,14 +47,14 @@
     <sys:String x:Key="InvalidFolderTitle">열 수 있는 폴더를 선택하세요</sys:String>
     <sys:String x:Key="InvalidFolderBody">전체 경로를 확인하거나 찾아보기로 다른 폴더를 선택하세요.</sys:String>
     <sys:String x:Key="RepairFailedTitle">설치 또는 복구를 완료하지 못했습니다</sys:String>
-    <sys:String x:Key="RepairFailedBody">현재 상태를 다시 검사하세요. WinGet을 사용할 수 없거나 실행이 차단되면 공식 설치 안내를 확인하세요.</sys:String>
+    <sys:String x:Key="RepairFailedBody">설치·복구를 마치지 못했습니다. 오류를 확인한 뒤 다시 검사하세요.</sys:String>
     <sys:String x:Key="LaunchFailedTitle">Claude Code를 시작하지 못했습니다</sys:String>
     <sys:String x:Key="LaunchFailedBody">설치 상태는 정상입니다. 이 폴더에서 PowerShell을 열고 claude를 실행하면 터미널 메시지를 확인할 수 있습니다.</sys:String>
     <sys:String x:Key="RetryFailedTitle">다시 열었지만 Claude Code를 시작하지 못했습니다</sys:String>
     <sys:String x:Key="RetryFailedBody">설치 상태를 다시 검사하거나 이 폴더에서 PowerShell을 열어 오류를 확인하세요.</sys:String>
     <sys:String x:Key="ExitCode">종료 코드 {0}</sys:String>
     <sys:String x:Key="Checking">Claude Code 설치 상태를 확인하는 중…</sys:String>
-    <sys:String x:Key="Installing">WinGet으로 Claude Code를 설치하는 중…</sys:String>
+    <sys:String x:Key="Installing">Claude Code를 설치하는 중…</sys:String>
     <sys:String x:Key="Repairing">PATH를 업데이트하는 중…</sys:String>
     <sys:String x:Key="Verifying">현재 설치 상태를 다시 확인하는 중…</sys:String>
     <sys:String x:Key="TerminalPending">PowerShell을 여는 중이거나 사용 중입니다.</sys:String>
@@ -195,7 +195,6 @@
     <sys:String x:Key="FullNoMatchingResult">같은 항목의 결과 없음</sys:String>
     <sys:String x:Key="ApprovalTitle">이 조치를 적용할까요?</sys:String>
     <sys:String x:Key="ApprovalApply">확인한 조치 적용</sys:String>
-    <sys:String x:Key="ApprovalWinGetTarget">WinGet으로 현재 Windows 사용자에게 Anthropic.ClaudeCode를 설치합니다. 설치 후 런처의 PATH를 갱신할 수 있습니다.</sys:String>
     <sys:String x:Key="ApprovalUserPathTarget" xml:space="preserve">현재 사용자의 Path(HKCU\Environment)와 런처의 PATH에 아래 경로를 추가합니다.&#10;{0}</sys:String>
     <sys:String x:Key="ApprovalProcessPathTarget" xml:space="preserve">런처와 여기서 새로 여는 터미널의 PATH에 아래 경로를 적용합니다.&#10;{0}</sys:String>
     <sys:String x:Key="CheckStatePass">정상</sys:String>
@@ -211,4 +210,24 @@
     <sys:String x:Key="CheckStage6">로그인·인증서·Git 설정</sys:String>
     <sys:String x:Key="CheckStage7">네트워크 연결</sys:String>
     <sys:String x:Key="CheckStage8">잔여 파일과 자동 업데이트</sys:String>
+    <sys:String x:Key="GuidedInstallNeeded">설치 필요</sys:String>
+    <sys:String x:Key="GuidedIssue">이상 있음</sys:String>
+    <sys:String x:Key="GuidedHealthy">이상 없음</sys:String>
+    <sys:String x:Key="GuidedDetails">전체 검사 결과</sys:String>
+    <sys:String x:Key="GuidedYes">예</sys:String>
+    <sys:String x:Key="GuidedNo">아니요</sys:String>
+    <sys:String x:Key="GuidedRestoreVersion">이 PC에서 확인한 백업(버전 {0})으로 Claude Code 실행 파일을 복원할까요?</sys:String>
+    <sys:String x:Key="GuidedRestore">이 PC에서 확인한 백업으로 Claude Code 실행 파일을 복원할까요?</sys:String>
+    <sys:String x:Key="GuidedInstall">이 Windows 계정에 공식 PowerShell 명령으로 Claude Code를 설치할까요?</sys:String>
+    <sys:String x:Key="GuidedReinstall">공식 PowerShell 명령으로 이 Windows 계정에 Claude Code를 다시 설치할까요?</sys:String>
+    <sys:String x:Key="GuidedRefreshPath">새 PowerShell 창에서 Claude Code를 찾도록 런처의 경로를 새로고칠까요?</sys:String>
+    <sys:String x:Key="GuidedUserPath">PowerShell이 확인된 Claude Code 설치 폴더를 먼저 찾도록 내 계정의 검색 경로를 수정할까요?</sys:String>
+    <sys:String x:Key="GuidedGitBash">이 PC에서 찾은 Git Bash를 사용하도록 내 계정의 설정을 바꿀까요?</sys:String>
+    <sys:String x:Key="GuidedFallbackNotice">공식 설치가 5분 동안 진행되지 않으면 먼저 종료 여부를 확인한 뒤 WinGet으로 시도합니다.</sys:String>
+    <sys:String x:Key="GuidedInstalling">공식 설치 명령을 실행하고 있습니다. 다운로드 중에는 진행률이 표시되지 않을 수 있습니다.</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerStartFailed">공식 설치 명령을 시작하지 못했습니다. Windows PowerShell을 열 수 있는지 확인하세요.</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerExitFailed">공식 설치 명령이 오류로 종료됐습니다. 전체 검사 결과에서 종료 코드를 확인하세요.</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerVerificationFailed">설치 명령은 끝났지만 공식 실행 파일의 서명과 버전을 확인하지 못했습니다. 전체 검사 결과에서 설치 경로를 확인하세요.</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerStopUnconfirmed">공식 설치가 완전히 종료됐는지 확인하지 못했습니다. 실행 중인 설치를 확인한 뒤 다시 검사하세요.</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerObservationFailed">공식 설치 진행 상태를 확인하지 못했습니다. 실행 파일과 진행 중인 설치를 다시 확인하세요.</sys:String>
 </ResourceDictionary>

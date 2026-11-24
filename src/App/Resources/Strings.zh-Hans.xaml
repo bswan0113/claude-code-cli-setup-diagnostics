@@ -33,7 +33,7 @@
     <sys:String x:Key="ReadyTitle">Claude Code 已就绪</sys:String>
     <sys:String x:Key="ReadyBody">打开一个文件夹即可开始使用 Claude Code。</sys:String>
     <sys:String x:Key="MissingTitle">未找到 Claude Code</sys:String>
-    <sys:String x:Key="MissingBody">可以使用 WinGet 的官方软件包（Anthropic.ClaudeCode）为当前 Windows 帐户安装 Claude Code。</sys:String>
+    <sys:String x:Key="MissingBody">可使用官方 PowerShell 命令为当前 Windows 用户安装 Claude Code。</sys:String>
     <sys:String x:Key="PathMissingTitle">PATH 中缺少 Claude Code 的路径</sys:String>
     <sys:String x:Key="PathMissingBody">可执行文件可以直接运行。将下方文件夹添加到用户 PATH 后，PowerShell 就能找到 claude 命令。</sys:String>
     <sys:String x:Key="StalePathTitle">启动器正在使用旧的 PATH</sys:String>
@@ -47,14 +47,14 @@
     <sys:String x:Key="InvalidFolderTitle">请选择可访问的文件夹</sys:String>
     <sys:String x:Key="InvalidFolderBody">请检查完整路径，或通过“浏览”选择其他文件夹。</sys:String>
     <sys:String x:Key="RepairFailedTitle">安装或修复未完成</sys:String>
-    <sys:String x:Key="RepairFailedBody">请重新检查当前状态。如果无法使用 WinGet 或它被阻止，请查看官方安装说明。</sys:String>
+    <sys:String x:Key="RepairFailedBody">安装或修复未完成。请查看错误后重新检查。</sys:String>
     <sys:String x:Key="LaunchFailedTitle">无法启动 Claude Code</sys:String>
     <sys:String x:Key="LaunchFailedBody">已通过安装检查。请在此文件夹中打开 PowerShell 并运行 claude，查看终端中的消息。</sys:String>
     <sys:String x:Key="RetryFailedTitle">重试后仍无法启动 Claude Code</sys:String>
     <sys:String x:Key="RetryFailedBody">请重新检查安装状态，或在此文件夹中打开 PowerShell 查看错误。</sys:String>
     <sys:String x:Key="ExitCode">退出代码 {0}</sys:String>
     <sys:String x:Key="Checking">正在检查 Claude Code 安装状态…</sys:String>
-    <sys:String x:Key="Installing">正在通过 WinGet 安装 Claude Code…</sys:String>
+    <sys:String x:Key="Installing">正在安装 Claude Code…</sys:String>
     <sys:String x:Key="Repairing">正在更新 PATH…</sys:String>
     <sys:String x:Key="Verifying">正在验证当前安装状态…</sys:String>
     <sys:String x:Key="TerminalPending">PowerShell 正在打开或使用中。</sys:String>
@@ -195,7 +195,6 @@
     <sys:String x:Key="FullNoMatchingResult">此项无对应结果</sys:String>
     <sys:String x:Key="ApprovalTitle">确认此操作</sys:String>
     <sys:String x:Key="ApprovalApply">应用此操作</sys:String>
-    <sys:String x:Key="ApprovalWinGetTarget">WinGet 将为当前 Windows 用户安装 Anthropic.ClaudeCode。安装后，启动器可能刷新自身的 PATH。</sys:String>
     <sys:String x:Key="ApprovalUserPathTarget" xml:space="preserve">将下方路径添加到当前用户的 Path（HKCU\Environment）和启动器的 PATH。&#10;{0}</sys:String>
     <sys:String x:Key="ApprovalProcessPathTarget" xml:space="preserve">将下方路径应用到启动器及它新打开的终端的 PATH。&#10;{0}</sys:String>
     <sys:String x:Key="CheckStatePass">正常</sys:String>
@@ -211,4 +210,24 @@
     <sys:String x:Key="CheckStage6">登录、证书和 Git 设置</sys:String>
     <sys:String x:Key="CheckStage7">网络连接</sys:String>
     <sys:String x:Key="CheckStage8">残留文件和自动更新</sys:String>
+    <sys:String x:Key="GuidedInstallNeeded">需要安装</sys:String>
+    <sys:String x:Key="GuidedIssue">发现问题</sys:String>
+    <sys:String x:Key="GuidedHealthy">未发现问题</sys:String>
+    <sys:String x:Key="GuidedDetails">完整诊断结果</sys:String>
+    <sys:String x:Key="GuidedYes">是</sys:String>
+    <sys:String x:Key="GuidedNo">否</sys:String>
+    <sys:String x:Key="GuidedRestoreVersion">要使用这台电脑上已验证的备份（版本 {0}）恢复 Claude Code 可执行文件吗？</sys:String>
+    <sys:String x:Key="GuidedRestore">要使用这台电脑上已验证的备份恢复 Claude Code 可执行文件吗？</sys:String>
+    <sys:String x:Key="GuidedInstall">要使用官方 PowerShell 命令为当前 Windows 用户安装 Claude Code 吗？</sys:String>
+    <sys:String x:Key="GuidedReinstall">要使用官方 PowerShell 命令为当前 Windows 用户重新安装 Claude Code 吗？</sys:String>
+    <sys:String x:Key="GuidedRefreshPath">要刷新启动器的搜索路径，让新开的 PowerShell 窗口能找到 Claude Code 吗？</sys:String>
+    <sys:String x:Key="GuidedUserPath">要更新当前用户的搜索路径，让 PowerShell 找到已验证的 Claude Code 吗？</sys:String>
+    <sys:String x:Key="GuidedGitBash">要更新当前用户的设置，使用在这台电脑上找到的 Git Bash 吗？</sys:String>
+    <sys:String x:Key="GuidedFallbackNotice">如果官方安装程序连续 5 分钟没有进展，启动器会先确认它已停止，再尝试 WinGet。</sys:String>
+    <sys:String x:Key="GuidedInstalling">正在安装。下载期间官方安装程序可能不显示进度。</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerStartFailed">无法启动官方安装命令。请确认 Windows PowerShell 能正常打开。</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerExitFailed">官方安装程序异常退出。请展开诊断结果查看退出代码。</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerVerificationFailed">安装命令已结束，但无法验证可执行文件的签名和版本。请在诊断详情中检查安装路径。</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerStopUnconfirmed">无法确认官方安装程序是否已完全停止。请先检查安装进程，再重新检测。</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerObservationFailed">无法确认官方安装进度。请检查可执行文件以及仍在运行的安装程序。</sys:String>
 </ResourceDictionary>

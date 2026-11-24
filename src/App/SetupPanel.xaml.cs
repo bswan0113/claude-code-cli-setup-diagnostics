@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -33,7 +32,7 @@ public partial class SetupPanel : UserControl
 
     internal async Task OpenAsync(bool examine, DiagnosticNotice? launchFailure)
     {
-        if (examine)
+        if (examine || (launchFailure is not null && launchFailure.Code != "InvalidFolder" && Directory.Exists(_cwd)))
             await CheckAsync(launchFailure, reopenAfterLogin: false);
 
         if (IsVisible && !IsKeyboardFocusWithin)
@@ -41,80 +40,107 @@ public partial class SetupPanel : UserControl
     }
 
     private async void Diagnose_Click(object sender, RoutedEventArgs e) =>
-        await CheckAsync(launchFailure: null, _notice?.Code == "AuthRequired");
+        await CheckAsync(null, _notice?.Code == "AuthRequired");
 
     private async Task CheckAsync(DiagnosticNotice? launchFailure, bool reopenAfterLogin)
     {
         if (IsBusy)
             return;
 
-        var open = false;
-        Begin("Checking");
+        using var cancellation = new CancellationTokenSource();
+        _scanCancellation = cancellation;
+        _retryVerified = false;
+        DetailsExpander.IsExpanded = false;
+        Begin("FullChecking");
         try
         {
-            var result = await Diagnostics.CheckAsync(_cwd);
-            open = result.Code == "Ready" && reopenAfterLogin && _intent is not null;
-            _notice = result.Code == "Ready" && launchFailure is not null
-                ? launchFailure : new DiagnosticNotice(result.Code, result.Detail, AllowRepair: true);
+            await RefreshAsync(cancellation.Token, launchFailure);
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            return;
         }
         catch (Exception exception)
         {
             Debug.WriteLine(exception.GetType().Name);
-            _notice = new DiagnosticNotice("Unknown");
+            InvalidateResults();
+            _feedback = "FullCheckFailed";
         }
         finally
         {
+            _scanCancellation = null;
             End();
         }
 
-        if (open)
+        if (reopenAfterLogin && _guided?.StatusKey == "GuidedHealthy" && _intent is not null)
             Finished?.Invoke(_intent);
     }
 
-    private void Repair_Click(object sender, RoutedEventArgs e)
+    private async void Recommended_Click(object sender, RoutedEventArgs e)
     {
-        if (IsBusy || _approval is not null || _notice is not { } notice || !CanRepair(notice))
+        if (IsBusy || _approval is not null || _guided is not { } result)
             return;
-
-        var action = LegacyActionLabel(notice.Code);
-        var target = notice.Code switch
-        {
-            "Missing" => UiLanguage.Text("ApprovalWinGetTarget"),
-            "StalePath" => Format("ApprovalProcessPathTarget", notice.Detail!),
-            _ => Format("ApprovalUserPathTarget", notice.Detail!)
-        };
-        OpenApproval(new RepairApproval(UiLanguage.Text(action), UiLanguage.Text(notice.Code + "Body"),
-            target, "", Quick: notice));
+        if (result.Repair is { } item)
+            await ApplyFullRepairAsync(item);
+        else if (result.QuickRepair is { } quick)
+            await ApplyQuickRepairAsync(quick);
     }
 
-    private async Task ApplyQuickRepairAsync(DiagnosticNotice notice)
-    {
-        var open = false;
-        Begin(notice.Code == "Missing" ? "Installing" : "Repairing");
-        try
+    private Task ApplyQuickRepairAsync(DiagnosticNotice notice) =>
+        ApplyAndVerifyAsync(async () =>
         {
             var result = await Diagnostics.RepairAsync(_cwd, notice.Code, notice.Detail);
-            if (result.Code == "Ready")
-            {
-                Begin("Verifying");
-                result = await Diagnostics.CheckAsync(_cwd);
-            }
+            var failed = result.Code == "RepairFailed";
+            // RepairAsync also returns a fresh finding when the approved target has changed.
+            // Its return value alone cannot attest that a change was made.
+            return ((bool?)null,
+                failed ? new DiagnosticNotice(result.Code, result.Detail) : null);
+        }, installing: notice.Code == "Missing");
 
-            open = result.Code == "Ready" && _intent is not null;
-            _notice = new DiagnosticNotice(result.Code, result.Detail, AllowRepair: true);
+    private async Task ApplyAndVerifyAsync(Func<Task<(bool? Applied, DiagnosticNotice? Failure)>> change, bool installing)
+    {
+        _retryVerified = false;
+        DetailsExpander.IsExpanded = false;
+        Begin(installing ? "GuidedInstalling" : "FullApplying");
+        bool? applied = false;
+        DiagnosticNotice? failure = null;
+        try
+        {
+            (applied, failure) = await change();
         }
         catch (Exception exception)
         {
             Debug.WriteLine(exception.GetType().Name);
-            _notice = new DiagnosticNotice("RepairFailed");
+        }
+
+        Begin("FullVerifying");
+        try
+        {
+            await RefreshAsync(CancellationToken.None);
+            _feedback = applied switch { true => "FullApplied", false => "FullNotApplied", _ => null };
+            if (failure is not null)
+                _notice = failure;
+            _retryVerified = applied != false && _intent is not null &&
+                GuidedDiagnosis.Evaluate(_notice, _checks).StatusKey == "GuidedHealthy";
+        }
+        catch (Exception exception)
+        {
+            Debug.WriteLine(exception.GetType().Name);
+            InvalidateResults();
+            _feedback = "FullVerifyFailed";
         }
         finally
         {
             End();
         }
+    }
 
-        if (open)
-            Finished?.Invoke(_intent);
+    private void InvalidateResults()
+    {
+        _checks = [];
+        FullStages.ItemsSource = null;
+        _notice = new DiagnosticNotice("Unknown");
+        _retryVerified = false;
     }
 
     private void Begin(string work)
@@ -148,6 +174,7 @@ public partial class SetupPanel : UserControl
         if (_scanCancellation is { } cancellation)
         {
             cancellation.Cancel();
+            Finished?.Invoke(null);
             return;
         }
         if (!IsBusy)
@@ -193,12 +220,12 @@ public partial class SetupPanel : UserControl
 
     private void Help_Click(object sender, RoutedEventArgs e)
     {
-        const string installHelp = "https://code.claude.com/docs/en/setup#install-on-native-windows";
         var url = _notice switch
         {
             { Code: "AuthRequired" } => "https://code.claude.com/docs/en/authentication",
-            { Code: "Missing" } => installHelp,
-            { Code: "RepairFailed", Detail: string detail } when detail.StartsWith("WinGet", StringComparison.Ordinal) => installHelp,
+            { Code: "Missing" } => Diagnostics.OfficialInstallHelp,
+            { Code: "RepairFailed", Detail: string detail } when detail.StartsWith("WinGet", StringComparison.Ordinal) ||
+                detail.StartsWith("NativeInstaller", StringComparison.Ordinal) => Diagnostics.OfficialInstallHelp,
             _ => "https://code.claude.com/docs/en/troubleshooting"
         };
 
@@ -220,63 +247,8 @@ public partial class SetupPanel : UserControl
         ProgressText.Text = _work is null ? "" : UiLanguage.Text(_work);
         FeedbackText.Visibility = _feedback is null ? Visibility.Collapsed : Visibility.Visible;
         FeedbackText.Text = _feedback is null ? "" : UiLanguage.Text(_feedback);
-        ResultPanel.Visibility = _notice is null ? Visibility.Collapsed : Visibility.Visible;
-        DiagnoseButton.Visibility = Visibility.Collapsed;
-        RepairButton.Visibility = Visibility.Collapsed;
-        SecondaryActions.Visibility = Visibility.Collapsed;
-        RenderDiagnosticsViews();
-        if (QuickView.Visibility != Visibility.Visible || _notice is not { } notice)
-            return;
-
-        var code = notice.Code switch
-        {
-            "Ready" or "Missing" or "PathMissing" or "StalePath" or "AuthRequired" or "Conflict" or
-            "InvalidFolder" or "RepairFailed" or "LaunchFailed" or "RetryFailed" or "CliExitedWithError" => notice.Code,
-            _ => "Unknown"
-        };
-        ResultTitle.Text = UiLanguage.Text(code + "Title");
-        ResultBody.Text = UiLanguage.Text(code + "Body");
-        var repair = CanRepair(notice);
-        var action = LegacyActionLabel(code);
-        ResultDetailLabel.Text = UiLanguage.Text(repair && code != "Missing" ? action : "ResultDetailLabel");
-        ResultDetail.Text = notice.ExitCode is int exitCode ? FormatExitCode(exitCode) : LocalizeDetail(notice.Detail);
-        ResultDetailPanel.Visibility = string.IsNullOrWhiteSpace(ResultDetail.Text) ? Visibility.Collapsed : Visibility.Visible;
-
-        ResultFolder.Text = _intent?.Folder ?? "";
-        ResultFolderPanel.Visibility = _intent is null ? Visibility.Collapsed : Visibility.Visible;
-        ResultIntent.Text = _intent?.Mode switch
-        {
-            LaunchMode.Resume => UiLanguage.Text("ResumeIntent"),
-            LaunchMode.Picker => UiLanguage.Text("PickerIntent"),
-            _ => ""
-        };
-        ResultIntent.Visibility = ResultIntent.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
-        if (IsBusy)
-            return;
-
-        FullScanButton.Style = (Style)FindResource(repair ? "Action" : "PrimaryAction");
-        RepairButton.Visibility = repair ? Visibility.Visible : Visibility.Collapsed;
-        var repairAction = repair && _intent is not null ? action + "AndOpen" : action;
-        RepairLabel.Text = UiLanguage.Text(repairAction);
-        AutomationProperties.SetName(RepairButton, RepairLabel.Text);
-        DiagnoseButton.Visibility = code is "Ready" or "InvalidFolder" || repair ? Visibility.Collapsed : Visibility.Visible;
-        DiagnoseLabel.Text = UiLanguage.Text(code == "AuthRequired"
-            ? _intent is not null ? "CheckLoginAndOpen" : "CheckAfterLogin"
-            : "CheckAgain");
-        AutomationProperties.SetName(DiagnoseButton, DiagnoseLabel.Text);
-        SecondaryActions.Visibility = code is "Ready" or "InvalidFolder" ? Visibility.Collapsed : Visibility.Visible;
-        LoginCommandButton.Visibility = code == "AuthRequired" ? Visibility.Visible : Visibility.Collapsed;
+        RenderSummary();
     }
-
-    private static bool CanRepair(DiagnosticNotice notice) => notice.AllowRepair && (notice.Code == "Missing" ||
-        (notice.Code is "PathMissing" or "StalePath" && WorkingFolder.Normalize(notice.Detail) is not null));
-
-    private static string LegacyActionLabel(string code) => code switch
-    {
-        "Missing" => "Install",
-        "StalePath" => "RefreshPath",
-        _ => "RepairPath"
-    };
 
     private static string FormatExitCode(int code) =>
         string.Format(CultureInfo.CurrentCulture, UiLanguage.Text("ExitCode"), code);

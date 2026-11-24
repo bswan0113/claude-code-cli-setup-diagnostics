@@ -33,7 +33,7 @@
     <sys:String x:Key="ReadyTitle">Claude Code is ready</sys:String>
     <sys:String x:Key="ReadyBody">Open a folder to start using Claude Code.</sys:String>
     <sys:String x:Key="MissingTitle">Claude Code was not found</sys:String>
-    <sys:String x:Key="MissingBody">Claude Code can be installed for your Windows account from the official WinGet package (Anthropic.ClaudeCode).</sys:String>
+    <sys:String x:Key="MissingBody">The official PowerShell command installs Claude Code for the current Windows user.</sys:String>
     <sys:String x:Key="PathMissingTitle">Claude Code is missing from PATH</sys:String>
     <sys:String x:Key="PathMissingBody">The executable works directly. Add its folder to your user PATH so PowerShell can find the claude command.</sys:String>
     <sys:String x:Key="StalePathTitle">The launcher is using an older PATH</sys:String>
@@ -47,14 +47,14 @@
     <sys:String x:Key="InvalidFolderTitle">Choose an accessible folder</sys:String>
     <sys:String x:Key="InvalidFolderBody">Check the full path or select another folder with Browse.</sys:String>
     <sys:String x:Key="RepairFailedTitle">Setup could not finish</sys:String>
-    <sys:String x:Key="RepairFailedBody">Check again to see the current state. If WinGet is unavailable or blocked, follow the official setup instructions.</sys:String>
+    <sys:String x:Key="RepairFailedBody">Setup or repair did not finish. Review the error and check again.</sys:String>
     <sys:String x:Key="LaunchFailedTitle">Claude Code could not start</sys:String>
     <sys:String x:Key="LaunchFailedBody">Setup checks passed. Open PowerShell in this folder and run claude to see any message from the terminal.</sys:String>
     <sys:String x:Key="RetryFailedTitle">Claude Code still could not start</sys:String>
     <sys:String x:Key="RetryFailedBody">Check the current setup or open PowerShell in this folder to read the error.</sys:String>
     <sys:String x:Key="ExitCode">Exit code {0}</sys:String>
     <sys:String x:Key="Checking">Checking Claude Code setup…</sys:String>
-    <sys:String x:Key="Installing">Installing Claude Code with WinGet…</sys:String>
+    <sys:String x:Key="Installing">Installing Claude Code…</sys:String>
     <sys:String x:Key="Repairing">Updating PATH…</sys:String>
     <sys:String x:Key="Verifying">Verifying the current setup…</sys:String>
     <sys:String x:Key="TerminalPending">PowerShell is opening or in use.</sys:String>
@@ -195,7 +195,6 @@
     <sys:String x:Key="FullNoMatchingResult">unavailable for this item</sys:String>
     <sys:String x:Key="ApprovalTitle">Confirm this action</sys:String>
     <sys:String x:Key="ApprovalApply">Apply this action</sys:String>
-    <sys:String x:Key="ApprovalWinGetTarget">WinGet will install Anthropic.ClaudeCode for the current Windows user. The launcher may refresh its own PATH after installation.</sys:String>
     <sys:String x:Key="ApprovalUserPathTarget" xml:space="preserve">Add the directory below to the current user's Path (HKCU\Environment) and this launcher's PATH.&#10;{0}</sys:String>
     <sys:String x:Key="ApprovalProcessPathTarget" xml:space="preserve">Use the directory below in this launcher’s PATH and any terminal it opens.&#10;{0}</sys:String>
     <sys:String x:Key="CheckStatePass">Pass</sys:String>
@@ -211,4 +210,24 @@
     <sys:String x:Key="CheckStage6">Sign-in, certificates and Git settings</sys:String>
     <sys:String x:Key="CheckStage7">Network and service reachability</sys:String>
     <sys:String x:Key="CheckStage8">Leftover files and automatic updates</sys:String>
+    <sys:String x:Key="GuidedInstallNeeded">Installation needed</sys:String>
+    <sys:String x:Key="GuidedIssue">Issue found</sys:String>
+    <sys:String x:Key="GuidedHealthy">No issues found</sys:String>
+    <sys:String x:Key="GuidedDetails">Full diagnostic results</sys:String>
+    <sys:String x:Key="GuidedYes">Yes</sys:String>
+    <sys:String x:Key="GuidedNo">No</sys:String>
+    <sys:String x:Key="GuidedRestoreVersion">Restore the Claude Code executable using the verified backup on this PC (version {0})?</sys:String>
+    <sys:String x:Key="GuidedRestore">Restore the Claude Code executable from a verified backup on this PC?</sys:String>
+    <sys:String x:Key="GuidedInstall">Install Claude Code for this Windows account with the official PowerShell command?</sys:String>
+    <sys:String x:Key="GuidedReinstall">Reinstall Claude Code for this Windows account with the official PowerShell command?</sys:String>
+    <sys:String x:Key="GuidedRefreshPath">Refresh the launcher’s search path so new PowerShell windows can find Claude Code?</sys:String>
+    <sys:String x:Key="GuidedUserPath">Update your Windows user search path so PowerShell finds the verified Claude Code installation?</sys:String>
+    <sys:String x:Key="GuidedGitBash">Update your user settings to use the Git Bash installation found on this PC?</sys:String>
+    <sys:String x:Key="GuidedFallbackNotice">If the official installer makes no progress for five minutes, the launcher confirms it has stopped before trying WinGet.</sys:String>
+    <sys:String x:Key="GuidedInstalling">Running the installation. The official download may show no progress indicator.</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerStartFailed">The official installation command could not start. Check whether Windows PowerShell opens.</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerExitFailed">The official installer reported an error. Open the diagnostic details for the exit code.</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerVerificationFailed">The installer finished, but the launcher could not verify the executable’s signature and version. Check the installation path in the details.</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerStopUnconfirmed">The launcher could not confirm that the official installer stopped. Check for a running installation before retrying.</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerObservationFailed">The launcher could not monitor the official installer. Check the executable and any installation still in progress.</sys:String>
 </ResourceDictionary>

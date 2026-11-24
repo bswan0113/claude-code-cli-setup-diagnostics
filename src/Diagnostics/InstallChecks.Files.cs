@@ -79,26 +79,20 @@ internal static partial class InstallChecks
 
         if (preferred is not null)
             return;
-        var winGetTarget = JoinLines(["Anthropic.ClaudeCode (WinGet, --scope user)", paths.UserWinGet, paths.UserWinGetLink]);
-        var winGetAvailable = File.Exists(Diagnostics.UserWinGetExecutable);
-        var evidence = Diagnostics.UserWinGetExecutable;
-        var winGetScope = new[] { paths.UserWinGet, paths.UserWinGetLink };
-        if (winGetAvailable && !FileChangeBlocked(processes, winGetScope))
+        var targetPaths = new[] { paths.Native, paths.Versions, paths.Downloads, paths.UserWinGet, paths.UserWinGetLink };
+        var installTarget = JoinLines(targetPaths);
+        var command = Diagnostics.NativeInstallCommand;
+        if (!readingFailed && SafeUserPath(paths.Native, paths.Profile) && !FileChangeBlocked(processes, targetPaths))
         {
-            var package = Stamp(paths.UserWinGet);
-            plans.Add(Mutation(2, "InstallWinGetRecovery", CheckState.Warning, evidence, "ReinstallClaudeWinGet", winGetTarget,
-                Fingerprint(native.File, package, Stamp(Diagnostics.UserWinGetExecutable)), async cancellation =>
-                {
-                    if (Stamp(paths.UserWinGet) != package || FileChangeBlocked(ReadProcesses(paths), winGetScope))
-                        return false;
-                    var result = await Diagnostics.InstallAsync(cwd, reinstall: true, token: cancellation).ConfigureAwait(false);
-                    return result.Code == "Ready";
-                }));
+            var revision = Fingerprint(native.File, Stamp(paths.UserWinGet), Stamp(Diagnostics.UserWinGetExecutable));
+            var item = new CheckItem(2, "InstallNativeRecovery", CheckState.Warning, command,
+                "InstallClaudeNative", installTarget) { Revision = revision };
+            plans.Add(new(item, Install: cancellation => Diagnostics.InstallAsync(cwd, reinstall: true, token: cancellation)));
         }
         else
         {
-            plans.Add(new(new(2, winGetAvailable ? "InstallWinGetRecovery" : "InstallWinGetUnavailable", CheckState.Warning,
-                evidence, Target: winGetTarget), WaitingOn: winGetAvailable ? winGetScope : null));
+            plans.Add(new(new(2, "InstallNativeRecovery", CheckState.Warning, command, Target: installTarget),
+                WaitingOn: targetPaths));
         }
     }
 

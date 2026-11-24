@@ -14,10 +14,10 @@ internal static partial class InstallChecks
     internal static async Task<IReadOnlyList<CheckItem>> ScanAsync(string cwd, CancellationToken token) =>
         (await InspectAsync(cwd, token).ConfigureAwait(false)).Select(plan => plan.Item).ToArray();
 
-    internal static async Task<bool> ApplyAsync(string cwd, CheckItem approved, CancellationToken token)
+    internal static async Task<RepairOutcome> ApplyWithOutcomeAsync(string cwd, CheckItem approved, CancellationToken token)
     {
         if (approved.Action is null || approved.Target is null || approved.Revision is null)
-            return false;
+            return new(false);
 
         try
         {
@@ -26,11 +26,16 @@ internal static partial class InstallChecks
                 plan.Item.Key == approved.Key && plan.Item.Action == approved.Action &&
                 plan.Item.Target == approved.Target && plan.Item.Revision == approved.Revision);
             token.ThrowIfCancellationRequested();
-            return current?.Apply is { } apply && await apply(token).ConfigureAwait(false);
+            if (current?.Install is { } install)
+            {
+                var result = await install(token).ConfigureAwait(false);
+                return result.Code == "RepairFailed" ? new(false, result) : new(result.Code == "Ready");
+            }
+            return new(current?.Apply is { } apply && await apply(token).ConfigureAwait(false));
         }
         catch (Exception error) when (IsInspectionError(error))
         {
-            return false;
+            return new(false);
         }
     }
 
@@ -101,7 +106,7 @@ internal static partial class InstallChecks
     }
 
     private sealed record Plan(CheckItem Item, Func<CancellationToken, Task<bool>>? Apply = null,
-        string[]? WaitingOn = null);
+        string[]? WaitingOn = null, Func<CancellationToken, Task<DiagnosticResult>>? Install = null);
     private sealed record PreferredInstall(string Executable, string PathEntry);
     private sealed record FileStamp(string Name, long Size, long Modified, long Created, FileAttributes Attributes);
 

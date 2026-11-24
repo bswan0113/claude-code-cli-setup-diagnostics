@@ -12,8 +12,9 @@ public sealed record DiagnosticResult(string Code, string? Detail);
 public static class Diagnostics
 {
     private const string PackageId = "Anthropic.ClaudeCode";
+    internal const string NativeInstallCommand = "irm https://claude.ai/install.ps1 | iex";
     private const string PortablePackageDirectory = PackageId + "_Microsoft.Winget.Source_8wekyb3d8bbwe";
-    internal const string OfficialInstallHelp = "https://code.claude.com/docs/en/setup#install-on-native-windows";
+    internal const string OfficialInstallHelp = "https://code.claude.com/docs/en/setup#install-claude-code";
     private const string UserEnvironmentKey = "Environment";
     private const string MachineEnvironmentKey = @"SYSTEM\CurrentControlSet\Control\Session Manager\Environment";
     private static readonly TimeSpan InstallerTimeout = TimeSpan.FromMinutes(5);
@@ -21,6 +22,9 @@ public static class Diagnostics
 
     public static Task<DiagnosticResult> CheckAsync(string cwd) =>
         Task.Run(() => RunAsync(cwd, repairCode: null, expectedDetail: null));
+
+    internal static Task<DiagnosticResult> CheckWithCancellationAsync(string cwd, CancellationToken token) =>
+        Task.Run(() => RunAsync(cwd, null, null, token), token);
 
     public static Task<DiagnosticResult> RepairAsync(string cwd, string code) =>
         RepairAsync(cwd, code, expectedDetail: null);
@@ -64,14 +68,14 @@ public static class Diagnostics
         }
     }
 
-    private static async Task<DiagnosticResult> RunAsync(string cwd, string? repairCode, string? expectedDetail)
+    private static async Task<DiagnosticResult> RunAsync(string cwd, string? repairCode, string? expectedDetail, CancellationToken token = default)
     {
         if (string.IsNullOrWhiteSpace(cwd) || !Path.IsPathFullyQualified(cwd) || !Directory.Exists(cwd))
             return new("InvalidFolder", null);
 
         try
         {
-            var current = await InspectAsync(cwd).ConfigureAwait(false);
+            var current = await InspectAsync(cwd, token).ConfigureAwait(false);
             // The UI approves a particular action. A changed finding requires a new decision.
             if (current.Code != repairCode)
                 return current;
@@ -101,17 +105,17 @@ public static class Diagnostics
         }
     }
 
-    private static async Task<DiagnosticResult> InspectAsync(string cwd)
+    private static async Task<DiagnosticResult> InspectAsync(string cwd, CancellationToken token = default)
     {
         // Match the launcher first: Windows PowerShell without a profile, using the app process's PATH.
-        var live = await PowerShellProbe.RunAsync(cwd, checkAuth: true).ConfigureAwait(false);
+        var live = await PowerShellProbe.RunWithCancellationAsync(cwd, token, checkAuth: true).ConfigureAwait(false);
         if (live.Kind != "Absent")
             return ClassifyResolvedCommand(live);
 
         var storedPath = ReadStoredPath();
         if (!string.Equals(storedPath, Environment.GetEnvironmentVariable("Path"), StringComparison.Ordinal))
         {
-            var fresh = await PowerShellProbe.RunAsync(cwd, pathOverride: storedPath).ConfigureAwait(false);
+            var fresh = await PowerShellProbe.RunWithCancellationAsync(cwd, token, pathOverride: storedPath).ConfigureAwait(false);
             if (fresh is { VerifiedVersion: true, Path: not null })
                 return new("StalePath", Path.GetDirectoryName(fresh.Path));
 
@@ -126,7 +130,7 @@ public static class Diagnostics
 
         if (installed is [var candidate])
         {
-            var direct = await PowerShellProbe.RunAsync(cwd, executable: candidate).ConfigureAwait(false);
+            var direct = await PowerShellProbe.RunWithCancellationAsync(cwd, token, executable: candidate).ConfigureAwait(false);
             var directory = Path.GetDirectoryName(candidate)!;
             if (!direct.VerifiedVersion)
                 return new("Unknown", Describe(direct.Issue, candidate));
@@ -177,6 +181,49 @@ public static class Diagnostics
 
     internal static async Task<DiagnosticResult> InstallAsync(string cwd, bool reinstall = false,
         CancellationToken token = default)
+    {
+        var profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var result = await NativeInstaller.InstallWithFallbackAsync(
+            ct => NativeInstaller.RunMonitoredAsync(NativeInstallCommand, profile, InstallerTimeout, TimeSpan.FromSeconds(2), ct),
+            (afterStall, ct) => VerifyNativeInstallAsync(cwd, profile, afterStall, ct),
+            ct => InstallWinGetAsync(cwd, reinstall, ct), token).ConfigureAwait(false);
+        if (reinstall || result.Code != "Ready")
+            return result;
+
+        var current = await InspectAsync(cwd, token).ConfigureAwait(false);
+        return current.Code == "StalePath" && current.Detail is { } directory
+            ? await ActivatePathAsync(cwd, directory, persist: false).ConfigureAwait(false)
+            : current;
+    }
+
+    private static async Task<DiagnosticResult?> VerifyNativeInstallAsync(string cwd, string profile,
+        bool afterStall, CancellationToken token)
+    {
+        var native = Path.Combine(profile, ".local", "bin", "claude.exe");
+        try
+        {
+            _ = File.GetAttributes(native);
+        }
+        catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException)
+        {
+            // A different installer might have completed while the native installer was stalled.
+            if (afterStall)
+            {
+                var current = await InspectAsync(cwd, token).ConfigureAwait(false);
+                if (current.Code is "Ready" or "AuthRequired" or "PathMissing" or "StalePath" or "Conflict")
+                    return current;
+                if (current.Code == "Unknown" && current.Detail != "InstallationFootprintFound")
+                    return InstallFailure("NativeInstallerVerificationFailed");
+            }
+            return null;
+        }
+
+        var verified = await PowerShellProbe.RunWithCancellationAsync(cwd, token, executable: native).ConfigureAwait(false);
+        return verified.VerifiedVersion ? new("Ready", native) : InstallFailure("NativeInstallerVerificationFailed");
+    }
+
+    private static async Task<DiagnosticResult> InstallWinGetAsync(string cwd, bool reinstall,
+        CancellationToken token)
     {
         var executable = UserWinGetExecutable;
         if (!File.Exists(executable))
@@ -232,19 +279,10 @@ public static class Diagnostics
         if (exitCode != 0)
             return InstallFailure(DescribeWinGetExitCode(exitCode));
 
-        if (reinstall)
-        {
-            var installed = await PowerShellProbe.RunWithCancellationAsync(cwd, token, executable: UserWinGetClaude)
-                .ConfigureAwait(false);
-            return installed.VerifiedVersion ? new("Ready", UserWinGetClaude) : InstallFailure("WinGetVerificationFailed");
-        }
-
-        var verified = await InspectAsync(cwd).ConfigureAwait(false);
-        if (verified.Code == "StalePath" && verified.Detail is { } directory)
-            return await ActivatePathAsync(cwd, directory, persist: false).ConfigureAwait(false);
-
-        // An installer exit code is insufficient to establish the final installation state.
-        return verified.Code == "Missing" ? InstallFailure("WinGetVerificationFailed") : verified;
+        // The package manager may report success even if the command on PATH belongs to another installation.
+        var installed = await PowerShellProbe.RunWithCancellationAsync(cwd, token, executable: UserWinGetClaude)
+            .ConfigureAwait(false);
+        return installed.VerifiedVersion ? new("Ready", UserWinGetClaude) : InstallFailure("WinGetVerificationFailed");
     }
 
     internal static bool IsWinGetRunningInCurrentSession()

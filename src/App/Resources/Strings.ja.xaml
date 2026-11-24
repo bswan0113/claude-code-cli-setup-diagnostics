@@ -33,7 +33,7 @@
     <sys:String x:Key="ReadyTitle">Claude Code を開けます</sys:String>
     <sys:String x:Key="ReadyBody">作業フォルダーを開いて Claude Code を起動してください。</sys:String>
     <sys:String x:Key="MissingTitle">Claude Code が見つかりません</sys:String>
-    <sys:String x:Key="MissingBody">WinGet の公式パッケージ（Anthropic.ClaudeCode）を現在の Windows アカウントにインストールできます。</sys:String>
+    <sys:String x:Key="MissingBody">公式の PowerShell コマンドで現在の Windows ユーザーに Claude Code をインストールできます。</sys:String>
     <sys:String x:Key="PathMissingTitle">PATH に Claude Code のパスがありません</sys:String>
     <sys:String x:Key="PathMissingBody">実行ファイルは直接起動できます。以下のフォルダーをユーザー PATH に追加すると、PowerShell で claude コマンドが見つかります。</sys:String>
     <sys:String x:Key="StalePathTitle">ランチャーが古い PATH を使っています</sys:String>
@@ -47,14 +47,14 @@
     <sys:String x:Key="InvalidFolderTitle">アクセスできるフォルダーを選択してください</sys:String>
     <sys:String x:Key="InvalidFolderBody">フルパスを確認するか、参照から別のフォルダーを選択してください。</sys:String>
     <sys:String x:Key="RepairFailedTitle">インストールまたは修復を完了できませんでした</sys:String>
-    <sys:String x:Key="RepairFailedBody">現在の状態を再確認してください。WinGet を使えない場合や実行がブロックされる場合は、公式のインストール手順をご確認ください。</sys:String>
+    <sys:String x:Key="RepairFailedBody">インストールまたは修復が完了しませんでした。エラーを確認して再診断してください。</sys:String>
     <sys:String x:Key="LaunchFailedTitle">Claude Code を起動できませんでした</sys:String>
     <sys:String x:Key="LaunchFailedBody">セットアップの確認は通りました。このフォルダーで PowerShell を開き、claude を実行してターミナルのメッセージをご確認ください。</sys:String>
     <sys:String x:Key="RetryFailedTitle">再試行しても Claude Code を起動できませんでした</sys:String>
     <sys:String x:Key="RetryFailedBody">現在のセットアップを再確認するか、このフォルダーで PowerShell を開いてエラーをご確認ください。</sys:String>
     <sys:String x:Key="ExitCode">終了コード {0}</sys:String>
     <sys:String x:Key="Checking">Claude Code のセットアップを確認しています…</sys:String>
-    <sys:String x:Key="Installing">WinGet で Claude Code をインストールしています…</sys:String>
+    <sys:String x:Key="Installing">Claude Code をインストールしています…</sys:String>
     <sys:String x:Key="Repairing">PATH を更新しています…</sys:String>
     <sys:String x:Key="Verifying">現在のセットアップを検証しています…</sys:String>
     <sys:String x:Key="TerminalPending">PowerShell を開いているか、使用中です。</sys:String>
@@ -195,7 +195,6 @@
     <sys:String x:Key="FullNoMatchingResult">該当項目の結果なし</sys:String>
     <sys:String x:Key="ApprovalTitle">この操作を実行しますか？</sys:String>
     <sys:String x:Key="ApprovalApply">確認した操作を実行</sys:String>
-    <sys:String x:Key="ApprovalWinGetTarget">WinGet で現在の Windows ユーザーに Anthropic.ClaudeCode をインストールします。完了後、ランチャーが自身の PATH を読み直す場合があります。</sys:String>
     <sys:String x:Key="ApprovalUserPathTarget" xml:space="preserve">現在のユーザーの Path（HKCU\Environment）とランチャーの PATH に、以下のパスを追加します。&#10;{0}</sys:String>
     <sys:String x:Key="ApprovalProcessPathTarget" xml:space="preserve">ランチャーと、ここから新しく開くターミナルの PATH に以下のパスを反映します。&#10;{0}</sys:String>
     <sys:String x:Key="CheckStatePass">正常</sys:String>
@@ -211,4 +210,24 @@
     <sys:String x:Key="CheckStage6">ログイン・証明書・Git の設定</sys:String>
     <sys:String x:Key="CheckStage7">ネットワーク接続</sys:String>
     <sys:String x:Key="CheckStage8">残存ファイルと自動更新</sys:String>
+    <sys:String x:Key="GuidedInstallNeeded">インストールが必要</sys:String>
+    <sys:String x:Key="GuidedIssue">問題あり</sys:String>
+    <sys:String x:Key="GuidedHealthy">問題なし</sys:String>
+    <sys:String x:Key="GuidedDetails">診断結果の詳細</sys:String>
+    <sys:String x:Key="GuidedYes">はい</sys:String>
+    <sys:String x:Key="GuidedNo">いいえ</sys:String>
+    <sys:String x:Key="GuidedRestoreVersion">この PC で確認できたバックアップ（バージョン {0}）から Claude Code の実行ファイルを復元しますか？</sys:String>
+    <sys:String x:Key="GuidedRestore">この PC で確認できたバックアップから Claude Code の実行ファイルを復元しますか？</sys:String>
+    <sys:String x:Key="GuidedInstall">公式の PowerShell コマンドで、この Windows ユーザーに Claude Code をインストールしますか？</sys:String>
+    <sys:String x:Key="GuidedReinstall">公式の PowerShell コマンドで、この Windows ユーザーに Claude Code を再インストールしますか？</sys:String>
+    <sys:String x:Key="GuidedRefreshPath">新しい PowerShell で Claude Code が見つかるよう、ランチャーの検索パスを更新しますか？</sys:String>
+    <sys:String x:Key="GuidedUserPath">PowerShell で確認済みの Claude Code が見つかるよう、ユーザーの検索パスを変更しますか？</sys:String>
+    <sys:String x:Key="GuidedGitBash">この PC で見つかった Git Bash を使うようにユーザー設定を変更しますか？</sys:String>
+    <sys:String x:Key="GuidedFallbackNotice">公式インストーラーが 5 分間進まない場合は、停止を確認してから WinGet を試します。</sys:String>
+    <sys:String x:Key="GuidedInstalling">インストールしています。公式インストーラーはダウンロード中に進捗を表示しないことがあります。</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerStartFailed">公式のインストールコマンドを起動できませんでした。Windows PowerShell が開くか確認してください。</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerExitFailed">公式インストーラーがエラーで終了しました。診断の詳細で終了コードを確認してください。</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerVerificationFailed">インストールは終了しましたが、実行ファイルの署名とバージョンを検証できませんでした。詳細でインストール先を確認してください。</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerStopUnconfirmed">公式インストーラーの停止を確認できませんでした。実行中のインストールを確認してから再診断してください。</sys:String>
+    <sys:String x:Key="EvidenceNativeInstallerObservationFailed">公式インストーラーの進捗を確認できませんでした。実行ファイルと実行中のインストールを確認してください。</sys:String>
 </ResourceDictionary>

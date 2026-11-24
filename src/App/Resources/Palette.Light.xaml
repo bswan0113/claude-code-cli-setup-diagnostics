@@ -32,4 +32,6 @@
     <SolidColorBrush x:Key="RepairFill" Color="#D9EEF9" />
     <SolidColorBrush x:Key="RepairInk" Color="#19485F" />
     <SolidColorBrush x:Key="RepairLine" Color="#7AA8BD" />
+    <SolidColorBrush x:Key="IssueInk" Color="#A21822" />
+    <SolidColorBrush x:Key="IssueFill" Color="#FFF0EF" />
 </ResourceDictionary>

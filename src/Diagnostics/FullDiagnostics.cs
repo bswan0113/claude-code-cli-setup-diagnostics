@@ -15,6 +15,8 @@ internal sealed record CheckItem(int Stage, string Key, CheckState State, string
     public string? Revision { get; init; }
 }
 
+internal sealed record RepairOutcome(bool Applied, DiagnosticResult? Failure = null);
+
 internal static class FullDiagnostics
 {
     public static async Task<IReadOnlyList<CheckItem>> ScanAsync(string cwd, CancellationToken token)
@@ -96,11 +98,14 @@ internal static class FullDiagnostics
         return [os, shell, path];
     }
 
-    public static Task<bool> ApplyAsync(string cwd, CheckItem approved, CancellationToken token)
+    public static async Task<bool> ApplyAsync(string cwd, CheckItem approved, CancellationToken token) =>
+        (await ApplyWithOutcomeAsync(cwd, approved, token).ConfigureAwait(false)).Applied;
+
+    internal static Task<RepairOutcome> ApplyWithOutcomeAsync(string cwd, CheckItem approved, CancellationToken token)
     {
         if (approved.Action is null || approved.Revision is null || string.IsNullOrWhiteSpace(approved.Target) ||
             WorkingFolder.Normalize(cwd) is null || !Directory.Exists(cwd))
-            return Task.FromResult(false);
+            return Task.FromResult(new RepairOutcome(false));
 
         return Task.Run(() =>
         {
@@ -109,7 +114,7 @@ internal static class FullDiagnostics
             {
                 using var identity = WindowsIdentity.GetCurrent();
                 if (identity.User is not { } user)
-                    return false;
+                    return new RepairOutcome(false);
 
                 // Hold the same per-user lock as the quick installation and PATH repairs.
                 // Mutex ownership stays on this worker thread throughout the asynchronous repair.
@@ -117,7 +122,7 @@ internal static class FullDiagnostics
                 try
                 {
                     if (!mutex.WaitOne(0))
-                        return false;
+                        return new RepairOutcome(false);
                 }
                 catch (AbandonedMutexException) { }
 
@@ -126,16 +131,16 @@ internal static class FullDiagnostics
                     token.ThrowIfCancellationRequested();
                     return approved.Stage switch
                     {
-                        2 or 3 or 4 or 8 => InstallChecks.ApplyAsync(cwd, approved, token).GetAwaiter().GetResult(),
-                        5 or 6 => EnvironmentChecks.ApplyAsync(cwd, approved, token).GetAwaiter().GetResult(),
-                        _ => false
+                        2 or 3 or 4 or 8 => InstallChecks.ApplyWithOutcomeAsync(cwd, approved, token).GetAwaiter().GetResult(),
+                        5 or 6 => new RepairOutcome(EnvironmentChecks.ApplyAsync(cwd, approved, token).GetAwaiter().GetResult()),
+                        _ => new RepairOutcome(false)
                     };
                 }
                 finally { mutex.ReleaseMutex(); }
             }
             catch (Exception ex) when (IsInspectionError(ex) || ex is WaitHandleCannotBeOpenedException)
             {
-                return false;
+                return new RepairOutcome(false);
             }
         }, token);
     }
