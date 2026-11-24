@@ -62,7 +62,8 @@ public partial class MainWindow
             Debug.WriteLine(exception.GetType().Name);
             return new SessionIndex(_sessions?.Sessions ?? [], HasReadErrors: true)
             {
-                FallbackFolders = _sessions?.FallbackFolders ?? []
+                FallbackFolders = _sessions?.FallbackFolders ?? [],
+                SubagentIds = _sessions?.SubagentIds ?? new HashSet<Guid>()
             };
         }
     }
@@ -202,6 +203,9 @@ public partial class MainWindow
 
     private void AppendLiveRow(LiveRow row, Guid? id, List<LiveRow> rows, HashSet<Guid> ids, HashSet<int> processes)
     {
+        if (row.Terminal.IsSubagent || WorkingFolder.IsClaudeScratchpad(row.Terminal.Folder) ||
+            id is Guid knownId && _sessions?.SubagentIds.Contains(knownId) == true)
+            return;
         if (!processes.Add(row.Terminal.ProcessId) || id is Guid session && !ids.Add(session))
             return;
 

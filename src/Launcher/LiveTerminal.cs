@@ -41,6 +41,7 @@ public sealed class LiveTerminal
 
     public Guid? SessionId => Volatile.Read(ref _snapshot).Id;
     public string Activity => Volatile.Read(ref _snapshot).Activity;
+    internal bool IsSubagent => Volatile.Read(ref _snapshot).IsSubagent;
     public string Folder { get; }
     internal int ProcessId => _claudePid;
     internal DateTime StartedUtc => DateTime.FromFileTimeUtc(_processStart);
@@ -52,11 +53,11 @@ public sealed class LiveTerminal
         {
             foreach (var path in Directory.EnumerateFiles(SessionDirectory(Environment.CurrentDirectory), "*.json"))
             {
-                if (ReadState(path) is not { } state || state.SessionId is null ||
+                if (ReadState(path) is not { } state || state.SessionId is null || state.IsSubagent ||
                     state.EntryPoint is "claude-desktop" or "claude-desktop-3p" or "local-agent" or "claude-vscode" ||
                     (state.Kind is not null && state.Kind != "interactive") ||
                     Path.GetFileNameWithoutExtension(path) != state.Pid.ToString(CultureInfo.InvariantCulture) ||
-                    WorkingFolder.Normalize(state.Cwd) is not { } cwd ||
+                    WorkingFolder.Normalize(state.Cwd) is not { } cwd || WorkingFolder.IsClaudeScratchpad(cwd) ||
                     FindProcessStart(state.Pid) is not { } start || !state.MatchesProcess(state.Pid, start))
                 {
                     continue;
@@ -164,12 +165,12 @@ public sealed class LiveTerminal
     {
         var current = Volatile.Read(ref _snapshot);
         var state = ReadState(_statePath);
-        var next = new Snapshot(current.Id, "Unknown");
+        var next = current with { Activity = "Unknown" };
         if (state is not null && state.MatchesProcess(_claudePid, _processStart) &&
             (_pendingSessionId is null || state.SessionId == _pendingSessionId))
         {
             _pendingSessionId = null;
-            next = new(state.SessionId ?? current.Id, state.Activity);
+            next = new(state.SessionId ?? current.Id, state.Activity, state.IsSubagent);
         }
         if (next != current)
         {
@@ -237,7 +238,7 @@ public sealed class LiveTerminal
                     _ => "Unknown",
                 };
                 return new(process, timestamp, token, fileTime is not null, id, GetString(row, "cwd"), GetString(row, "kind"),
-                    GetString(row, "entrypoint"), activity);
+                    GetString(row, "entrypoint"), activity, SessionRole.IsSubagent(row));
             }
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException
@@ -253,7 +254,7 @@ public sealed class LiveTerminal
         row.TryGetProperty(field, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 
     private sealed record RuntimeState(int Pid, long StartedAt, string? StartToken, bool ExplicitFileTime, Guid? SessionId, string? Cwd,
-        string? Kind, string? EntryPoint, string Activity)
+        string? Kind, string? EntryPoint, string Activity, bool IsSubagent)
     {
         public bool MatchesProcess(int pid, long processStart)
         {
@@ -284,7 +285,7 @@ public sealed class LiveTerminal
         }
     }
 
-    private sealed record Snapshot(Guid? Id, string Activity);
+    private sealed record Snapshot(Guid? Id, string Activity, bool IsSubagent = false);
 
     [DllImport("user32.dll", EntryPoint = "GetClassNameW", CharSet = CharSet.Unicode, ExactSpelling = true)]
     private static extern int GetClassName(IntPtr window, StringBuilder className, int capacity);

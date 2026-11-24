@@ -11,15 +11,27 @@ internal static partial class Program
         var cwdA = MakeDirectory(root, "세션 A [편집] & 폴더");
         var cwdB = MakeDirectory(root, "세션 B");
         var cwdLegacy = MakeDirectory(root, "legacy-only");
+        var folderRules = typeof(SessionHistory).Assembly.GetType("ClaudeLauncher.WorkingFolder", throwOnError: true)!;
+        var namespacePath = Path.Combine(Path.GetTempPath(), "claude", "d77ddafaa6a9eb9e", Guid.NewGuid().ToString("D"));
+        bool IsScratchpad(string path) => (bool)Call(folderRules, "IsClaudeScratchpad", path)!;
+        Require(IsScratchpad(Path.Combine(namespacePath, "scratchpad", "lab", "g4")) &&
+            IsScratchpad(Path.Combine(namespacePath, "scratchpad")) &&
+            !IsScratchpad(Path.Combine(namespacePath, "scratchpad-backup", "proj")) &&
+            !IsScratchpad(Path.Combine(cwdA, "scratchpad", "lab", "g1")),
+            "Only the Claude session's temporary scratch workspace should be hidden.");
         var textId = Guid.NewGuid();
         var blocksId = Guid.NewGuid();
         var text = WriteSession(project, textId, Older,
+            JsonSerializer.Serialize(new { type = "user", sessionId = textId, agentId = "child", cwd = cwdB,
+                message = new { role = "user", content = "embedded agent task" } }),
             JsonSerializer.Serialize(new { type = "assistant", cwd = cwdA, message = new { role = "assistant", content = "qa-assistant-marker" } }),
             UserLine(textId, cwdA, "qa-meta-marker", Latest, isMeta: true),
             UserLine(textId, cwdA, new object[] { new { type = "tool_result", content = "qa-tool-marker" } }, Latest),
             UserLine(textId, cwdA, "첫 사용자 메시지", Latest),
             UserLine(textId, cwdA, "qa-second-user-marker", Latest.AddHours(1)));
         var blocks = WriteSession(project, blocksId, Newer,
+            JsonSerializer.Serialize(new { type = "agent-name", sessionId = blocksId, agentName = "named independent agent",
+                entrypoint = "sdk-cli" }),
             UserLine(blocksId, cwdB, new object[]
             {
                 new { type = "text", text = "첫 번째 조각" },
@@ -29,6 +41,10 @@ internal static partial class Program
         var sidechainId = Guid.NewGuid();
         var emptyId = Guid.NewGuid();
         var subagentId = Guid.NewGuid();
+        var topLevelChild = Guid.NewGuid();
+        WriteSession(project, topLevelChild, Latest, JsonSerializer.Serialize(new { type = "user", sessionId = topLevelChild,
+            cwd = cwdB, entrypoint = "sdk-cli", parent_tool_use_id = "toolu_fixture",
+            message = new { role = "user", content = "child task" } }));
         WriteSession(project, sidechainId, Latest, UserLine(sidechainId, cwdA, "qa-sidechain-marker", Newer, isSidechain: true));
         WriteSession(project, emptyId, Latest, UserLine(emptyId, cwdA, "", Latest));
         WriteSession(MakeDirectory(project, Path.Combine(textId.ToString("D"), "subagents")),
@@ -41,11 +57,12 @@ internal static partial class Program
         var sessions = index.Sessions;
         Require(!index.HasReadErrors, "Valid, empty, or excluded files were reported as unreadable.");
         Require(sessions.Count == 2, "Expected two main sessions. Empty, sidechain, subagent and legacy records are excluded.");
-        Require(sessions[0] == new SavedSession(blocksId, sessions[0].Title, cwdB, File.GetLastWriteTimeUtc(blocks)) &&
+        Require(sessions[0].Id == blocksId && sessions[0].Cwd == cwdB && sessions[0].ModifiedUtc == File.GetLastWriteTimeUtc(blocks) &&
             sessions[0].Title.StartsWith("첫 번째 조각", StringComparison.Ordinal) &&
             sessions[0].Title.Contains("두 번째 조각", StringComparison.Ordinal),
             "Text blocks, the JSONL cwd, or file-mtime ordering was incorrect.");
-        Require(sessions[1] == new SavedSession(textId, "첫 사용자 메시지", cwdA, File.GetLastWriteTimeUtc(text)),
+        Require(sessions[1].Id == textId && sessions[1].Title == "첫 사용자 메시지" &&
+            sessions[1].Cwd == cwdA && sessions[1].ModifiedUtc == File.GetLastWriteTimeUtc(text),
             "Metadata, tool results or later messages displaced the first actual user title, cwd or file mtime.");
         Require(before.SequenceEqual(Fingerprint(config)), "Session indexing modified fixture data.");
         return "Two main sessions sorted by file UTC mtime. Exact GUID/cwd, string and text blocks verified; legacy and excluded records absent.";

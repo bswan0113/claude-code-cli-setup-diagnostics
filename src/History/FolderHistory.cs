@@ -18,12 +18,12 @@ public static class FolderHistory
     public static Task<IReadOnlyList<RecentFolder>> LoadAsync() => Task.Run<IReadOnlyList<RecentFolder>>(() =>
     {
         var folders = ReadLocal(StorePath);
-        return Sort(folders).Take(HistoryLimit).ToArray();
+        return Sort(folders).Where(folder => !WorkingFolder.IsClaudeScratchpad(folder.Path)).Take(HistoryLimit).ToArray();
     });
 
     public static void Remember(string path)
     {
-        if (WorkingFolder.Normalize(path) is not { } folder || !Directory.Exists(folder))
+        if (WorkingFolder.Normalize(path) is not { } folder || WorkingFolder.IsClaudeScratchpad(folder) || !Directory.Exists(folder))
         {
             return;
         }

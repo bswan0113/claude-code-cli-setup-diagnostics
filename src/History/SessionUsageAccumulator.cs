@@ -24,7 +24,7 @@ internal sealed class SessionUsageAccumulator(Guid sessionId)
 
     internal void Observe(JsonElement row)
     {
-        if (row.ValueKind != JsonValueKind.Object || True(row, "isSidechain") ||
+        if (row.ValueKind != JsonValueKind.Object || SessionRole.IsSubagent(row) ||
             (row.TryGetProperty("sessionId", out var id) &&
              !MatchesSession(id)) || (row.TryGetProperty("session_id", out var sid) && !MatchesSession(sid)))
             return;

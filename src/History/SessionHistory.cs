@@ -13,6 +13,7 @@ public sealed record SavedSession(Guid Id, string Title, string Cwd, DateTime Mo
 public sealed record SessionIndex(IReadOnlyList<SavedSession> Sessions, bool HasReadErrors)
 {
     public IReadOnlyList<string> FallbackFolders { get; init; } = [];
+    internal IReadOnlySet<Guid> SubagentIds { get; init; } = new HashSet<Guid>();
 }
 
 public static class SessionHistory
@@ -40,6 +41,7 @@ public static class SessionHistory
         }
 
         var transcripts = new Dictionary<Guid, Transcript>();
+        var subagentIds = new HashSet<Guid>();
         var hasErrors = false;
         var chunk = ArrayPool<byte>.Shared.Rent(ChunkSize);
         var record = ArrayPool<byte>.Shared.Rent(MaxRecordSize);
@@ -53,7 +55,7 @@ public static class SessionHistory
                     {
                         if (Guid.TryParseExact(Path.GetFileNameWithoutExtension(path), "D", out var id) && id != Guid.Empty)
                         {
-                            var item = ReadSession(path, id, chunk, record, ref hasErrors);
+                            var item = ReadSession(path, id, chunk, record, subagentIds, ref hasErrors);
                             if (item is not null && (!transcripts.TryGetValue(id, out var previous) ||
                                 item.IsPreferredTo(previous)))
                             {
@@ -114,11 +116,13 @@ public static class SessionHistory
             }
         }
 
-        return new(sessions.ToArray(), hasErrors) { FallbackFolders = fallbackFolders.ToArray() };
+        // A genuine main transcript wins when several project directories contain the same ID.
+        subagentIds.ExceptWith(transcripts.Keys);
+        return new(sessions.ToArray(), hasErrors) { FallbackFolders = fallbackFolders.ToArray(), SubagentIds = subagentIds };
     }
 
     private static Transcript? ReadSession(string path, Guid id, byte[] chunk, byte[] record,
-        ref bool hasErrors)
+        HashSet<Guid> subagentIds, ref bool hasErrors)
     {
         var reader = new SessionRecordReader(id);
         var readFailed = false;
@@ -171,6 +175,12 @@ public static class SessionHistory
                 readFailed |= !reader.Read(record.AsMemory(0, length));
             }
 
+            if (reader.Cwd is { } cwd && WorkingFolder.IsClaudeScratchpad(cwd) ||
+                reader.IsSubagentOnly && !readFailed && !skippedLargeRecord)
+            {
+                subagentIds.Add(id);
+                return null;
+            }
             if (!readFailed && reader.Cwd is not null)
             {
                 title = ReadResumeTitle(file, id, chunk, reader.Title);
@@ -267,7 +277,7 @@ public static class SessionHistory
                 using var json = JsonDocument.Parse(line);
                 var row = json.RootElement;
                 if (row.ValueKind != JsonValueKind.Object ||
-                    (row.TryGetProperty("isSidechain", out var sidechain) && sidechain.ValueKind == JsonValueKind.True) ||
+                    SessionRole.IsSubagent(row) ||
                     (row.TryGetProperty("sessionId", out var session) && (session.ValueKind != JsonValueKind.String ||
                     !session.TryGetGuid(out var parsed) || parsed != id)))
                 {
@@ -309,6 +319,9 @@ public static class SessionHistory
         public string? Cwd { get; private set; }
         public bool HasUserMessage { get; private set; }
         public bool HasSession => HasUserMessage && Cwd is not null;
+        private bool _hasAgentMessages;
+        private bool _hasMainMessages;
+        public bool IsSubagentOnly => _hasAgentMessages && !_hasMainMessages;
 
         public bool Read(ReadOnlyMemory<byte> line)
         {
@@ -332,11 +345,18 @@ public static class SessionHistory
                 }
 
                 var hasSessionId = row.TryGetProperty("sessionId", out var id);
-                if (IsTrue(row, "isSidechain") || (hasSessionId && (id.ValueKind != JsonValueKind.String ||
-                    !id.TryGetGuid(out var recordId) || sessionId != recordId)))
+                if (hasSessionId && (id.ValueKind != JsonValueKind.String ||
+                    !id.TryGetGuid(out var recordId) || sessionId != recordId))
                 {
                     return true;
                 }
+                var conversation = IsText(row, "type", "user") || IsText(row, "type", "assistant");
+                if (SessionRole.IsSubagent(row))
+                {
+                    _hasAgentMessages |= conversation;
+                    return true;
+                }
+                _hasMainMessages |= conversation;
 
                 var cwd = row.TryGetProperty("cwd", out var path) && path.ValueKind == JsonValueKind.String
                     ? WorkingFolder.Normalize(path.GetString())
