@@ -95,8 +95,13 @@ internal static partial class Program
 
             if (languageSmoke)
             {
-                foreach (var code in new[] { "en", "ko", "zh-Hans", "ja" })
-                    Run("QA-DIA-11-" + code, () => TestDiagnosticStartupLanguage(root.FullName, Path.GetFullPath(args[1]), code));
+                var resourceHost = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+                try
+                {
+                    foreach (var code in new[] { "en", "ko", "zh-Hans", "ja" })
+                        Run("QA-DIA-11-" + code, () => TestDiagnosticStartupLanguage(root.FullName, Path.GetFullPath(args[1]), code));
+                }
+                finally { resourceHost.Shutdown(); }
                 Console.WriteLine($"SUMMARY passed={passed} failed={failed} blocked={blocked}");
                 return failed > 0 ? 1 : blocked > 0 ? 3 : 0;
             }

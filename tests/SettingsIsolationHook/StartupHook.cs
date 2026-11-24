@@ -15,6 +15,7 @@ public static class StartupHook
             throw new InvalidOperationException("The isolated QA settings directory was not provided.");
 
         var app = Assembly.GetEntryAssembly() ?? throw new InvalidOperationException("The launcher assembly was not found.");
+        Redirect(app, "ClaudeLauncher.ProfileDataPaths", "LocalData", root!);
         Redirect(app, "ClaudeLauncher.AppearancePreferences", "Store", Path.Combine(root!, "appearance.json"));
         Redirect(app, "ClaudeLauncher.UiLanguage", "PreferencePath", Path.Combine(root!, "language.txt"));
         Redirect(app, "ClaudeLauncher.SessionRecency", "Store", Path.Combine(root!, "session-launches"));

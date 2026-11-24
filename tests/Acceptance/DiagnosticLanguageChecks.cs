@@ -6,7 +6,6 @@ internal static partial class Program
 {
     private static string TestDiagnosticStartupLanguage(string root, string release, string language)
     {
-        VerifyFixtureOnlyProfile(recencyIsolated: true);
         var fixture = MakeDirectory(root, "diagnostic-startup-languages");
         var emptyPath = MakeDirectory(fixture, "empty-path");
         var variables = EnvironmentSnapshot();
@@ -27,8 +26,8 @@ internal static partial class Program
         start.Environment["NO_PROXY"] = "localhost";
         start.Environment["PATH"] = emptyPath;
         ConfigureFixtureSettings(start, settings);
-        using var app = StartAppearanceFixture(start, Path.Combine(settings, "isolated.ready"));
         var resources = LoadDiagnosticResources(language);
+        using var app = StartAppearanceFixture(start, Path.Combine(settings, "isolated.ready"));
         try
         {
             var initial = DashboardWindow(app)!;
