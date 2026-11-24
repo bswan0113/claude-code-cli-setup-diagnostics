@@ -121,6 +121,7 @@ internal static partial class Program
             Run("QA-DIA-10", () => TestDiagnosticProcessTargets(root.FullName));
             Run("QA-DIA-13", TestNativeInstallFallbackPolicy);
             Run("QA-DIA-14", () => TestNativeInstallActivity(root.FullName));
+            Run("QA-DIA-15", TestBinaryTrustClassification);
             Run("QA-SES-01", () => TestSessionMetadata(root.FullName));
             Run("QA-SES-02", () => TestSessionDamage(root.FullName));
             Run("QA-SES-03", () => TestResumeArguments(root.FullName));
@@ -300,10 +301,10 @@ internal static partial class Program
             Environment.SetEnvironmentVariable(MarkerName, marker, EnvironmentVariableTarget.Process);
             CheckUnsignedCliMarker(bin, folder, marker);
             var result = Diagnostics.CheckAsync(folder).GetAwaiter().GetResult();
-            var detail = result.Detail?.Split('\n', 2);
-            Require((result.Code is "Unknown" or "Conflict") && detail is ["SignatureUnverified", var path] &&
+            var detail = result.Detail?.Split(["\r\n", "\n"], StringSplitOptions.None);
+            Require(result.Code == "BinaryUnsigned" && detail is [var path, "NotSigned"] &&
                     string.Equals(path, Path.Combine(bin, "claude.exe"), StringComparison.OrdinalIgnoreCase),
-                $"Expected an unverified candidate, observed {result.Code}; candidate detail present={result.Detail is not null}.");
+                $"Expected the path and NotSigned status for the unsigned fixture, observed {result.Code}.");
             Require(!File.Exists(marker), "Diagnostic code executed the unsigned candidate.");
             Require(Environment.GetEnvironmentVariable("Path") == bin, "Diagnosis changed the test process PATH.");
 

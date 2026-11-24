@@ -23,12 +23,15 @@ public partial class SetupPanel
         var quick = checkedStatus is null ? Diagnostics.CheckWithCancellationAsync(_cwd, token) : Task.FromResult(checkedStatus);
         await Task.WhenAll(full, quick);
         token.ThrowIfCancellationRequested();
-        _checks = await full;
         var result = await quick;
         _notice = result.Code == "Ready" && launchFailure is not null
             ? launchFailure : new DiagnosticNotice(result.Code, result.Detail, AllowRepair: true);
+        _checks = await full;
+        var reviewable = GuidedDiagnosis.ReconcileExecutable(_notice, _checks);
+        var guidance = GuidedDiagnosis.Evaluate(_notice, _checks);
         FullStages.ItemsSource = Enumerable.Range(1, 8).Select(stage => new DiagnosticStageView(stage,
-            _checks.Where(check => check.Stage == stage).Select(check => new DiagnosticItemView(check)).ToArray(),
+            reviewable.Where(check => check.Stage == stage).Select(check => new DiagnosticItemView(check,
+                guidance.Repair is null && check == guidance.Finding ? guidance.ManualExecutableAdvice : null)).ToArray(),
             expanded: false)).ToArray();
     }
 

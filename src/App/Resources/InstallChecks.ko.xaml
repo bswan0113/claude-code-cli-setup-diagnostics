@@ -125,4 +125,23 @@
     <sys:String x:Key="FixCleanClaudeDebris">표시된 업데이트 파일 삭제</sys:String>
     <sys:String x:Key="FixCleanClaudeDownloads">표시된 다운로드 캐시 삭제</sys:String>
     <sys:String x:Key="FixDisableClaudeUpdater">현재 사용자 자동 업데이트 끄기</sys:String>
+    <sys:String x:Key="CheckInstallBinaryHashMismatchTitle">Claude Code 실행 파일 내용이 서명과 다릅니다</sys:String>
+    <sys:String x:Key="CheckInstallBinaryHashMismatchCause">Windows가 파일 내용이 서명 당시와 달라진 것을 확인했습니다. 런처가 이 실행 파일을 차단했습니다.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryHashMismatchSolution">이 파일에 쓸 수 있는 검증된 백업이 있으면 복원할 수 있습니다. 복원 제안이 없으면 열린 Claude Code를 닫고 표시된 설치 경로를 확인한 뒤 다시 검사하세요.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryUnsignedTitle">Claude Code 실행 파일에 서명이 없습니다</sys:String>
+    <sys:String x:Key="CheckInstallBinaryUnsignedCause">파일은 있지만 Windows에서 디지털 서명을 찾지 못했습니다. 게시자를 확인할 수 없어 실행을 차단했습니다.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryUnsignedSolution">이 파일에 쓸 수 있는 검증된 백업이 있으면 복원할 수 있습니다. 복원 제안이 없으면 열린 Claude Code를 닫고 표시된 설치 경로를 확인한 뒤 다시 검사하세요.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryOtherPublisherTitle">Claude Code 실행 파일의 서명자가 다릅니다</sys:String>
+    <sys:String x:Key="CheckInstallBinaryOtherPublisherCause">파일에 유효한 서명이 있지만 게시자가 Anthropic, PBC와 다릅니다. 런처가 이 파일의 실행을 차단했습니다.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryOtherPublisherSolution">이 파일에 쓸 수 있는 검증된 백업이 있으면 복원할 수 있습니다. 복원 제안이 없으면 열린 Claude Code를 닫고 표시된 설치 경로를 확인한 뒤 다시 검사하세요.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryTrustUnknownTitle">실행 파일의 신뢰 여부를 확인할 수 없습니다</sys:String>
+    <sys:String x:Key="CheckInstallBinaryTrustUnknownCause">파일 검사만으로는 서명 상태를 판단할 수 없어 복구를 보류했습니다.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryTrustUnknownSolution">파일을 읽을 권한이 있는지 확인하고 Windows의 파일 속성 → 디지털 서명에서 서명자를 확인한 뒤 다시 검사하세요.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryExecutionFailedTitle">서명된 실행 파일에서 정상 버전을 확인하지 못했습니다</sys:String>
+    <sys:String x:Key="CheckInstallBinaryExecutionFailedCause">Anthropic 서명은 유효하지만 버전 검사에서 정상적인 Claude Code 응답을 받지 못했습니다.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryExecutionFailedSolution">이 파일에 쓸 수 있는 검증된 백업이 있으면 복원할 수 있습니다. 복원 제안이 없으면 열린 Claude Code를 닫고 표시된 설치 경로를 확인한 뒤 다시 검사하세요.</sys:String>
+    <sys:String x:Key="GuidedPreserveExecutable">승인하면 현재 파일을 별도로 보관하고 검증된 백업을 이 경로에 복원합니다.</sys:String>
+    <sys:String x:Key="GuidedExecutableReview">이 파일에 안전하게 적용할 복원 방법을 확인하지 못했습니다. 열려 있는 Claude Code를 닫고 표시된 경로가 어떤 설치본인지 확인한 뒤 다시 검사하세요.</sys:String>
+    <sys:String x:Key="GuidedNativeExecutableReview">Claude Code를 닫고 탐색기에서 표시된 파일을 실행하지 않은 채 claude.exe.saved처럼 사용하지 않는 이름으로 바꿔 보관하세요. 다시 검사해 실행 파일이 없고 설치가 가능하다고 나오면 공식 설치를 진행할 수 있습니다.</sys:String>
+    <sys:String x:Key="GuidedExternalExecutableReview">표시된 파일은 그대로 두고 PowerShell이 PATH에서 어느 claude 명령을 먼저 찾는지 확인하세요. WinGet이나 다른 도구가 설치한 파일이면 해당 도구에서 복구한 뒤 다시 검사하세요.</sys:String>
 </ResourceDictionary>

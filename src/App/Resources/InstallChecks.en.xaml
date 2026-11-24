@@ -125,4 +125,23 @@
     <sys:String x:Key="FixCleanClaudeDebris">Delete listed updater leftovers</sys:String>
     <sys:String x:Key="FixCleanClaudeDownloads">Delete listed download cache files</sys:String>
     <sys:String x:Key="FixDisableClaudeUpdater">Disable automatic updates for this user</sys:String>
+    <sys:String x:Key="CheckInstallBinaryHashMismatchTitle">The Claude Code executable no longer matches its signature</sys:String>
+    <sys:String x:Key="CheckInstallBinaryHashMismatchCause">Windows found that the file contents differ from the signed contents. The launcher blocked this executable.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryHashMismatchSolution">If a verified backup is available for this exact file, review the proposed restore. Otherwise close Claude Code, check the displayed installation path and scan again.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryUnsignedTitle">The Claude Code executable has no digital signature</sys:String>
+    <sys:String x:Key="CheckInstallBinaryUnsignedCause">The file exists, but Windows found no Authenticode signature. The launcher could not confirm its publisher and blocked execution.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryUnsignedSolution">If a verified backup is available for this exact file, review the proposed restore. Otherwise close Claude Code, check the displayed installation path and scan again.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryOtherPublisherTitle">A different publisher signed the Claude Code executable</sys:String>
+    <sys:String x:Key="CheckInstallBinaryOtherPublisherCause">Windows verified the signature, but its publisher differs from Anthropic, PBC. The launcher blocked this file.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryOtherPublisherSolution">If a verified backup is available for this exact file, review the proposed restore. Otherwise close Claude Code, check the displayed installation path and scan again.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryTrustUnknownTitle">The launcher could not establish trust in this executable</sys:String>
+    <sys:String x:Key="CheckInstallBinaryTrustUnknownCause">The verification did not return a conclusive result. The launcher has paused recovery for this file.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryTrustUnknownSolution">Check access to the file and the signer shown in its Windows Properties → Digital Signatures, then scan again.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryExecutionFailedTitle">The signed executable did not return a valid Claude Code version</sys:String>
+    <sys:String x:Key="CheckInstallBinaryExecutionFailedCause">The Anthropic signature was valid, but the version check did not produce the expected Claude Code response.</sys:String>
+    <sys:String x:Key="CheckInstallBinaryExecutionFailedSolution">If a verified backup is available for this exact file, review the proposed restore. Otherwise close Claude Code, check the displayed installation path and scan again.</sys:String>
+    <sys:String x:Key="GuidedPreserveExecutable">If you approve, the launcher keeps the current file separately before putting the verified backup in its place.</sys:String>
+    <sys:String x:Key="GuidedExecutableReview">The launcher could not confirm a safe restore for this exact file. Close any open Claude Code windows, check which installation is at the displayed path, and scan again.</sys:String>
+    <sys:String x:Key="GuidedNativeExecutableReview">Close Claude Code. In File Explorer, keep the indicated file under a new, unused name such as claude.exe.saved. Then scan again. If the executable is now missing and installation is available, the launcher will offer the official installer.</sys:String>
+    <sys:String x:Key="GuidedExternalExecutableReview">Leave this file in place. Check which claude command PowerShell finds first on PATH. If WinGet or another tool manages the installation, use that tool to repair it, then scan again.</sys:String>
 </ResourceDictionary>

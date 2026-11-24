@@ -13,11 +13,13 @@ internal static class PowerShellProbe
     private const string ProbePath = "CLAUDE_LAUNCHER_DIAGNOSTIC_PATH";
     private const string ProbeAuth = "CLAUDE_LAUNCHER_DIAGNOSTIC_AUTH";
 
-    private static readonly string EncodedProbe = Convert.ToBase64String(Encoding.Unicode.GetBytes("""
+    private static readonly string EncodedProbe = Convert.ToBase64String(Encoding.Unicode.GetBytes(SignedExecutable.ResolvePath + "\n" + """
         $ErrorActionPreference = 'Stop'
         $ProgressPreference = 'SilentlyContinue'
         [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
-        $result = @{ Kind = 'Absent'; Path = $null; VerifiedVersion = $false; LoggedIn = $null; Issue = $null }
+        $result = @{ Kind = 'Absent'; Path = $null; VerifiedVersion = $false; LoggedIn = $null; Issue = $null;
+            SignatureStatus = $null; OfficialPublisher = $null }
+        $file = $null
 
         try {
             $result.Issue = 'WorkingFolderUnavailable'
@@ -52,10 +54,16 @@ internal static class PowerShellProbe
                 $securityModule = [IO.Path]::Combine($PSHOME, 'Modules', 'Microsoft.PowerShell.Security',
                     'Microsoft.PowerShell.Security.psd1')
                 Microsoft.PowerShell.Core\Import-Module -Name $securityModule
+                # Pin the resolved file. Never run a second lookup of the original WinGet link.
+                $path = Resolve-LauncherExecutable $path
+                $file = [IO.File]::Open($path, 'Open', 'Read', 'Read')
                 $signature = Microsoft.PowerShell.Security\Get-AuthenticodeSignature -LiteralPath $path
-                $result.Issue = 'SignatureUnverified'
-                if ($signature.Status -eq 'Valid' -and
-                    $signature.SignerCertificate.GetNameInfo('SimpleName', $false) -ceq 'Anthropic, PBC') {
+                $result.SignatureStatus = [string]$signature.Status
+                if ($signature.Status -eq 'Valid' -and $null -ne $signature.SignerCertificate) {
+                    $publisher = $signature.SignerCertificate.GetNameInfo('SimpleName', $false)
+                    if (![string]::IsNullOrWhiteSpace($publisher)) { $result.OfficialPublisher = $publisher -ceq 'Anthropic, PBC' }
+                }
+                if ($result.OfficialPublisher -eq $true) {
                     $result.Issue = 'VersionCheckFailed'
                     $ErrorActionPreference = 'SilentlyContinue'
                     $global:LASTEXITCODE = $null
@@ -82,7 +90,7 @@ internal static class PowerShellProbe
             }
         } catch {
             $result.Kind = 'ProbeError'
-        }
+        } finally { if ($file) { $file.Dispose() } }
 
         ConvertTo-Json -InputObject $result -Compress
         """));
@@ -90,8 +98,23 @@ internal static class PowerShellProbe
     internal sealed record Result(string Kind, string? Path, bool VerifiedVersion, bool? LoggedIn, string? Issue)
     {
         public string? Version { get; init; }
+        public string? SignatureStatus { get; init; }
+        public bool? OfficialPublisher { get; init; }
+        internal string? BinaryCode => ClassifyBinaryIssue(SignatureStatus, OfficialPublisher, VerifiedVersion, Issue);
         internal static Result Failure(string issue) => new("ProbeError", null, false, null, issue);
     }
+
+    internal static string? ClassifyBinaryIssue(string? signatureStatus, bool? officialPublisher,
+        bool verifiedVersion, string? issue) => signatureStatus switch
+    {
+        "HashMismatch" => "BinaryHashMismatch",
+        "NotSigned" => "BinaryUnsigned",
+        "Valid" when officialPublisher == false => "BinaryOtherPublisher",
+        "Valid" when officialPublisher == true => !verifiedVersion && issue == "VersionCheckFailed"
+            ? "BinaryExecutionFailed" : null,
+        null when issue != "SignatureCheckFailed" => null,
+        _ => "BinaryTrustUnknown",
+    };
 
     internal static Task<Result> RunAsync(
         string cwd, string? pathOverride = null, string? executable = null, bool checkAuth = false) =>

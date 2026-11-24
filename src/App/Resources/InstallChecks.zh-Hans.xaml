@@ -125,4 +125,23 @@
     <sys:String x:Key="FixCleanClaudeDebris">删除所列更新残留文件</sys:String>
     <sys:String x:Key="FixCleanClaudeDownloads">删除所列下载缓存</sys:String>
     <sys:String x:Key="FixDisableClaudeUpdater">为当前用户关闭自动更新</sys:String>
+    <sys:String x:Key="CheckInstallBinaryHashMismatchTitle">Claude Code 可执行文件与签名不符</sys:String>
+    <sys:String x:Key="CheckInstallBinaryHashMismatchCause">Windows 检测到文件内容与签名时不同。启动器已阻止运行此文件。</sys:String>
+    <sys:String x:Key="CheckInstallBinaryHashMismatchSolution">如果有适用于此文件且已验证的备份，可确认后恢复。若未提供恢复操作，请关闭 Claude Code，核对所示安装路径后再次检查。</sys:String>
+    <sys:String x:Key="CheckInstallBinaryUnsignedTitle">Claude Code 可执行文件没有数字签名</sys:String>
+    <sys:String x:Key="CheckInstallBinaryUnsignedCause">文件存在，但 Windows 没有找到 Authenticode 签名。启动器无法确认发布者，已阻止运行。</sys:String>
+    <sys:String x:Key="CheckInstallBinaryUnsignedSolution">如果有适用于此文件且已验证的备份，可确认后恢复。若未提供恢复操作，请关闭 Claude Code，核对所示安装路径后再次检查。</sys:String>
+    <sys:String x:Key="CheckInstallBinaryOtherPublisherTitle">Claude Code 可执行文件由其他发布者签名</sys:String>
+    <sys:String x:Key="CheckInstallBinaryOtherPublisherCause">Windows 已验证签名，但发布者与 Anthropic, PBC 不符。启动器已阻止运行此文件。</sys:String>
+    <sys:String x:Key="CheckInstallBinaryOtherPublisherSolution">如果有适用于此文件且已验证的备份，可确认后恢复。若未提供恢复操作，请关闭 Claude Code，核对所示安装路径后再次检查。</sys:String>
+    <sys:String x:Key="CheckInstallBinaryTrustUnknownTitle">无法确认可执行文件是否可信</sys:String>
+    <sys:String x:Key="CheckInstallBinaryTrustUnknownCause">检查未能确定签名状态，启动器已暂停对此文件的修复。</sys:String>
+    <sys:String x:Key="CheckInstallBinaryTrustUnknownSolution">请检查文件的读取权限，在 Windows 文件属性 → 数字签名中核对签名者，然后重新检查。</sys:String>
+    <sys:String x:Key="CheckInstallBinaryExecutionFailedTitle">已签名的可执行文件未返回有效的 Claude Code 版本</sys:String>
+    <sys:String x:Key="CheckInstallBinaryExecutionFailedCause">Anthropic 签名有效，但版本检查没有收到预期的 Claude Code 响应。</sys:String>
+    <sys:String x:Key="CheckInstallBinaryExecutionFailedSolution">如果有适用于此文件且已验证的备份，可确认后恢复。若未提供恢复操作，请关闭 Claude Code，核对所示安装路径后再次检查。</sys:String>
+    <sys:String x:Key="GuidedPreserveExecutable">如果确认，启动器会单独保留当前文件，并把已验证的备份恢复到此位置。</sys:String>
+    <sys:String x:Key="GuidedExecutableReview">启动器未能确认适用于此文件的安全恢复方法。请关闭已打开的 Claude Code，核对所示路径对应的安装版本，然后重新检查。</sys:String>
+    <sys:String x:Key="GuidedNativeExecutableReview">关闭 Claude Code。请勿运行所示文件，在文件资源管理器中将它改为尚未使用的名称（如 claude.exe.saved）并保留。然后重新检查。如果可执行文件现已缺失且满足安装条件，启动器会提供官方安装程序。</sys:String>
+    <sys:String x:Key="GuidedExternalExecutableReview">请保留此文件的原位置，检查 PowerShell 在 PATH 中优先找到哪个 claude 命令。如果是 WinGet 或其他工具安装的文件，请用相应工具修复后再检查。</sys:String>
 </ResourceDictionary>

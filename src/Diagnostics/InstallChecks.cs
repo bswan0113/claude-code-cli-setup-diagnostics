@@ -56,9 +56,9 @@ internal static partial class InstallChecks
             : userWinGet.Valid ? WinGetPreferred(paths.UserWinGet, paths.UserWinGetLink)
             : machineWinGet.Valid ? WinGetPreferred(paths.MachineWinGet, paths.MachineWinGetLink)
             : null;
+        var resolved = await PowerShellProbe.RunWithCancellationAsync(probeFolder, token).ConfigureAwait(false);
         if (preferred is null)
         {
-            var resolved = await PowerShellProbe.RunWithCancellationAsync(probeFolder, token).ConfigureAwait(false);
             if (resolved is { VerifiedVersion: true, Version: not null, Kind: "Application" } &&
                 WorkingFolder.Normalize(resolved.Path) is { } executable && Stamp(executable) is { } observed)
             {
@@ -69,7 +69,7 @@ internal static partial class InstallChecks
         token.ThrowIfCancellationRequested();
 
         var processes = ReadProcesses(paths);
-        await AddBinaryChecksAsync(plans, paths, native, preferred, userWinGet, machineWinGet, alternate, processes, probeFolder, token)
+        await AddBinaryChecksAsync(plans, paths, native, preferred, userWinGet, machineWinGet, alternate, processes, resolved, probeFolder, token)
             .ConfigureAwait(false);
 
         try
@@ -179,6 +179,25 @@ internal static partial class InstallChecks
     {
         var info = new FileInfo(path);
         return info.Exists ? new(path, info.Length, info.LastWriteTimeUtc.Ticks, info.CreationTimeUtc.Ticks, info.Attributes) : null;
+    }
+
+    internal static bool CanInstallIntoEmptyTargets()
+    {
+        var paths = new InstallPaths();
+        try
+        {
+            if (!SafeUserPath(paths.Native, paths.Profile) || !SafeUserPath(paths.Versions, paths.Profile) ||
+                !SafeUserPath(paths.Downloads, paths.Profile) || !SafeUserPath(paths.UserWinGet, paths.LocalAppData) ||
+                !SafeUserPath(paths.UserWinGetLink, paths.LocalAppData)) return false;
+            foreach (var path in new[] { paths.Native, paths.UserWinGet, paths.MachineWinGet,
+                paths.UserWinGetLink, paths.MachineWinGetLink })
+            {
+                try { _ = File.GetAttributes(path); return false; }
+                catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException) { }
+            }
+            return true;
+        }
+        catch (Exception error) when (IsInspectionError(error)) { return false; }
     }
 
     private sealed class InstallPaths

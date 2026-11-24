@@ -23,6 +23,29 @@ internal static partial class Program
     ];
     private static readonly byte[] DiagnosticSnapshotKey = RandomNumberGenerator.GetBytes(32);
 
+    private static string TestBinaryTrustClassification()
+    {
+        var probe = typeof(Diagnostics).Assembly.GetType("ClaudeLauncher.PowerShellProbe", throwOnError: true)!;
+        (string? Status, bool? Official, bool Verified, string? Issue, string? Expected)[] cases =
+        [
+            ("Valid", true, true, null, null),
+            ("Valid", true, false, "VersionCheckFailed", "BinaryExecutionFailed"),
+            ("Valid", false, false, null, "BinaryOtherPublisher"),
+            ("NotSigned", null, false, null, "BinaryUnsigned"),
+            ("HashMismatch", null, false, null, "BinaryHashMismatch"),
+            ("NotTrusted", null, false, null, "BinaryTrustUnknown"),
+            ("UnknownError", null, false, null, "BinaryTrustUnknown"),
+            (null, null, false, "SignatureCheckFailed", "BinaryTrustUnknown"),
+        ];
+        foreach (var (status, official, verified, issue, expected) in cases)
+        {
+            var actual = (string?)Call(probe, "ClassifyBinaryIssue", status, official, verified, issue);
+            Require(actual == expected,
+                $"Status {status ?? "(missing)"}, official publisher {official}, verified version {verified} yielded {actual ?? "(none)"}; expected {expected ?? "(none)"}.");
+        }
+        return "Verified, unsigned, foreign-signed, changed, untrusted, unavailable and version-failure cases were classified separately.";
+    }
+
     private static string TestFullDiagnosticsScan(string root)
     {
         var fixture = MakeDirectory(root, "full-diagnostics");
@@ -313,7 +336,7 @@ internal static partial class Program
         var planType = Nested("Plan");
         (DiagnosticRow Row, Func<CancellationToken, Task<bool>>? Apply)[] Plans(bool binaryValid)
         {
-            var binary = Activator.CreateInstance(Nested("BinaryState"), null, binaryValid, null, null);
+            var binary = Activator.CreateInstance(Nested("BinaryState"), null, binaryValid, null, null, null);
             var plans = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(planType))!;
             Call(install, "AddCleanupChecks", plans, paths, binary, null, processScan);
             return plans.Cast<object>().Select(plan => (ToDiagnosticRow(planType.GetProperty("Item")!.GetValue(plan)!),

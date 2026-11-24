@@ -126,8 +126,22 @@ public static class Diagnostics
                 return ClassifyResolvedCommand(fresh);
         }
 
-        var installed = KnownExecutables().Where(File.Exists)
-            .DistinctBy(ExecutableTarget, StringComparer.OrdinalIgnoreCase).ToArray();
+        var candidates = new List<string>();
+        foreach (var candidatePath in KnownExecutables())
+        {
+            try
+            {
+                if ((File.GetAttributes(candidatePath) & FileAttributes.Directory) != 0)
+                    return new("BinaryTrustUnknown", candidatePath);
+                candidates.Add(candidatePath);
+            }
+            catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException) { }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or SecurityException)
+            {
+                return new("BinaryTrustUnknown", candidatePath);
+            }
+        }
+        var installed = candidates.DistinctBy(ExecutableTarget, StringComparer.OrdinalIgnoreCase).ToArray();
         if (installed.Length > 1)
             return new("Conflict", installed[0]);
 
@@ -136,7 +150,7 @@ public static class Diagnostics
             var direct = await PowerShellProbe.RunWithCancellationAsync(cwd, token, executable: candidate).ConfigureAwait(false);
             var directory = Path.GetDirectoryName(candidate)!;
             if (!direct.VerifiedVersion)
-                return new("Unknown", Describe(direct.Issue, candidate));
+                return BinaryFinding(direct, candidate);
 
             return CanAddToPath(directory)
                 ? new("PathMissing", directory)
@@ -164,11 +178,18 @@ public static class Diagnostics
         var desktopAlias = path is not null && SamePath(path, LocalAppPath("Microsoft", "WindowsApps", "claude.exe"));
         if (desktopAlias || result.Kind is "Alias" or "Function" or "Cmdlet")
             return new("Conflict", path);
+        if (path is not null && (result.BinaryCode is not null ||
+            string.Equals(Path.GetExtension(path), ".exe", StringComparison.OrdinalIgnoreCase)))
+            return BinaryFinding(result, path);
 
         var otherInstallation = path is not null && File.Exists(path) && KnownExecutables().Any(
             candidate => File.Exists(candidate) && !SamePath(ExecutableTarget(candidate), ExecutableTarget(path)));
         return new(otherInstallation ? "Conflict" : "Unknown", Describe(result.Issue, path));
     }
+
+    private static DiagnosticResult BinaryFinding(PowerShellProbe.Result result, string path) =>
+        new(result.BinaryCode ?? "BinaryTrustUnknown",
+            result.SignatureStatus is { Length: > 0 } status ? $"{path}\n{status}" : path);
 
     private static string? Describe(string? issue, string? path) =>
         issue is null ? path : path is null ? issue : $"{issue}\n{path}";
@@ -185,6 +206,8 @@ public static class Diagnostics
     internal static async Task<DiagnosticResult> InstallAsync(string cwd, bool reinstall = false,
         CancellationToken token = default)
     {
+        if (!await CanStartInstallerAsync(cwd, token).ConfigureAwait(false))
+            return InstallFailure("NativeInstallerVerificationFailed");
         var profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var result = await NativeInstaller.InstallWithFallbackAsync(
             ct => NativeInstaller.RunMonitoredAsync(NativeInstallCommand, profile, InstallerTimeout, TimeSpan.FromSeconds(2), ct),
@@ -215,7 +238,7 @@ public static class Diagnostics
                 var current = await InspectAsync(cwd, token).ConfigureAwait(false);
                 if (current.Code is "Ready" or "AuthRequired" or "PathMissing" or "StalePath" or "Conflict")
                     return current;
-                if (current.Code == "Unknown" && current.Detail != "InstallationFootprintFound")
+                if (current.Code != "Missing" && !(current.Code == "Unknown" && current.Detail == "InstallationFootprintFound"))
                     return InstallFailure("NativeInstallerVerificationFailed");
             }
             return null;
@@ -228,6 +251,8 @@ public static class Diagnostics
     private static async Task<DiagnosticResult> InstallWinGetAsync(string cwd, bool reinstall,
         CancellationToken token)
     {
+        if (!await CanStartInstallerAsync(cwd, token).ConfigureAwait(false))
+            return InstallFailure("WinGetVerificationFailed");
         var executable = UserWinGetExecutable;
         if (!File.Exists(executable))
             return InstallFailure($"WinGetUnavailable\n{executable}");
@@ -333,6 +358,13 @@ public static class Diagnostics
         {
             return false;
         }
+    }
+
+    private static async Task<bool> CanStartInstallerAsync(string cwd, CancellationToken token)
+    {
+        var current = await InspectAsync(cwd, token).ConfigureAwait(false);
+        return (current.Code == "Missing" || current is { Code: "Unknown", Detail: "InstallationFootprintFound" }) &&
+            InstallChecks.CanInstallIntoEmptyTargets();
     }
 
     private static DiagnosticResult InstallFailure(string evidence) => new("RepairFailed", $"{evidence}\n{OfficialInstallHelp}");

@@ -53,6 +53,14 @@ public partial class SetupPanel
         ResultTitle.Text = finding?.Title ?? UiLanguage.TryText(notice.Code + "Title") ?? UiLanguage.Text("UnknownTitle");
         ResultBody.Text = hasAction ? RepairQuestion(result)
             : finding?.Solution ?? UiLanguage.TryText(notice.Code + "Body") ?? UiLanguage.Text("UnknownBody");
+        if (result.Finding is { } executable && GuidedDiagnosis.IsIntegrityFinding(executable.Key))
+        {
+            var path = GuidedDiagnosis.ObservedExecutable(executable);
+            ResultBody.Text = string.Join(Environment.NewLine, new[] { finding!.Cause, path,
+                hasAction ? UiLanguage.Text("GuidedPreserveExecutable") : null,
+                !hasAction && result.ManualExecutableAdvice is { } advice ? UiLanguage.Text(advice) : ResultBody.Text }
+                .Where(line => !string.IsNullOrWhiteSpace(line)));
+        }
         if (result.Finding?.SettingsError is not null)
             ResultBody.Text = finding!.Evidence + Environment.NewLine + ResultBody.Text;
         if (result.Repair?.Action == "InstallClaudeNative" || result.QuickRepair?.Code == "Missing")
@@ -73,7 +81,8 @@ public partial class SetupPanel
             target = Diagnostics.NativeInstallCommand;
         ScopeText.Text = string.IsNullOrWhiteSpace(target) ? "" : UiLanguage.Text("FullChangeTarget") + Environment.NewLine + target;
         ScopeText.Visibility = Show(ScopeText.Text.Length > 0);
-        var defender = _checks.FirstOrDefault(check => check.Key is "DefenderQuarantined" or "DefenderPossible");
+        var defender = result.Finding is { } file && GuidedDiagnosis.IsIntegrityFinding(file.Key) ? null :
+            _checks.FirstOrDefault(check => check.Key is "DefenderQuarantined" or "DefenderPossible");
         DefenderPanel.Visibility = Show(defender is not null && result.StatusKey != "GuidedInstallNeeded");
         DefenderDetailButton.Visibility = Show(defender is not null && DefenderPanel.Visibility != Visibility.Visible);
         if (defender is not null)

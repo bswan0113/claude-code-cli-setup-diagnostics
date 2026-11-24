@@ -16,20 +16,22 @@ internal static partial class Program
         var stateType = product.GetType("ClaudeLauncher.CheckState", throwOnError: true)!;
         var noticeType = product.GetType("ClaudeLauncher.DiagnosticNotice", throwOnError: true)!;
 
-        object Finding(int stage, string key, string state, string? action = null, string? target = null, string? revision = null)
+        object Finding(int stage, string key, string state, string? action = null, string? target = null, string? revision = null,
+            string evidence = "")
         {
-            var item = Activator.CreateInstance(itemType, stage, key, Enum.Parse(stateType, state), "", action, target)!;
+            var item = Activator.CreateInstance(itemType, stage, key, Enum.Parse(stateType, state), evidence, action, target)!;
             itemType.GetProperty("Revision")!.SetValue(item, revision);
             return item;
         }
 
-        object Evaluate(string code, string? detail, params object[] rows)
+        object Examine(string method, string code, string? detail, object[] rows)
         {
             var notice = Activator.CreateInstance(noticeType, code, detail, true, null)!;
             var checks = Array.CreateInstance(itemType, rows.Length);
             Array.Copy(rows, checks, rows.Length);
-            return Call(guided, "Evaluate", notice, checks)!;
+            return Call(guided, method, notice, checks)!;
         }
+        object Evaluate(string code, string? detail, params object[] rows) => Examine("Evaluate", code, detail, rows);
 
         static object? Property(object result, string key) => result.GetType().GetProperty(key)!.GetValue(result);
         static void Expect(object result, string status, object? repair = null, string? quickRepair = null)
@@ -73,6 +75,34 @@ internal static partial class Program
         Expect(Evaluate("Unknown", "InstallationFootprintFound", WithBinary(missing, changedBackup)), "GuidedIssue");
         var networkFailure = Finding(7, "NetDownloadHtml", "Failed");
         Expect(Evaluate("Ready", null, [.. pass, networkFailure]), "GuidedIssue");
+
+        const string nativeExe = @"C:\Users\Example\.local\bin\claude.exe";
+        const string otherExe = @"C:\Tools\claude.exe";
+        var unsigned = Finding(2, "InstallBinaryUnsigned", "Failed", evidence: nativeExe + "\nNotSigned");
+        var unknown = Finding(2, "InstallBinaryTrustUnknown", "Unknown", evidence: nativeExe + "\nUnknownError");
+        foreach (var code in new[] { "BinaryHashMismatch", "BinaryUnsigned", "BinaryOtherPublisher", "BinaryExecutionFailed" })
+        {
+            var finding = Finding(2, "Install" + code, "Failed", evidence: nativeExe);
+            Expect(Evaluate(code, nativeExe, WithBinary(finding, latest, reinstall)), "GuidedIssue", latest);
+            Expect(Evaluate(code, nativeExe, WithBinary(finding, reinstall)), "GuidedIssue");
+        }
+        var wrongTarget = Finding(2, "InstallBackupAvailable", "Warning", "RestoreClaudeBackup",
+            @"C:\Tools\signed-backup" + Environment.NewLine + otherExe, "fixture-revision");
+        void ExpectReadOnly(string code, string detail, object finding, object backup)
+        {
+            var rows = WithBinary(finding, backup, reinstall, pathMissing);
+            Expect(Evaluate(code, detail, rows), "GuidedIssue");
+            var details = (System.Collections.IEnumerable)Examine("ReconcileExecutable", code, detail, rows);
+            Require(details.Cast<object>().All(row => Property(row, "Action") is not
+                ("RestoreClaudeBackup" or "InstallClaudeNative" or "PreferClaudePath" or "RefreshClaudeProcessPath")),
+                $"Expanded details still offered to replace or redirect the executable for {code}.");
+        }
+        ExpectReadOnly("BinaryTrustUnknown", nativeExe, unknown, latest);
+        ExpectReadOnly("BinaryUnsigned", otherExe, unsigned, latest);
+        ExpectReadOnly("BinaryHashMismatch", nativeExe, unsigned, latest);
+        ExpectReadOnly("BinaryUnsigned", nativeExe, unsigned, wrongTarget);
+        ExpectReadOnly("BinaryUnsigned", otherExe, missing, latest);
+        ExpectReadOnly("Ready", nativeExe, unsigned, latest);
 
         AddFixtureStyles(app);
         var korean = LoadDiagnosticResources("ko");

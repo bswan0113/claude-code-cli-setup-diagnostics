@@ -1,7 +1,7 @@
 namespace ClaudeLauncher;
 
 internal sealed record GuidedDiagnosis(string StatusKey, CheckItem? Finding = null,
-    CheckItem? Repair = null, DiagnosticNotice? QuickRepair = null)
+    CheckItem? Repair = null, DiagnosticNotice? QuickRepair = null, string? ManualExecutableAdvice = null)
 {
     private const string Issue = "GuidedIssue";
     private const string Install = "GuidedInstallNeeded";
@@ -12,6 +12,14 @@ internal sealed record GuidedDiagnosis(string StatusKey, CheckItem? Finding = nu
             return new(Issue);
         if (checks.FirstOrDefault(item => item.Key == "Windows32") is { } unsupported)
             return new(Issue, unsupported);
+
+        var original = checks;
+        checks = ReconcileExecutable(quick, checks);
+        if (checks.FirstOrDefault(item => IsIntegrityFinding(item.Key)) is { } integrity)
+        {
+            var restore = checks.FirstOrDefault(item => item.Action == "RestoreClaudeBackup" && Eligible(item));
+            return new(Issue, integrity, restore, ManualExecutableAdvice: ManualAdvice(integrity, original, quick));
+        }
 
         var binary = checks.FirstOrDefault(item => item.Key is "InstallBinaryMissing" or "InstallBinaryDamaged");
         if (binary is not null)
@@ -56,6 +64,72 @@ internal sealed record GuidedDiagnosis(string StatusKey, CheckItem? Finding = nu
         if (quick?.Code == "Missing")
             return new(Issue, new CheckItem(2, "InstallBinaryUnknown", CheckState.Unknown));
         return new(quick?.Code == "Ready" ? "GuidedHealthy" : Issue);
+    }
+
+    internal static bool IsIntegrityFinding(string key) => key is "InstallBinaryHashMismatch" or
+        "InstallBinaryUnsigned" or "InstallBinaryOtherPublisher" or "InstallBinaryTrustUnknown" or
+        "InstallBinaryExecutionFailed";
+
+    internal static string? ObservedExecutable(CheckItem item)
+    {
+        var path = item.Evidence.Split('\n', 2)[0].Trim();
+        return path.Length != 0 && Path.IsPathFullyQualified(path) ? path : null;
+    }
+
+    private static string? ManualAdvice(CheckItem finding, IReadOnlyList<CheckItem> originals, DiagnosticNotice? quick)
+    {
+        if (finding.Key == "InstallBinaryTrustUnknown")
+            return null;
+        if (ObservedExecutable(finding) is not { } path)
+            return "GuidedExecutableReview";
+        var nativePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "bin", "claude.exe");
+        if (!string.Equals(nativePath, path, StringComparison.OrdinalIgnoreCase))
+            return "GuidedExternalExecutableReview";
+        return originals.Contains(finding) && finding.ManualNativeRecovery &&
+            quick is not null && "Install" + quick.Code == finding.Key &&
+            string.Equals(path, quick.Detail?.Split('\n', 2)[0].Trim(), StringComparison.OrdinalIgnoreCase)
+            ? "GuidedNativeExecutableReview" : "GuidedExecutableReview";
+    }
+
+    // The PATH probe and the installation scan may inspect different files, or straddle an update.
+    // An approval for a signed backup is meaningful only for the exact destination examined.
+    internal static IReadOnlyList<CheckItem> ReconcileExecutable(DiagnosticNotice? quick, IReadOnlyList<CheckItem> checks)
+    {
+        var quickKey = quick?.Code switch
+        {
+            "BinaryHashMismatch" => "InstallBinaryHashMismatch",
+            "BinaryUnsigned" => "InstallBinaryUnsigned",
+            "BinaryOtherPublisher" => "InstallBinaryOtherPublisher",
+            "BinaryTrustUnknown" => "InstallBinaryTrustUnknown",
+            "BinaryExecutionFailed" => "InstallBinaryExecutionFailed",
+            _ => null
+        };
+        var installed = checks.FirstOrDefault(item => IsIntegrityFinding(item.Key));
+        if (quickKey is null && installed is null)
+            return checks;
+
+        var resolved = quickKey is null ? null : new CheckItem(2, quickKey,
+            quickKey == "InstallBinaryTrustUnknown" ? CheckState.Unknown : CheckState.Failed, quick!.Detail ?? "");
+        var resolvedPath = resolved is null ? null : ObservedExecutable(resolved);
+        var different = resolved is not null && (resolvedPath is null || installed is null || installed.Key != resolved.Key ||
+            !string.Equals(resolvedPath, ObservedExecutable(installed), StringComparison.OrdinalIgnoreCase));
+        var restorablePath = resolved is not null && installed is not null &&
+            installed.Key != "InstallBinaryTrustUnknown" && !different ? resolvedPath : null;
+        var result = new List<CheckItem>(checks.Count + 1);
+        if (different)
+            result.Add(resolved!);
+        foreach (var item in checks)
+        {
+            bool suppress = item.Action switch
+            {
+                "InstallClaudeNative" or "PreferClaudePath" or "RefreshClaudeProcessPath" => true,
+                "RestoreClaudeBackup" => restorablePath is null || item.Target?.Split('\n') is not [_, var target, ..] ||
+                    !string.Equals(target.Trim(), restorablePath, StringComparison.OrdinalIgnoreCase),
+                _ => false
+            };
+            result.Add(suppress ? item with { Action = null, Revision = null } : item);
+        }
+        return result;
     }
 
     private static GuidedDiagnosis ForBinary(DiagnosticNotice? quick, IReadOnlyList<CheckItem> checks, CheckItem binary)

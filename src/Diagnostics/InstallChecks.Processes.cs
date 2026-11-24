@@ -12,7 +12,8 @@ internal static partial class InstallChecks
     private const string RequestVariable = "BLSLAB_CLAUDE_INSTALL_CHECK_INPUT";
     private sealed record ProcessIdentity(int Pid, int Session, long Started, string Executable, bool CanStop);
     private sealed record ProcessScan(List<ProcessIdentity> Active, bool Unverified);
-    private readonly record struct BinaryState(FileStamp? File, bool Valid, string? Version, string? Issue);
+    private readonly record struct BinaryState(FileStamp? File, bool Valid, string? Version, string? Issue,
+        string? SignatureStatus = null);
     private sealed record ToolResult(int ExitCode, string Output);
 
     private static ProcessScan ReadProcesses(InstallPaths paths)
@@ -143,17 +144,22 @@ internal static partial class InstallChecks
     {
         try
         {
-            if (Stamp(path) is not { } file)
-                return new(null, false, null, "FileMissing");
+            var attrs = File.GetAttributes(path);
+            if ((attrs & FileAttributes.Directory) != 0 || Stamp(path) is not { } file)
+                return new(null, false, null, "BinaryTrustUnknown");
             var probe = await PowerShellProbe.RunWithCancellationAsync(Environment.SystemDirectory, token, executable: path)
                 .ConfigureAwait(false);
             return probe.VerifiedVersion && probe.Version is { } version
-                ? new(file, true, version, null)
-                : new(file, false, null, probe.Issue ?? "VersionCheckFailed");
+                ? new(file, true, version, null, probe.SignatureStatus)
+                : new(file, false, null, probe.BinaryCode ?? "BinaryTrustUnknown", probe.SignatureStatus);
+        }
+        catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return new(null, false, null, "FileMissing");
         }
         catch (Exception error) when (IsInspectionError(error))
         {
-            return new(null, false, null, "FileReadFailed");
+            return new(null, false, null, "BinaryTrustUnknown");
         }
     }
 

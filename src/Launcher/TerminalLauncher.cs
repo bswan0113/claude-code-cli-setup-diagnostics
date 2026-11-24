@@ -20,7 +20,7 @@ public static class TerminalLauncher
         Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
 
     // The bootstrap is fixed. Per-launch values are passed in the child environment.
-    private static readonly string EncodedBootstrap = Convert.ToBase64String(Encoding.Unicode.GetBytes("""
+    private static readonly string EncodedBootstrap = Convert.ToBase64String(Encoding.Unicode.GetBytes(SignedExecutable.ResolvePath + "\n" + """
         function Write-LauncherReport([string]$path, [string]$value) {
             $bytes = [Text.Encoding]::ASCII.GetBytes($value + "`n")
             $file = [IO.File]::Open($path, [IO.FileMode]::Open, [IO.FileAccess]::Write,
@@ -41,6 +41,7 @@ public static class TerminalLauncher
         $status = 'StartFailed'
         $exitCode = $null
         $process = $null
+        $exeLock = $null
 
         try { [Console]::Title = 'Windows PowerShell' } catch { }
 
@@ -55,12 +56,14 @@ public static class TerminalLauncher
                 $securityModule = [IO.Path]::Combine($PSHOME, 'Modules', 'Microsoft.PowerShell.Security',
                     'Microsoft.PowerShell.Security.psd1')
                 Microsoft.PowerShell.Core\Import-Module -Name $securityModule -ErrorAction Stop
-                $signature = Microsoft.PowerShell.Security\Get-AuthenticodeSignature -LiteralPath $command.Path -ErrorAction Stop
+                $exePath = Resolve-LauncherExecutable $command.Path
+                $exeLock = [IO.File]::Open($exePath, 'Open', 'Read', 'Read')
+                $signature = Microsoft.PowerShell.Security\Get-AuthenticodeSignature -LiteralPath $exePath -ErrorAction Stop
                 if ($signature.Status -ne 'Valid' -or
                     $signature.SignerCertificate.GetNameInfo('SimpleName', $false) -cne 'Anthropic, PBC') {
                     $status = 'Failed'
                 } else {
-                    $startInfo = [Diagnostics.ProcessStartInfo]::new($command.Path)
+                    $startInfo = [Diagnostics.ProcessStartInfo]::new($exePath)
                     $startInfo.WorkingDirectory = $cwd
                     $startInfo.UseShellExecute = $false
                     if ($resume -eq '-r') {
@@ -73,6 +76,8 @@ public static class TerminalLauncher
                         $startInfo.Arguments = '--session-id ' + $id.ToString('D')
                     }
                     $process = [Diagnostics.Process]::Start($startInfo)
+                    $exeLock.Dispose()
+                    $exeLock = $null
                     $status = 'Unknown'
                     if ($livePath) {
                         try {
@@ -91,6 +96,7 @@ public static class TerminalLauncher
         } catch {
             # Keep the stage recorded before the exception. Never send console or exception text.
         } finally {
+            if ($exeLock) { $exeLock.Dispose() }
             if ($process) { $process.Dispose() }
         }
 

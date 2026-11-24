@@ -6,7 +6,7 @@ namespace ClaudeLauncher;
 
 internal static class RepairInteractions
 {
-    private static readonly string LoginScript = Convert.ToBase64String(Encoding.Unicode.GetBytes("""
+    private static readonly string LoginScript = Convert.ToBase64String(Encoding.Unicode.GetBytes(SignedExecutable.ResolvePath + "\n" + """
         $ErrorActionPreference = 'Stop'
         $status = 1
         $cli = $null
@@ -19,6 +19,7 @@ internal static class RepairInteractions
             [Environment]::SetEnvironmentVariable('BLSLAB_CLAUDE_LOGIN_CANCEL', $null)
             $module = [IO.Path]::Combine($PSHOME, 'Modules', 'Microsoft.PowerShell.Security', 'Microsoft.PowerShell.Security.psd1')
             Microsoft.PowerShell.Core\Import-Module -Name $module
+            $exe = Resolve-LauncherExecutable $exe
             $lock = [IO.File]::Open($exe, 'Open', 'Read', 'Read')
             $sig = Microsoft.PowerShell.Security\Get-AuthenticodeSignature -LiteralPath $exe
             if ($cancel.WaitOne(0) -or $sig.Status -ne 'Valid' -or

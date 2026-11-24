@@ -13,27 +13,52 @@ internal static partial class InstallChecks
 
     private static async Task AddBinaryChecksAsync(List<Plan> plans, InstallPaths paths, BinaryState native,
         PreferredInstall? preferred, BinaryState userWinGet, BinaryState machineWinGet, BinaryState alternate, ProcessScan processes,
-        string cwd, CancellationToken token)
+        PowerShellProbe.Result resolved, string cwd, CancellationToken token)
     {
+        if (resolved.BinaryCode is { } externalIssue && resolved.Path is { } externalPath &&
+            !PathComparer.Equals(ResolvedFile(paths.Native), ResolvedFile(externalPath)))
+        {
+            plans.Add(new(new(2, "Install" + externalIssue,
+                externalIssue == "BinaryTrustUnknown" ? CheckState.Unknown : CheckState.Failed,
+                JoinLines(new[] { externalPath, resolved.SignatureStatus }.OfType<string>()))));
+            return;
+        }
         if (native.Valid)
         {
             plans.Add(new(new(2, "InstallBinaryVerified", CheckState.Pass, BinaryEvidence(paths.Native, native))));
             return;
         }
-        if (native.File is null && preferred is not null)
+        if (native.Issue == "FileMissing" && preferred is not null &&
+            (userWinGet.Valid || userWinGet.Issue == "FileMissing" && (machineWinGet.Valid || machineWinGet.Issue == "FileMissing")))
         {
             plans.Add(new(new(2, "InstallBinaryVerified", CheckState.Pass, BinaryEvidence(preferred.Executable, alternate))));
             return;
         }
 
-        var absent = native.File is null && userWinGet.File is null && machineWinGet.File is null;
-        var readingFailed = native.Issue == "FileReadFailed" || userWinGet.Issue == "FileReadFailed" ||
-            machineWinGet.Issue == "FileReadFailed";
-        var observedPath = native.File is not null || absent ? paths.Native
-            : userWinGet.File is not null ? paths.UserWinGet : paths.MachineWinGet;
-        var observed = native.File is not null || absent ? native : userWinGet.File is not null ? userWinGet : machineWinGet;
-        plans.Add(new(new(2, readingFailed ? "InstallBinaryUnknown" : absent ? "InstallBinaryMissing" : "InstallBinaryDamaged",
-            readingFailed ? CheckState.Unknown : CheckState.Failed, BinaryEvidence(observedPath, observed))));
+        (string Path, BinaryState State)[] managed = [(paths.Native, native), (paths.UserWinGet, userWinGet),
+            (paths.MachineWinGet, machineWinGet)];
+        var absent = managed.All(pair => pair.State.Issue == "FileMissing");
+        var observed = managed.FirstOrDefault(pair => pair.State.Issue is not (null or "FileMissing"));
+        var observedPath = observed.Path ?? paths.Native;
+        var issue = absent ? "BinaryMissing" : observed.State.Issue ?? "BinaryTrustUnknown";
+        // Do not treat an inconclusive command lookup as proof that installing over this setup is safe.
+        if (absent && resolved.Kind != "Absent")
+        {
+            issue = "BinaryTrustUnknown";
+            observedPath = resolved.Path ?? paths.Native;
+        }
+        var manualNative = issue is "BinaryHashMismatch" or "BinaryUnsigned" or "BinaryOtherPublisher" or "BinaryExecutionFailed" &&
+            PathComparer.Equals(observedPath, paths.Native) && native.File is { } file &&
+            (file.Attributes & (FileAttributes.Directory | FileAttributes.ReparsePoint | FileAttributes.Device)) == 0 &&
+            SafeUserPath(paths.Native, paths.Profile) && !FileChangeBlocked(processes, paths.Bin, paths.Versions);
+        var evidence = issue == "BinaryTrustUnknown" && absent ? observedPath :
+            BinaryEvidence(observedPath, absent ? native : observed.State);
+        plans.Add(new(new CheckItem(2, "Install" + issue, issue == "BinaryTrustUnknown" ? CheckState.Unknown : CheckState.Failed,
+            evidence) { ManualNativeRecovery = manualNative }));
+
+        // Only the native per-user destination can be preserved and replaced by the backup workflow.
+        if (issue == "BinaryTrustUnknown" || !absent && !PathComparer.Equals(observedPath, paths.Native))
+            return;
 
         try
         {
@@ -48,7 +73,7 @@ internal static partial class InstallChecks
                         JoinLines(backups.Select(file => file.Name)))));
                 }
                 var restoreScope = new[] { paths.Bin, paths.Versions };
-                var safeDestination = signed.Count != 0 && !readingFailed && SafeUserPath(paths.Native, paths.Profile);
+                var safeDestination = signed.Count != 0 && SafeUserPath(paths.Native, paths.Profile);
                 var restoreBlocked = FileChangeBlocked(processes, restoreScope);
                 var canRestore = safeDestination && !restoreBlocked;
                 var destinationHash = canRestore && native.File is not null ? HashFile(paths.Native) : null;
@@ -77,12 +102,12 @@ internal static partial class InstallChecks
             plans.Add(new(new(2, "InstallBackupUnverified", CheckState.Unknown)));
         }
 
-        if (preferred is not null)
+        if (preferred is not null || !absent)
             return;
         var targetPaths = new[] { paths.Native, paths.Versions, paths.Downloads, paths.UserWinGet, paths.UserWinGetLink };
         var installTarget = JoinLines(targetPaths);
         var command = Diagnostics.NativeInstallCommand;
-        if (!readingFailed && SafeUserPath(paths.Native, paths.Profile) && !FileChangeBlocked(processes, targetPaths))
+        if (CanInstallIntoEmptyTargets() && !FileChangeBlocked(processes, targetPaths))
         {
             var revision = Fingerprint(native.File, Stamp(paths.UserWinGet), Stamp(Diagnostics.UserWinGetExecutable));
             var item = new CheckItem(2, "InstallNativeRecovery", CheckState.Warning, command,
@@ -98,7 +123,8 @@ internal static partial class InstallChecks
 
     private static string BinaryEvidence(string path, BinaryState binary) => JoinLines(new[]
     {
-        path, binary.Version is null ? null : $"Claude Code {binary.Version}", binary.Issue,
+        path, binary.Version is null ? null : $"Claude Code {binary.Version}", binary.SignatureStatus,
+        binary.Issue == "FileMissing" ? binary.Issue : null,
         binary.File is null ? null : SizeText(binary.File.Size),
     }.OfType<string>());
 
@@ -166,7 +192,24 @@ internal static partial class InstallChecks
             if (brokenAside is null)
                 File.Move(temporary, paths.Native, overwrite: false);
             else
-                File.Replace(temporary, paths.Native, brokenAside);
+            {
+                // Reserve the approved backup name without replacing an existing file. If an updater
+                // recreates claude.exe between the two renames, leave both its file and the original intact.
+                File.Move(paths.Native, brokenAside, overwrite: false);
+                try
+                {
+                    if (!SafeUserPath(brokenAside, paths.Profile) ||
+                        !string.Equals(HashFile(brokenAside), destinationHash, StringComparison.Ordinal))
+                        return false;
+                    File.Move(temporary, paths.Native, overwrite: false);
+                }
+                finally
+                {
+                    if (File.Exists(temporary) && SafeUserPath(paths.Native, paths.Profile) &&
+                        SafeUserPath(brokenAside, paths.Profile) && !File.Exists(paths.Native))
+                        File.Move(brokenAside, paths.Native, overwrite: false);
+                }
+            }
             var verified = await PowerShellProbe.RunAsync(Environment.SystemDirectory, executable: paths.Native)
                 .ConfigureAwait(false);
             if (!verified.VerifiedVersion && SafeUserPath(paths.Native, paths.Profile) &&
@@ -210,7 +253,7 @@ internal static partial class InstallChecks
         {
             var updaterArtifacts = ReadFiles(paths.Bin, paths.Profile, recurse: false).Where(file =>
                 IsNamed(file.Name, "claude.exe.old.") || IsNamed(file.Name, "claude.exe.new.") ||
-                IsNamed(file.Name, "claude.exe.broken.")).ToArray();
+                IsNamed(file.Name, "claude.exe.broken.") && !IsNamed(file.Name, "claude.exe.broken.launcher")).ToArray();
             interruptedUpdate = updaterArtifacts.Any(file => !IsNamed(file.Name, "claude.exe.old."));
             var keep = LatestOld(updaterArtifacts);
             var debris = updaterArtifacts.Where(file => file != keep).ToArray();

@@ -14,6 +14,7 @@ internal sealed record CheckItem(int Stage, string Key, CheckState State, string
     // Used for checking that the approval still refers to the same value. Never display it.
     public string? Revision { get; init; }
     public SettingsLocation? SettingsError { get; init; }
+    public bool ManualNativeRecovery { get; init; }
 }
 
 internal sealed record RepairOutcome(bool Applied, DiagnosticResult? Failure = null);
