@@ -191,6 +191,8 @@
                     </Grid>
                     <Grid Grid.Row="1">
                         <TreeView x:Name="FolderTree" AutomationProperties.Name="{DynamicResource FolderTreeTitle}"
+                                  VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                  VirtualizingPanel.ScrollUnit="Pixel" ScrollViewer.CanContentScroll="True"
                                   PreviewKeyDown="FolderTree_PreviewKeyDown" BorderBrush="{DynamicResource Line}"
                                   BorderThickness="1" Background="{DynamicResource Surface}" Foreground="{DynamicResource Ink}" Padding="0"
                                   ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto">

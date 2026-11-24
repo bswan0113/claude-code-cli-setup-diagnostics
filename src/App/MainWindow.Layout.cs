@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ClaudeLauncher;
 
@@ -13,6 +14,11 @@ public partial class MainWindow
     private Rect _desktopBounds;
     private WindowState _desktopState;
     private bool _sidebarRight;
+    private bool _layoutQueued;
+    private LayoutInputs? _lastLayout;
+
+    private readonly record struct LayoutInputs(double Width, double Height, bool Sidebar, int FontPercent,
+        bool HasSearch, bool AppearanceOpen, int RunningCount, int RecentCount);
 
     public bool IsSidebar
     {
@@ -35,20 +41,31 @@ public partial class MainWindow
 
     private void PinSidebar(bool right)
     {
-        if (!IsSidebar)
+        _sidebarRight = right;
+        MoveSidebarButton.SetResourceReference(ContentControl.ContentProperty, right ? "MoveLeft" : "MoveRight");
+        AutomationProperties.SetAutomationId(MoveSidebarButton, right ? "DockLeftButton" : "DockRightButton");
+        if (IsSidebar)
         {
-            _desktopState = WindowState;
-            _desktopBounds = WindowState == WindowState.Normal
-                ? new Rect(Left, Top, ActualWidth, ActualHeight) : RestoreBounds;
+            MoveSidebarToEdge(right);
+            return;
         }
 
-        _sidebarRight = right;
+        _desktopState = WindowState;
+        _desktopBounds = WindowState == WindowState.Normal
+            ? new Rect(Left, Top, ActualWidth, ActualHeight) : RestoreBounds;
         IsSidebar = true;
         WindowState = WindowState.Normal;
         WindowStyle = WindowStyle.None;
         ResizeMode = ResizeMode.NoResize;
         MinWidth = 0;
         MinHeight = 0;
+        MoveSidebarToEdge(right);
+        UpdateLayoutMode();
+        ApplyWindowAppearance();
+    }
+
+    private void MoveSidebarToEdge(bool right)
+    {
         if (!DesktopSidebar.MoveToEdge(this, right, 450))
         {
             var work = SystemParameters.WorkArea;
@@ -57,9 +74,6 @@ public partial class MainWindow
             Left = right ? work.Right - Width : work.Left;
             Top = work.Top;
         }
-
-        UpdateLayoutMode();
-        ApplyWindowAppearance();
     }
 
     private void Unpin_Click(object sender, RoutedEventArgs e)
@@ -90,9 +104,28 @@ public partial class MainWindow
 
     private void UpdateLayoutMode()
     {
+        if (_layoutQueued || _closing)
+            return;
+        _layoutQueued = true;
+        Dispatcher.BeginInvoke(DispatcherPriority.Render, () =>
+        {
+            _layoutQueued = false;
+            if (!_closing)
+                ApplyLayoutMode();
+        });
+    }
+
+    private void ApplyLayoutMode()
+    {
         var height = ActualHeight > 0 ? ActualHeight : Height;
         var width = ActualWidth > 0 ? ActualWidth : Width;
         var sidebar = IsSidebar;
+        var inputs = new LayoutInputs(width, height, sidebar, _appearance.FontPercent,
+            sidebar && HistorySearch.Text.Length != 0, _appearancePanel is not null,
+            sidebar ? Math.Min(_liveRows.Count, 3) : 0, sidebar ? Math.Min(RecentSessions.Items.Count, 3) : 0);
+        if (_lastLayout == inputs)
+            return;
+        _lastLayout = inputs;
         var fontScale = _appearance.FontPercent / 100.0;
         var wrappedToolbar = !sidebar && width < 1120 * fontScale;
         var compactSidebarTitle = sidebar && width < 410 * fontScale;
@@ -133,8 +166,6 @@ public partial class MainWindow
         UnpinButton.Visibility = sidebar ? Visibility.Visible : Visibility.Collapsed;
         DesktopFooter.Visibility = sidebar ? Visibility.Collapsed : Visibility.Visible;
         SidebarFooter.Visibility = sidebar ? Visibility.Visible : Visibility.Collapsed;
-        MoveSidebarButton.Content = UiLanguage.Text(_sidebarRight ? "MoveLeft" : "MoveRight");
-        AutomationProperties.SetAutomationId(MoveSidebarButton, _sidebarRight ? "DockLeftButton" : "DockRightButton");
         AutomationProperties.SetAutomationId(PinLeftButton, sidebar ? "MainDockLeftButton" : "DockLeftButton");
         AutomationProperties.SetAutomationId(PinRightButton, sidebar ? "MainDockRightButton" : "DockRightButton");
         Dashboard.Margin = new Thickness(0, 0, 0, sidebar ? 8 + 5 * sidebarSpacing : shortWindow ? 16 : 31);
