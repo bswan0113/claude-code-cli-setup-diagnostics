@@ -7,6 +7,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <!-- The hidden STA fixture hosts the launcher's application-scoped pack URIs in this test assembly. -->
+    <Page Include="../../src/App/Resources/*.xaml" Link="App/Resources/%(Filename)%(Extension)" />
     <ProjectReference Include="../../src/ClaudeLauncher.csproj" />
     <ProjectReference Include="../SettingsIsolationHook/SettingsIsolationHook.csproj" />
     <ProjectReference Include="../UnsignedCli/UnsignedCli.csproj" ReferenceOutputAssembly="false" />

@@ -7,10 +7,14 @@ namespace ClaudeLauncher;
 internal sealed record ProjectRemovalPreview(IReadOnlyList<string> Folders, IReadOnlyList<SavedSession> Sessions, string Code)
 {
     internal IReadOnlyList<RecentFolder> Previous { get; init; } = [];
+    internal string ProfileConfigRoot { get; init; } = ProfileDataPaths.Config;
 }
 
 internal sealed record RemovedProject(Guid Id, IReadOnlyList<string> Folders, IReadOnlyList<string> SessionFolders,
-    int SessionCount, DateTime RemovedUtc, bool NeedsRecovery);
+    int SessionCount, DateTime RemovedUtc, bool NeedsRecovery)
+{
+    internal string ProfileConfigRoot { get; init; } = ProfileDataPaths.Config;
+}
 
 internal static partial class ProjectRemoval
 {
@@ -20,7 +24,7 @@ internal static partial class ProjectRemoval
         ArgumentException or NotSupportedException or WaitHandleCannotBeOpenedException;
 
     internal static Task<ProjectRemovalPreview> PreviewBatchAsync(IReadOnlyList<string> folders,
-        IReadOnlyList<SavedSession> sessions, CancellationToken token = default) => Task.Run(() =>
+        IReadOnlyList<SavedSession> sessions, CancellationToken token = default) => LauncherProfiles.RunBound(() =>
     {
         try { return Preview(folders, sessions, token); }
         catch (Exception e) when (AccessError(e)) { return new ProjectRemovalPreview([], [], "Unavailable"); }
@@ -77,6 +81,7 @@ internal static partial class ProjectRemoval
     private static string Remove(ProjectRemovalPreview preview, CancellationToken token)
     {
         if (preview.Code != "Ready") return preview.Code;
+        if (!Paths.Equals(preview.ProfileConfigRoot, ProfileDataPaths.Config)) return "Changed";
         var fresh = Preview(preview.Folders, preview.Sessions, token);
         if (fresh.Code != "Ready") return fresh.Code;
         if (fresh.Sessions.Count != preview.Sessions.Count || !SameFolders(fresh.Previous, preview.Previous)) return "Changed";
@@ -144,6 +149,7 @@ internal static partial class ProjectRemoval
     internal static Task<SessionRemovalResult> RestoreAsync(RemovedProject removed, CancellationToken token = default) =>
         Run(() =>
         {
+            if (!Paths.Equals(removed.ProfileConfigRoot, ProfileDataPaths.Config)) return "Changed";
             CheckStore();
             if (!Exists(Manifest(removed.Id))) return "Changed";
             var group = ReadGroup(removed.Id);
@@ -199,7 +205,7 @@ internal static partial class ProjectRemoval
         return "Restored";
     }
 
-    private static Task<SessionRemovalResult> Run(Func<string> action, CancellationToken token) => Task.Run(() =>
+    private static Task<SessionRemovalResult> Run(Func<string> action, CancellationToken token) => LauncherProfiles.RunBound(() =>
     {
         token.ThrowIfCancellationRequested();
         try { return new SessionRemovalResult(SessionRemoval.WithMutationLock(action)); }
@@ -210,7 +216,7 @@ internal static partial class ProjectRemoval
     internal static bool IsPending(Guid id) =>
         ReadGroups().Any(g => g.State != Phase.Archived && g.Members.Any(m => m.Id == id));
 
-    internal static Task<IReadOnlyList<RemovedProject>> ListRemovedAsync() => Task.Run<IReadOnlyList<RemovedProject>>(() =>
+    internal static Task<IReadOnlyList<RemovedProject>> ListRemovedAsync() => LauncherProfiles.RunBound<IReadOnlyList<RemovedProject>>(() =>
         SessionRemoval.WithMutationLock(() =>
         {
             var unreadable = new List<RemovedProject>();
@@ -220,6 +226,7 @@ internal static partial class ProjectRemoval
     // Keep expensive JSONL reads outside the mutation mutex. If a group changed meanwhile, rescan.
     internal static async Task<(SessionIndex Index, IReadOnlyList<RecentFolder> Folders)> LoadVisibleAsync()
     {
+        using var scope = LauncherProfiles.Bind(LauncherProfiles.Current);
         while (true)
         {
             Guid? before = await Task.Run(() =>

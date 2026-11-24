@@ -20,13 +20,49 @@ public partial class MainWindow
     private string? _selectedTreeKey;
     private DateTime _lastTitleLookup;
     private bool _restoringTree;
-    private bool _discovering;
+    private int? _discoveryGeneration;
+    private int _profileViewGeneration;
     private bool _folderHistoryUnavailable;
     private int _historyVersion;
 
-    private async Task<SessionIndex> RefreshHistoriesAsync()
+    private async Task ResetProfileHistoryAsync()
     {
-        var version = ++_historyVersion;
+        var profile = LauncherProfiles.Selected;
+        using var scope = LauncherProfiles.Bind(profile);
+        _profileViewGeneration++;
+        _historyVersion++;
+        _usageRead?.Cancel();
+        _usageRead = null;
+        _usageRescanQueued = false;
+        _nextUsagePoll = default;
+        _lastTitleLookup = default;
+        _externalRows.Clear();
+        _liveRows.Clear();
+        _activeIds.Clear();
+        _sessions = null;
+        _folderHistory = [];
+        _folderHistoryUnavailable = false;
+        _shownFolders = [];
+        _expandedFolders.Clear();
+        _renderedSearch = "";
+        _restoringTree = false;
+        FolderTree.ItemsSource = null;
+        _selectedTreeKey = null;
+        HistorySearch.Clear();
+        FolderInput.Clear();
+        RefreshLiveRows();
+        RefreshHistoryView();
+        await Task.WhenAll(RefreshHistoriesAsync(profile), DiscoverAsync());
+        if (IsSelectedProfile(profile) && _setupQueue.Count != 0)
+            _ = Dispatcher.BeginInvoke(OpenNextSetup);
+    }
+
+    private async Task<SessionIndex> RefreshHistoriesAsync(LauncherProfile? forProfile = null)
+    {
+        var profile = forProfile ?? LauncherProfiles.Selected;
+        using var scope = LauncherProfiles.Bind(profile);
+        var generation = _profileViewGeneration;
+        var version = IsSelectedProfile(profile) ? ++_historyVersion : -1;
         SessionIndex index;
         IReadOnlyList<RecentFolder>? folders;
         try
@@ -36,10 +72,11 @@ public partial class MainWindow
         catch (Exception error)
         {
             Debug.WriteLine(error.GetType().Name);
-            index = _sessions is { } previousIndex ? previousIndex with { HasReadErrors = true } : new([], true);
+            index = IsSelectedProfile(profile) && generation == _profileViewGeneration && _sessions is { } previousIndex
+                ? previousIndex with { HasReadErrors = true } : new([], true);
             folders = null;
         }
-        if (_closing || version != _historyVersion)
+        if (_closing || !IsSelectedProfile(profile) || generation != _profileViewGeneration || version != _historyVersion)
             return index;
 
         var previous = _sessions?.Sessions.ToDictionary(session => session.Id);
@@ -60,23 +97,30 @@ public partial class MainWindow
 
     private async void ActivityTimer_Tick(object? sender, EventArgs e)
     {
+        var profile = LauncherProfiles.Selected;
+        using var scope = LauncherProfiles.Bind(profile);
+        foreach (var op in _operations.Where(op => op.Profile.Id != profile.Id))
+            RememberOwnedSession(op);
         if (RefreshLiveRows())
             RefreshHistoryView();
         await DiscoverAsync();
-        if (!_closing && _usageRead is null && _activeIds.Count != 0 && DateTime.UtcNow >= _nextUsagePoll)
+        if (!_closing && IsSelectedProfile(profile) && _usageRead is null && _activeIds.Count != 0 && DateTime.UtcNow >= _nextUsagePoll)
             ScheduleUsageRead(liveOnly: true);
     }
 
     private async Task DiscoverAsync()
     {
-        if (_discovering || _closing)
+        var profile = LauncherProfiles.Selected;
+        using var scope = LauncherProfiles.Bind(profile);
+        var generation = _profileViewGeneration;
+        if (_discoveryGeneration == generation || _closing)
             return;
 
-        _discovering = true;
+        _discoveryGeneration = generation;
         try
         {
             var discovered = await Task.Run(LiveTerminal.Discover);
-            if (_closing)
+            if (_closing || !IsSelectedProfile(profile) || generation != _profileViewGeneration)
                 return;
 
             var observed = new HashSet<int>();
@@ -97,7 +141,7 @@ public partial class MainWindow
                 _liveRows.Any(row => row.SessionId is Guid id && FindSession(id) is null))
             {
                 _lastTitleLookup = now;
-                await RefreshHistoriesAsync();
+                await RefreshHistoriesAsync(profile);
             }
         }
         catch (Exception exception)
@@ -106,7 +150,7 @@ public partial class MainWindow
         }
         finally
         {
-            _discovering = false;
+            if (_discoveryGeneration == generation) _discoveryGeneration = null;
         }
     }
 
@@ -115,7 +159,7 @@ public partial class MainWindow
         _externalRows.TryGetValue(terminal.ProcessId, out var row);
         var previous = row?.Terminal;
         if (terminal.SessionId is Guid id &&
-            !_operations.Any(operation => operation.Live?.Terminal.ProcessId == terminal.ProcessId))
+            !SelectedOperations.Any(operation => operation.Live?.Terminal.ProcessId == terminal.ProcessId))
         {
             if (previous is null || previous.StartedUtc != terminal.StartedUtc)
                 SessionRecency.Remember(id, terminal.StartedUtc);
@@ -132,22 +176,28 @@ public partial class MainWindow
 
     private SavedSession? FindSession(Guid id) => _sessions?.Sessions.FirstOrDefault(session => session.Id == id);
 
+    private static void RememberOwnedSession(LaunchOperation operation)
+    {
+        if (operation.Live is not { } row || (row.Terminal.SessionId ?? operation.Intent.SessionId) is not Guid id ||
+            operation.RememberedSession == id) return;
+        using var scope = LauncherProfiles.Bind(operation.Profile);
+        SessionRecency.Remember(id);
+        operation.RememberedSession = id;
+    }
+
     private bool RefreshLiveRows()
     {
+        using var scope = LauncherProfiles.Bind(LauncherProfiles.Selected);
         var rows = new List<LiveRow>();
         var claimedIds = new HashSet<Guid>();
         var claimedProcesses = new HashSet<int>();
-        foreach (var operation in _operations)
+        foreach (var operation in SelectedOperations)
         {
             if (operation.Live is not { } row)
                 continue;
 
             var id = row.Terminal.SessionId ?? operation.Intent.SessionId;
-            if (id is Guid session && operation.RememberedSession != session)
-            {
-                operation.RememberedSession = session;
-                SessionRecency.Remember(session);
-            }
+            RememberOwnedSession(operation);
 
             AppendLiveRow(row, id, rows, claimedIds, claimedProcesses);
         }
@@ -203,9 +253,10 @@ public partial class MainWindow
 
     private void RefreshHistoryView()
     {
+        using var scope = LauncherProfiles.Bind(LauncherProfiles.Selected);
         RefreshTree();
         var eligible = (_sessions?.Sessions ?? []).Where(session => !_activeIds.Contains(session.Id) &&
-            !_operations.Any(operation => operation.PendingSession == session.Id));
+            !SelectedOperations.Any(operation => operation.PendingSession == session.Id));
         var recent = SessionRecency.Order(eligible).Take(5)
             .Select(session => new SessionTreeRow(session, SessionRecency.LastUsedUtc(session), running: null))
             .ToArray();
@@ -252,6 +303,7 @@ public partial class MainWindow
 
     private void RefreshTree()
     {
+        using var scope = LauncherProfiles.Bind(LauncherProfiles.Selected);
         var query = HistorySearch.Text.Trim();
         if (_renderedSearch.Length == 0)
         {

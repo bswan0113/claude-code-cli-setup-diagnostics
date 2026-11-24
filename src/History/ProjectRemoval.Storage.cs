@@ -23,7 +23,7 @@ internal static partial class ProjectRemoval
         {
             string root = SessionRemoval.ProjectsRoot().ToUpperInvariant();
             string key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(root)));
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            return Path.Combine(ProfileDataPaths.LocalData,
                 "BlsLab", "ClaudeLauncher", "removed-projects", key);
         }
     }

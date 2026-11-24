@@ -21,16 +21,19 @@ public static class Diagnostics
     private static readonly TimeSpan InstallerExitTimeout = TimeSpan.FromSeconds(5);
 
     public static Task<DiagnosticResult> CheckAsync(string cwd) =>
-        Task.Run(() => RunAsync(cwd, repairCode: null, expectedDetail: null));
+        CheckWithCancellationAsync(cwd, CancellationToken.None);
 
-    internal static Task<DiagnosticResult> CheckWithCancellationAsync(string cwd, CancellationToken token) =>
-        Task.Run(() => RunAsync(cwd, null, null, token), token);
+    internal static Task<DiagnosticResult> CheckWithCancellationAsync(string cwd, CancellationToken token)
+    {
+        using var scope = LauncherProfiles.Bind(LauncherProfiles.Current);
+        return Task.Run(() => RunAsync(cwd, null, null, token), token);
+    }
 
     public static Task<DiagnosticResult> RepairAsync(string cwd, string code) =>
         RepairAsync(cwd, code, expectedDetail: null);
 
     public static Task<DiagnosticResult> RepairAsync(string cwd, string code, string? expectedDetail) =>
-        Task.Run(() => RepairWithLock(cwd, code, expectedDetail));
+        LauncherProfiles.RunBound(() => RepairWithLock(cwd, code, expectedDetail));
 
     private static DiagnosticResult RepairWithLock(string cwd, string code, string? expectedDetail)
     {

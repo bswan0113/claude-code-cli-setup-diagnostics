@@ -27,7 +27,7 @@ public static class SessionHistory
         AttributesToSkip = FileAttributes.ReparsePoint,
     };
 
-    public static Task<SessionIndex> LoadAsync() => Task.Run(Load);
+    public static Task<SessionIndex> LoadAsync() => LauncherProfiles.RunBound(Load);
 
     // Also used for a transcript moved to the launcher's trash, whose name now includes a suffix.
     internal static SavedSession? InspectTranscript(string path, Guid id)

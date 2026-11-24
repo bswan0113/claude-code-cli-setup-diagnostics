@@ -81,7 +81,7 @@ irm https://claude.ai/install.ps1 | iex
 
 런처 맨 위의 **＋**를 누르고 탭 이름을 입력한 뒤 **만들고 로그인**을 선택하세요. 새 프로필이 열리면 PowerShell과 브라우저에서 Claude Code 로그인을 마칩니다. 도중에 창을 닫았으면 **로그인** 버튼으로 다시 시작할 수 있습니다. 탭에는 직접 입력한 이름이 표시됩니다.
 
-다른 탭을 선택하면 해당 프로필로 런처가 다시 열립니다. 기본 계정 탭은 기존 Claude Code 설정을 쓰고, 추가 프로필은 각각의 `CLAUDE_CONFIG_DIR`에 설정과 로컬 세션 기록을 보관합니다. 이미 열린 터미널은 원래 프로필로 계속 실행됩니다. 복구나 세션 변경, 새 터미널 시작이 진행 중이면 작업이 끝난 뒤 탭을 전환하세요.
+탭을 누르면 같은 창에 그 계정의 프로젝트, 최근 세션, 실행 중인 터미널이 표시됩니다. 기본 계정 탭은 기존 Claude Code 설정을 쓰고, 추가 프로필은 각각의 `CLAUDE_CONFIG_DIR`에 설정과 로컬 세션 기록을 보관합니다. 탭을 바꿔도 시작 중이거나 이미 열린 터미널은 원래 계정에서 계속 실행됩니다. 로그인이나 세션 제거·복원 중에는 작업이 끝난 뒤 전환하세요. 설치·복구 화면이 열려 있으면 먼저 닫으세요.
 
 기본 탭의 설정 경로는 실행 시 지정된 `CLAUDE_CONFIG_DIR` 또는 `~/.claude`입니다. 추가 프로필의 경로는 `%LOCALAPPDATA%\BlsLab\ClaudeLauncher\profiles\<ID>\claude`이며 Claude Code가 로그인 정보도 여기에 저장합니다. CLI 설치와 Windows 사용자 PATH는 모든 탭이 함께 씁니다. 프로젝트 설정과 조직 정책도 적용됩니다. [Claude Code 다중 계정 로그인 안내](https://code.claude.com/docs/en/authentication#log-in-with-multiple-accounts)
 

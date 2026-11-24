@@ -15,6 +15,7 @@ internal sealed record CheckItem(int Stage, string Key, CheckState State, string
     public string? Revision { get; init; }
     public SettingsLocation? SettingsError { get; init; }
     public bool ManualNativeRecovery { get; init; }
+    internal string ProfileConfigRoot { get; init; } = ProfileDataPaths.Config;
 }
 
 internal sealed record RepairOutcome(bool Applied, DiagnosticResult? Failure = null);
@@ -23,6 +24,7 @@ internal static class FullDiagnostics
 {
     public static async Task<IReadOnlyList<CheckItem>> ScanAsync(string cwd, CancellationToken token)
     {
+        using var scope = LauncherProfiles.Bind(LauncherProfiles.Current);
         token.ThrowIfCancellationRequested();
         var system = Task.Run(() => InspectComputerAsync(token), token);
         var install = ScanGroupAsync(InstallChecks.ScanAsync, cwd, [2, 3, 4, 8], token);
@@ -120,8 +122,10 @@ internal static class FullDiagnostics
             WorkingFolder.Normalize(cwd) is null || !Directory.Exists(cwd))
             return Task.FromResult(new RepairOutcome(false));
 
-        return Task.Run(() =>
+        return LauncherProfiles.RunBound(() =>
         {
+            if (!string.Equals(approved.ProfileConfigRoot, ProfileDataPaths.Config, StringComparison.OrdinalIgnoreCase))
+                return new RepairOutcome(false);
             token.ThrowIfCancellationRequested();
             try
             {

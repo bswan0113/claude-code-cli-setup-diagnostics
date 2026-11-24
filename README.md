@@ -77,7 +77,7 @@ The sort menu beside **Folders and sessions** orders folders by last use, name o
 
 Use **＋** at the top of the launcher, enter a tab name and choose **Create and sign in**. In the new profile, complete Claude Code’s sign-in in PowerShell and your browser. If you close the sign-in window, **Sign in** lets you try again. The tab name is the label you chose.
 
-Select a tab to reopen the launcher with that profile. The default tab uses your existing Claude Code configuration. Additional profiles use their own `CLAUDE_CONFIG_DIR` for Claude Code settings and local session history. Switching tabs leaves running terminals in their original profile. If a repair, session change or terminal startup is underway, wait for it to finish before switching.
+Select a tab to show that account’s projects, recent sessions and running terminals in the same window. The default tab uses your existing Claude Code configuration. Additional profiles use their own `CLAUDE_CONFIG_DIR` for Claude Code settings and local session history. Terminals that are starting or already running stay with the account that opened them. Finish sign-in, close the setup and repair panel, or let a session removal or restore finish before switching.
 
 In the default tab, the launcher uses the configuration directory from startup, or `~/.claude`. For an added profile it uses `%LOCALAPPDATA%\BlsLab\ClaudeLauncher\profiles\<ID>\claude`. Claude Code stores the local sign-in there. The CLI installation and Windows user PATH are shared. Project and organization settings still apply. [Signing in with multiple accounts](https://code.claude.com/docs/en/authentication#log-in-with-multiple-accounts)
 

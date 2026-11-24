@@ -14,7 +14,8 @@ namespace ClaudeLauncher;
 public partial class MainWindow : Window
 {
     private readonly List<LaunchOperation> _operations = [];
-    private readonly Queue<SetupRequest> _setupQueue = [];
+    private readonly List<(LauncherProfile Profile, SetupRequest Request)> _setupQueue = [];
+    private LauncherProfile? _setupProfile;
     private readonly DispatcherTimer _activityTimer;
     private SetupPanel? _setup;
     private IInputElement? _returnFocus;
@@ -36,18 +37,12 @@ public partial class MainWindow : Window
         LanguagePicker.SelectedValue = UiLanguage.Current;
         Language = XmlLanguage.GetLanguage(UiLanguage.Current);
         FitInitialWindow();
-        RestoreSwitchPlacement();
         _initialized = true;
         UpdateLayoutMode();
         RefreshHistoryView();
         RenderInput();
         Loaded += async (_, _) =>
         {
-            if (!LauncherProfiles.AcceptHandoff())
-            {
-                Close();
-                return;
-            }
             if (_appearance.Sidebar)
                 PinSidebar(_appearance.SidebarRight, _appearance.SidebarMonitor);
             InitProfileTabs();
@@ -235,28 +230,33 @@ public partial class MainWindow : Window
         SetStatus("TerminalFocusUnavailable");
     }
 
-    private async Task LaunchAsync(LaunchIntent intent, bool afterRepair = false)
+    private static bool IsSelectedProfile(LauncherProfile profile) => profile.Id == LauncherProfiles.Selected.Id;
+    private IEnumerable<LaunchOperation> SelectedOperations => _operations.Where(op => IsSelectedProfile(op.Profile));
+
+    private async Task LaunchAsync(LaunchIntent intent, bool afterRepair = false, LauncherProfile? forProfile = null)
     {
-        if (_closing)
+        var profile = forProfile ?? LauncherProfiles.Selected;
+        using var scope = LauncherProfiles.Bind(profile);
+        if (_closing || !IsSelectedProfile(profile))
             return;
 
         if (intent.SessionId is Guid id)
         {
-            var existing = FindOwnedLive(id);
+            var existing = FindOwnedLive(id, profile);
             if (existing is not null)
             {
                 FocusTerminal(existing);
                 return;
             }
 
-            if (_operations.Any(operation => operation.PendingSession == id))
+            if (SelectedOperations.Any(operation => operation.PendingSession == id))
             {
                 SetStatus("SessionOpening");
                 return;
             }
         }
 
-        var operation = new LaunchOperation(intent, ++_nextTerminal);
+        var operation = new LaunchOperation(intent, ++_nextTerminal, profile);
         _operations.Add(operation);
         SetStatus(null);
         RefreshHistoryView();
@@ -265,25 +265,25 @@ public partial class MainWindow : Window
         {
             if (!await Task.Run(() => Directory.Exists(intent.Folder)))
             {
-                QueueSetup(new SetupRequest(intent.Folder, intent, new DiagnosticNotice("InvalidFolder")));
+                QueueSetup(new SetupRequest(intent.Folder, intent, new DiagnosticNotice("InvalidFolder")), profile);
                 return;
             }
 
-            if (intent.SessionId is Guid requested && await FindLiveBeforeStartAsync(requested) is { } active)
+            if (intent.SessionId is Guid requested && await FindLiveBeforeStartAsync(requested, profile) is { } active)
             {
-                FocusTerminal(active);
+                if (IsSelectedProfile(profile)) FocusTerminal(active);
                 return;
             }
             if (_closing)
                 return;
 
             result = await RunTerminalAsync(operation);
-            if (!afterRepair && intent.Mode == LaunchMode.Resume && result is { Status: "Failed", ExitCode: not null })
+            if (!afterRepair && IsSelectedProfile(profile) && intent.Mode == LaunchMode.Resume && result is { Status: "Failed", ExitCode: not null })
             {
-                var index = await RefreshHistoriesAsync();
+                var index = await RefreshHistoriesAsync(profile);
                 if (index.FallbackFolders.Contains(intent.Folder, StringComparer.OrdinalIgnoreCase) &&
                     index.Sessions.All(session => session.Id != intent.SessionId) &&
-                    await Task.Run(() => Directory.Exists(intent.Folder)))
+                    await Task.Run(() => Directory.Exists(intent.Folder)) && IsSelectedProfile(profile))
                 {
                     operation.Live = null;
                     operation.Intent = new LaunchIntent(intent.Folder, LaunchMode.Picker);
@@ -300,8 +300,9 @@ public partial class MainWindow : Window
         }
         finally
         {
+            RememberOwnedSession(operation);
             _operations.Remove(operation);
-            if (!_closing && (RefreshLiveRows() || intent.SessionId is not null))
+            if (!_closing && IsSelectedProfile(profile) && (RefreshLiveRows() || intent.SessionId is not null))
                 RefreshHistoryView();
         }
 
@@ -312,10 +313,10 @@ public partial class MainWindow : Window
         {
             case "Exited":
                 await Task.Run(() => FolderHistory.Remember(intent.Folder));
-                await RefreshHistoriesAsync();
+                if (IsSelectedProfile(profile)) await RefreshHistoriesAsync(profile);
                 return;
             case "Canceled":
-                SetStatus("TerminalCanceled");
+                if (IsSelectedProfile(profile)) SetStatus("TerminalCanceled");
                 return;
             case "Unknown":
                 return;
@@ -324,14 +325,14 @@ public partial class MainWindow : Window
         var effective = operation.Intent;
         if (result is { Status: "Failed", ExitCode: int exitCode })
         {
-            QueueSetup(new SetupRequest(effective.Folder, effective, new DiagnosticNotice("CliExitedWithError", ExitCode: exitCode)));
+            QueueSetup(new SetupRequest(effective.Folder, effective, new DiagnosticNotice("CliExitedWithError", ExitCode: exitCode)), profile);
             return;
         }
 
         var failure = new DiagnosticNotice(afterRepair ? "RetryFailed" : "LaunchFailed", ExitCode: result.ExitCode);
         var examine = !afterRepair && (result.Status is "CommandMissing" or "StartFailed" ||
             result is { Status: "Failed", ExitCode: null });
-        QueueSetup(new SetupRequest(effective.Folder, effective, failure, examine));
+        QueueSetup(new SetupRequest(effective.Folder, effective, failure, examine), profile);
     }
 
     private Task<LaunchResult> RunTerminalAsync(LaunchOperation operation)
@@ -348,29 +349,33 @@ public partial class MainWindow : Window
 
         void Started(LiveTerminal terminal)
         {
+            using var scope = LauncherProfiles.Bind(operation.Profile);
             if (_closing || !_operations.Contains(operation) || operation.Attempt != attempt)
                 return;
             operation.Live = new LiveRow(terminal, operation.Ordinal, owned: true);
+            RememberOwnedSession(operation);
+            if (!IsSelectedProfile(operation.Profile)) return;
             RefreshLiveRows();
             RefreshHistoryView();
         }
     }
 
-    private LiveRow? FindOwnedLive(Guid id) => _operations
+    private LiveRow? FindOwnedLive(Guid id, LauncherProfile profile) => _operations.Where(op => op.Profile.Id == profile.Id)
         .Select(operation => operation.Live)
         .FirstOrDefault(row => row is not null && row.Terminal.SessionId == id);
 
-    private async Task<LiveRow?> FindLiveBeforeStartAsync(Guid id)
+    private async Task<LiveRow?> FindLiveBeforeStartAsync(Guid id, LauncherProfile profile)
     {
         // A click can arrive before the first poll or after another app starts a session.
         var observed = await Task.Run(LiveTerminal.Discover);
-        var own = FindOwnedLive(id);
+        var own = FindOwnedLive(id, profile);
         if (own is not null)
             return own;
 
         var terminal = observed.FirstOrDefault(candidate => candidate.SessionId == id);
         if (terminal is null)
             return null;
+        if (!IsSelectedProfile(profile)) return new LiveRow(terminal, 0, owned: false);
 
         var row = UpdateExternalTerminal(terminal);
         RefreshLiveRows();
@@ -393,23 +398,30 @@ public partial class MainWindow : Window
         QueueSetup(new SetupRequest(cwd, folder is null ? null : new LaunchIntent(folder), Examine: true));
     }
 
-    private void QueueSetup(SetupRequest request)
+    private void QueueSetup(SetupRequest request, LauncherProfile? forProfile = null)
     {
         if (_closing)
             return;
 
-        _setupQueue.Enqueue(request);
-        if (_setup is null)
+        var profile = forProfile ?? LauncherProfiles.Selected;
+        _setupQueue.Add((profile, request));
+        if (_setup is null && IsSelectedProfile(profile))
             Dispatcher.BeginInvoke(OpenNextSetup);
     }
 
     private async void OpenNextSetup()
     {
-        if (_closing || _setup is not null || _appearancePanel is not null || !_setupQueue.TryDequeue(out var request))
+        if (_closing || _setup is not null || _appearancePanel is not null)
             return;
+        int next = _setupQueue.FindIndex(entry => IsSelectedProfile(entry.Profile));
+        if (next < 0) return;
+        var (profile, request) = _setupQueue[next];
+        _setupQueue.RemoveAt(next);
+        using var scope = LauncherProfiles.Bind(profile);
 
         var panel = new SetupPanel(request.Cwd, request.Intent, request.Examine ? null : request.Notice);
         _setup = panel;
+        _setupProfile = profile;
         panel.Finished += FinishSetup;
         ShowOverlay(panel);
         await panel.OpenAsync(request.Examine, request.Notice);
@@ -421,11 +433,13 @@ public partial class MainWindow : Window
             return;
 
         panel.Finished -= FinishSetup;
+        var profile = _setupProfile;
         _setup = null;
+        _setupProfile = null;
         HideOverlay();
 
-        if (retry is not null)
-            _ = LaunchAsync(retry, afterRepair: true);
+        if (retry is not null && profile is not null)
+            _ = LaunchAsync(retry, afterRepair: true, forProfile: profile);
         if (_setupQueue.Count > 0)
             Dispatcher.BeginInvoke(OpenNextSetup);
     }
@@ -459,8 +473,9 @@ public partial class MainWindow : Window
     private sealed record SetupRequest(string Cwd, LaunchIntent? Intent, DiagnosticNotice? Notice = null,
         bool Examine = false);
 
-    private sealed class LaunchOperation(LaunchIntent intent, int ordinal)
+    private sealed class LaunchOperation(LaunchIntent intent, int ordinal, LauncherProfile profile)
     {
+        public LauncherProfile Profile { get; } = profile;
         public LaunchIntent Intent { get; set; } = intent;
         public Guid? PendingSession => Live is null ? Intent.SessionId : null;
         public int Ordinal { get; } = ordinal;

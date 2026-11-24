@@ -12,12 +12,13 @@
     <sys:String x:Key="ProfileCancel">キャンセル</sys:String>
     <sys:String x:Key="ProfileListFailed">アカウントプロファイルを読み取れませんでした。ランチャーのローカル設定にアクセスできるか確認してください。</sys:String>
     <sys:String x:Key="ProfileCreateFailed">プロファイルを作成できませんでした。タブの名前とローカル設定フォルダーのアクセス権限を確認してください。</sys:String>
-    <sys:String x:Key="ProfileSwitchFailed">選択したプロファイルを開けませんでした。現在のプロファイルは開いたままです。</sys:String>
-    <sys:String x:Key="ProfileBusy">進行中の操作やターミナルの起動が終わってからやり直してください。</sys:String>
+    <sys:String x:Key="ProfileSwitchFailed">アカウントを切り替えられませんでした。元のタブが選択されています。</sys:String>
+    <sys:String x:Key="ProfileBusy">現在のアカウントの操作を終えるか、セットアップと修復画面を閉じてからやり直してください。</sys:String>
     <sys:String x:Key="ProfileSigningIn">PowerShell とブラウザーで Claude Code にログインしてください。</sys:String>
     <sys:String x:Key="ProfileLoginDone">現在のプロファイルでログインを確認しました。</sys:String>
     <sys:String x:Key="ProfileLoginCanceled">ログインを確認できませんでした。このタブのログインボタンからやり直してください。</sys:String>
     <sys:String x:Key="ProfileInvalidName">タブ名は 80 文字以内で、制御文字は使用できません。</sys:String>
-    <sys:String x:Key="ProfileSwitching">選択したプロファイルを開いています…</sys:String>
+    <sys:String x:Key="ProfileSwitching">選択したアカウントのセッションを読み込み中…</sys:String>
     <sys:String x:Key="ProfileDuplicateName">このタブ名はすでに使われています。別の名前を入力してください。</sys:String>
+    <sys:String x:Key="ProfileHistoryFailed">アカウントを切り替えましたが、セッション履歴を読み取れませんでした。設定フォルダーのアクセス権限を確認してください。</sys:String>
 </ResourceDictionary>

@@ -1,13 +1,12 @@
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Reflection;
-using System.Security;
 using System.Security.Principal;
 using System.Text.Json;
 
 namespace ClaudeLauncher;
 
-internal sealed record LauncherProfile(string Id, string Label, string ConfigRoot);
+internal sealed record LauncherProfile(string Id, string Label, string ConfigRoot)
+{
+    internal bool UsesStandardAccountState { get; init; }
+}
 
 internal static class LauncherProfiles
 {
@@ -21,29 +20,81 @@ internal static class LauncherProfiles
     private const string SwitchBounds = "BLSLAB_CLAUDE_LAUNCHER_SWITCH_BOUNDS";
 
     private static readonly string Store = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BlsLab", "ClaudeLauncher", "profiles");
+        ProfileDataPaths.LocalData, "BlsLab", "ClaudeLauncher", "profiles");
     private static readonly string RegistryPath = Path.Combine(Store, "profiles.json");
-    private static readonly string? ActiveId = Environment.GetEnvironmentVariable(ProfileId);
-    private static readonly string? OriginalRoot = ResolveOriginalRoot();
-    private static readonly Lazy<bool> HandoffAccepted = new(ConfirmHandoff);
-    private static int _loginPending = Environment.GetEnvironmentVariable(LoginRequest) is { } requested &&
-        requested == (ActiveId ?? DefaultId) ? 1 : 0;
+    // Older launcher versions switched accounts by starting a new process. Its saved default
+    // directory must take priority over the additional user's inherited CLAUDE_CONFIG_DIR.
+    private static readonly string? LegacyId = Environment.GetEnvironmentVariable(ProfileId);
+    private static readonly AsyncLocal<Binding?> Pinned = new();
+    private static LauncherProfile? _selected = ValidId(LegacyId)
+        ? Additional(LegacyId!, Environment.GetEnvironmentVariable(ProfileLabel) ?? LegacyId!) : null;
 
-    internal static bool IsAdditional => ValidId(ActiveId);
-    internal static LauncherProfile Current => IsAdditional
-        ? Additional(ActiveId!, Environment.GetEnvironmentVariable(ProfileLabel) ?? ActiveId!)
-        : Default;
-    private static LauncherProfile Default => new(DefaultId, "Default", OriginalRoot ??
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude"));
+    internal static LauncherProfile Selected => Volatile.Read(ref _selected) ?? Default;
+    internal static LauncherProfile Current => Pinned.Value?.Profile ?? Selected;
+    internal static bool IsAdditional => Current.Id != DefaultId;
+    internal static string? CurrentConfigOverride => ConfigOverride(Current);
+    private static string? ConfigOverride(LauncherProfile profile) => profile.UsesStandardAccountState ? null : profile.ConfigRoot;
+
+    private static LauncherProfile Default
+    {
+        get
+        {
+            var configured = ResolveOriginalRoot();
+            return new(DefaultId, "Default", configured ??
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude"))
+                { UsesStandardAccountState = configured is null };
+        }
+    }
+
     private static LauncherProfile Additional(string id, string label) => new(id, label, Path.Combine(Store, id, "claude"));
+
     internal static string? AccountStatePath(LauncherProfile profile)
     {
         if (profile.Id == DefaultId && SamePath(profile.ConfigRoot, Default.ConfigRoot))
-            return Path.Combine(OriginalRoot ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude.json");
+            return Path.Combine(profile.UsesStandardAccountState
+                ? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) : profile.ConfigRoot, ".claude.json");
         return ValidId(profile.Id) && SamePath(profile.ConfigRoot, Additional(profile.Id, profile.Label).ConfigRoot)
             ? Path.Combine(profile.ConfigRoot, ".claude.json") : null;
     }
-    internal static bool ConsumeLoginRequest() => Interlocked.Exchange(ref _loginPending, 0) == 1;
+
+    internal static LauncherProfile Select(LauncherProfile profile)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        var selected = profile.Id == DefaultId ? Default : List().FirstOrDefault(item => item.Id == profile.Id);
+        if (selected is null || !SamePath(selected.ConfigRoot, profile.ConfigRoot))
+            throw new InvalidDataException("The selected profile is no longer available.");
+        if (selected.Id != DefaultId)
+        {
+            EnsureStorage(selected.ConfigRoot, create: true);
+            EnsureStorage(PlatformConfig(selected), create: true);
+        }
+        Volatile.Write(ref _selected, selected.Id == DefaultId ? null : selected);
+        return selected;
+    }
+
+    internal static IDisposable Bind(LauncherProfile profile)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        var binding = new Binding(profile, Pinned.Value);
+        Pinned.Value = binding;
+        return binding;
+    }
+
+    // Task.Run captures the caller's ExecutionContext before this temporary binding is released.
+    internal static Task<T> RunBound<T>(Func<T> work, CancellationToken token = default)
+    {
+        using var scope = Bind(Current);
+        return Task.Run(work, token);
+    }
+
+    private sealed class Binding(LauncherProfile profile, Binding? previous) : IDisposable
+    {
+        internal LauncherProfile Profile { get; } = profile;
+        public void Dispose()
+        {
+            if (ReferenceEquals(Pinned.Value, this)) Pinned.Value = previous;
+        }
+    }
 
     internal static IReadOnlyList<LauncherProfile> List()
     {
@@ -96,86 +147,17 @@ internal static class LauncherProfiles
         finally { gate.ReleaseMutex(); }
     }
 
-    internal static bool SwitchTo(LauncherProfile profile, bool login = false, string? cwd = null,
-        string? windowPlacement = null)
-    {
-        try
-        {
-            var selected = List().FirstOrDefault(item => item.Id == profile.Id && SamePath(item.ConfigRoot, profile.ConfigRoot));
-            var folder = WorkingFolder.Normalize(cwd ?? Environment.CurrentDirectory);
-            var executable = Environment.ProcessPath;
-            if (selected is null || folder is null || !Directory.Exists(folder) || executable is null ||
-                Assembly.GetEntryAssembly() != typeof(LauncherProfiles).Assembly) return false;
-            var start = new ProcessStartInfo(executable) { UseShellExecute = false, WorkingDirectory = folder };
-            if (Path.GetFileName(executable).Equals("dotnet.exe", StringComparison.OrdinalIgnoreCase))
-            {
-                var assembly = Path.Combine(AppContext.BaseDirectory, typeof(LauncherProfiles).Assembly.GetName().Name + ".dll");
-                if (!File.Exists(assembly)) return false;
-                start.ArgumentList.Add(assembly);
-            }
-            var environment = start.Environment;
-            environment[ProfileId] = selected.Id;
-            environment[ProfileLabel] = selected.Label;
-            SetOrRemove(environment, OriginalConfig, OriginalRoot);
-            SetOrRemove(environment, LoginRequest, login ? selected.Id : null);
-            SetOrRemove(environment, SwitchBounds, windowPlacement);
-            SetOrRemove(environment, Config, selected.Id == DefaultId ? OriginalRoot : selected.ConfigRoot);
-            if (selected.Id != DefaultId)
-            {
-                EnsureStorage(selected.ConfigRoot, create: true);
-                EnsureStorage(PlatformConfig(selected), create: true);
-            }
-            var ticket = Guid.NewGuid().ToString("N");
-            environment[Handoff] = ticket;
-            using var ready = new EventWaitHandle(false, EventResetMode.ManualReset, EventName(ticket, "ready"), out var newReady);
-            using var accepted = new EventWaitHandle(false, EventResetMode.ManualReset, EventName(ticket, "accepted"), out var newAccepted);
-            if (!newReady || !newAccepted) return false;
-            using var child = Process.Start(start);
-            if (child is null) return false;
-            var timer = Stopwatch.StartNew();
-            do
-            {
-                if (child.HasExited) return false;
-                if (ready.WaitOne(100)) return accepted.Set();
-            } while (timer.Elapsed < TimeSpan.FromSeconds(12));
-            return false;
-        }
-        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or Win32Exception or
-            SecurityException or InvalidOperationException or ArgumentException or NotSupportedException or JsonException)
-        {
-            return false;
-        }
-    }
-
-    // Called after the child window is created and before login starts. If the original
-    // launcher timed out or closed, a late child exits instead of opening a second session UI.
-    internal static bool AcceptHandoff() => HandoffAccepted.Value;
-
-    private static bool ConfirmHandoff()
-    {
-        if (Environment.GetEnvironmentVariable(Handoff) is not { } ticket) return true;
-        if (!ValidId(ticket)) return false;
-        try
-        {
-            using var ready = EventWaitHandle.OpenExisting(EventName(ticket, "ready"));
-            using var accepted = EventWaitHandle.OpenExisting(EventName(ticket, "accepted"));
-            return ready.Set() && accepted.WaitOne(TimeSpan.FromSeconds(12));
-        }
-        catch (Exception e) when (e is WaitHandleCannotBeOpenedException or IOException or UnauthorizedAccessException) { return false; }
-    }
-
-    private static string EventName(string ticket, string state) => @"Local\BlsLab.ClaudeLauncher.Switch." + ticket + "." + state;
-
-    // Launcher-to-launcher switches retain the caller's process-only authentication. Only a
-    // Claude subprocess belonging to an additional claude.ai account receives this environment.
     internal static void ApplyCliEnvironment(IDictionary<string, string?> environment)
     {
+        var profile = Current;
+        environment.Remove(ProfileId);
+        environment.Remove(ProfileLabel);
+        environment.Remove(OriginalConfig);
         environment.Remove(LoginRequest);
         environment.Remove(Handoff);
         environment.Remove(SwitchBounds);
-        if (!IsAdditional) return;
-        var profile = Current;
-        environment[Config] = profile.ConfigRoot;
+        SetOrRemove(environment, Config, ConfigOverride(profile));
+        if (profile.Id == DefaultId) return;
         foreach (var variable in AccountOverrides) environment.Remove(variable);
         // The ant CLI's default profiles live outside CLAUDE_CONFIG_DIR. A global federation
         // profile can outrank a claude.ai login even after ANTHROPIC_PROFILE has been cleared.
@@ -230,7 +212,7 @@ internal static class LauncherProfiles
 
     private static string? ResolveOriginalRoot()
     {
-        var root = Environment.GetEnvironmentVariable(ValidId(ActiveId) ? OriginalConfig : Config);
+        var root = Environment.GetEnvironmentVariable(ValidId(LegacyId) ? OriginalConfig : Config);
         if (string.IsNullOrWhiteSpace(root)) return null;
         try { return Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)); }
         catch (Exception e) when (e is ArgumentException or IOException or NotSupportedException) { return root; }
@@ -244,7 +226,7 @@ internal static class LauncherProfiles
 
     private static void EnsureStorage(string path, bool create)
     {
-        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var local = ProfileDataPaths.LocalData;
         var current = local;
         foreach (var name in Path.GetRelativePath(local, path).Split(Path.DirectorySeparatorChar))
         {

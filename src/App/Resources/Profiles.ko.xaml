@@ -12,12 +12,13 @@
     <sys:String x:Key="ProfileCancel">취소</sys:String>
     <sys:String x:Key="ProfileListFailed">계정 프로필을 읽지 못했습니다. 런처의 로컬 설정에 접근할 수 있는지 확인하세요.</sys:String>
     <sys:String x:Key="ProfileCreateFailed">프로필을 만들지 못했습니다. 탭 이름과 로컬 설정 폴더의 접근 권한을 확인하세요.</sys:String>
-    <sys:String x:Key="ProfileSwitchFailed">선택한 프로필을 열지 못했습니다. 현재 프로필을 계속 사용합니다.</sys:String>
-    <sys:String x:Key="ProfileBusy">진행 중인 작업이나 터미널 시작이 끝난 뒤 다시 시도하세요.</sys:String>
+    <sys:String x:Key="ProfileSwitchFailed">계정을 전환하지 못했습니다. 이전 탭이 계속 선택돼 있습니다.</sys:String>
+    <sys:String x:Key="ProfileBusy">진행 중인 계정 작업을 마치거나 설치·복구 화면을 닫은 뒤 다시 시도하세요.</sys:String>
     <sys:String x:Key="ProfileSigningIn">PowerShell과 브라우저에서 Claude Code 로그인을 진행하세요.</sys:String>
     <sys:String x:Key="ProfileLoginDone">현재 프로필의 로그인을 확인했습니다.</sys:String>
     <sys:String x:Key="ProfileLoginCanceled">로그인을 확인하지 못했습니다. 이 탭의 로그인 버튼으로 다시 시도하세요.</sys:String>
     <sys:String x:Key="ProfileInvalidName">탭 이름은 제어 문자를 제외하고 80자까지 입력할 수 있습니다.</sys:String>
-    <sys:String x:Key="ProfileSwitching">선택한 프로필을 여는 중…</sys:String>
+    <sys:String x:Key="ProfileSwitching">선택한 계정의 세션을 불러오는 중…</sys:String>
     <sys:String x:Key="ProfileDuplicateName">이미 사용 중인 탭 이름입니다. 다른 이름을 입력하세요.</sys:String>
+    <sys:String x:Key="ProfileHistoryFailed">계정은 전환됐지만 세션 기록을 읽지 못했습니다. 해당 계정의 설정 폴더에 접근할 수 있는지 확인하세요.</sys:String>
 </ResourceDictionary>

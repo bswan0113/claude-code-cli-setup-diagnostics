@@ -62,7 +62,7 @@ public partial class MainWindow
         var paths = folders.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var ids = sessions.Select(session => session.Id).ToHashSet();
         return ids.Overlaps(_activeIds) || _liveRows.Any(row => paths.Contains(row.Terminal.Folder)) ||
-            _operations.Any(op => paths.Contains(op.Intent.Folder) ||
+            SelectedOperations.Any(op => paths.Contains(op.Intent.Folder) ||
                 op.PendingSession is Guid pending && ids.Contains(pending) ||
                 op.Live?.SessionId is Guid live && ids.Contains(live) ||
                 op.RememberedSession is Guid remembered && ids.Contains(remembered));
@@ -73,6 +73,7 @@ public partial class MainWindow
     {
         if (_changingSessions || _closing || folders.Count + sessions.Count == 0)
             return false;
+        using var profileScope = LauncherProfiles.Bind(LauncherProfiles.Selected);
         _changingSessions = true;
         try
         {

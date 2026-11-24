@@ -12,12 +12,13 @@
     <sys:String x:Key="ProfileCancel">取消</sys:String>
     <sys:String x:Key="ProfileListFailed">无法读取账户配置。请检查启动器本地设置的访问权限。</sys:String>
     <sys:String x:Key="ProfileCreateFailed">无法创建配置。请检查标签名称和本地设置目录的访问权限。</sys:String>
-    <sys:String x:Key="ProfileSwitchFailed">无法打开所选配置，当前配置仍保持打开。</sys:String>
-    <sys:String x:Key="ProfileBusy">请等当前操作或终端启动完成后重试。</sys:String>
+    <sys:String x:Key="ProfileSwitchFailed">无法切换账户，仍停留在之前的标签。</sys:String>
+    <sys:String x:Key="ProfileBusy">请先完成当前账户的操作，或关闭安装和修复面板，然后重试。</sys:String>
     <sys:String x:Key="ProfileSigningIn">请在 PowerShell 和浏览器中登录 Claude Code。</sys:String>
     <sys:String x:Key="ProfileLoginDone">已确认当前配置的登录状态。</sys:String>
     <sys:String x:Key="ProfileLoginCanceled">未能确认登录。请点击此标签上的“登录”重试。</sys:String>
     <sys:String x:Key="ProfileInvalidName">标签名称最多可输入 80 个字符，不支持控制字符。</sys:String>
-    <sys:String x:Key="ProfileSwitching">正在打开所选配置…</sys:String>
+    <sys:String x:Key="ProfileSwitching">正在加载此账户的会话…</sys:String>
     <sys:String x:Key="ProfileDuplicateName">此标签名称已被使用，请输入其他名称。</sys:String>
+    <sys:String x:Key="ProfileHistoryFailed">已切换账户，但无法读取其会话记录。请检查该账户配置目录的访问权限。</sys:String>
 </ResourceDictionary>

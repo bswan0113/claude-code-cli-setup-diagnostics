@@ -77,7 +77,7 @@ irm https://claude.ai/install.ps1 | iex
 
 点击启动器顶部的 **＋**，输入标签名称，再选择**创建并登录**。在新配置中通过 PowerShell 和浏览器完成 Claude Code 登录。如果中途关闭了登录窗口，可点击**登录**重试。标签显示你输入的名称。
 
-选择另一个标签后，启动器会使用对应的配置重新打开。默认账户使用原有的 Claude Code 配置。新增的配置使用各自的 `CLAUDE_CONFIG_DIR` 存储设置和本地会话记录。已打开的终端继续使用原配置。修复、会话更改或终端启动过程中，请等操作完成后再切换。
+点击标签后，同一窗口会显示该账户的项目、最近会话和正在运行的终端。默认账户使用原有的 Claude Code 配置。新增的配置使用各自的 `CLAUDE_CONFIG_DIR` 存储设置和本地会话记录。正在启动或已经打开的终端继续使用原账户。登录、移除或恢复会话时，请等操作完成后再切换。如果安装和修复面板已打开，请先关闭。
 
 默认标签使用启动时指定的配置目录或 `~/.claude`。新增配置使用 `%LOCALAPPDATA%\BlsLab\ClaudeLauncher\profiles\<ID>\claude`，Claude Code 也会在此保存该账户的登录信息。各标签共用 CLI 安装和 Windows 用户 PATH。项目设置和组织策略仍然适用。 [Claude Code 多账户登录](https://code.claude.com/docs/en/authentication#log-in-with-multiple-accounts)
 

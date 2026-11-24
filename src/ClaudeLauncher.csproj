@@ -16,6 +16,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Using Include="System.IO" />
+    <!-- Keep the language dictionaries verbatim in the app's WPF resources. A language edit
+         then goes straight into the assembly without relying on cached BAML from a prior build. -->
+    <Page Remove="App/Resources/*.en.xaml;App/Resources/*.ko.xaml;App/Resources/*.ja.xaml;App/Resources/*.zh-Hans.xaml" />
+    <Resource Include="App/Resources/*.en.xaml;App/Resources/*.ko.xaml;App/Resources/*.ja.xaml;App/Resources/*.zh-Hans.xaml" />
     <Page Remove="App/App.xaml" />
     <ApplicationDefinition Include="App/App.xaml" />
   </ItemGroup>

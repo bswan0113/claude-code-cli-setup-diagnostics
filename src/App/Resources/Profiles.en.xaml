@@ -12,12 +12,13 @@
     <sys:String x:Key="ProfileCancel">Cancel</sys:String>
     <sys:String x:Key="ProfileListFailed">Could not read the account profiles. Check access to the launcher’s local settings.</sys:String>
     <sys:String x:Key="ProfileCreateFailed">Could not create this profile. Check the tab name and access to the local settings.</sys:String>
-    <sys:String x:Key="ProfileSwitchFailed">Could not open the selected profile. The current profile is still open.</sys:String>
-    <sys:String x:Key="ProfileBusy">Wait for the current operation or terminal startup to finish, then try again.</sys:String>
+    <sys:String x:Key="ProfileSwitchFailed">Could not select that account. The previous tab is still selected.</sys:String>
+    <sys:String x:Key="ProfileBusy">Finish the current account operation or close the setup and repair panel, then try again.</sys:String>
     <sys:String x:Key="ProfileSigningIn">Sign in to Claude Code in PowerShell and your browser.</sys:String>
     <sys:String x:Key="ProfileLoginDone">Sign-in confirmed for the current profile.</sys:String>
     <sys:String x:Key="ProfileLoginCanceled">Sign-in could not be confirmed. Use Sign in on this tab to try again.</sys:String>
     <sys:String x:Key="ProfileInvalidName">Use up to 80 characters with no control characters.</sys:String>
-    <sys:String x:Key="ProfileSwitching">Opening the selected profile…</sys:String>
+    <sys:String x:Key="ProfileSwitching">Loading this account’s sessions…</sys:String>
     <sys:String x:Key="ProfileDuplicateName">This tab name is already in use. Choose another name.</sys:String>
+    <sys:String x:Key="ProfileHistoryFailed">This account is selected, but its session history could not be loaded. Check access to its configuration directory.</sys:String>
 </ResourceDictionary>

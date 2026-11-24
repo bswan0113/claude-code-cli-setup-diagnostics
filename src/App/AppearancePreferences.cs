@@ -17,7 +17,7 @@ internal sealed record AppearancePreferences(bool DarkMode = false, int FontPerc
     public double? SidebarHeight { get; init; }
 
     private static readonly string Store = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        ProfileDataPaths.LocalData,
         "ClaudeCodeSetupDiagnostics", "appearance.json");
 
     public static AppearancePreferences Load()

@@ -8,6 +8,7 @@ public partial class MainWindow
     {
         // Auth status and interactive sign-in use the same profile-bound child environment as terminals.
         var cwd = Environment.SystemDirectory;
+        using var profileScope = LauncherProfiles.Bind(LauncherProfiles.Selected);
         SetStatus("ProfileSigningIn");
         try
         {

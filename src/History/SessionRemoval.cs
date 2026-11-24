@@ -69,7 +69,7 @@ internal static class SessionRemoval
             return RestoreLocked(id, original, session.ArchivePath, session.ModifiedUtc, token);
         }, token);
 
-    private static Task<SessionRemovalResult> Run(Func<string> operation, CancellationToken token) => Task.Run(() =>
+    private static Task<SessionRemovalResult> Run(Func<string> operation, CancellationToken token) => LauncherProfiles.RunBound(() =>
     {
         token.ThrowIfCancellationRequested();
         try { return new SessionRemovalResult(WithMutationLock(operation)); }
@@ -77,7 +77,7 @@ internal static class SessionRemoval
     }, token);
 
     internal static Task<IReadOnlyList<RemovedSession>> ListRemovedAsync(CancellationToken token = default) =>
-        Task.Run<IReadOnlyList<RemovedSession>>(() =>
+        LauncherProfiles.RunBound<IReadOnlyList<RemovedSession>>(() =>
         {
             string root = ProjectsRoot();
             var result = new List<RemovedSession>();

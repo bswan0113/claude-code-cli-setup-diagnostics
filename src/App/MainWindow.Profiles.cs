@@ -9,8 +9,10 @@ public partial class MainWindow
 {
     private bool _profileSigningIn;
     private bool _profileSwitching;
-    private bool _initialProfileLoginChecked;
     private int _profileTabGeneration;
+    private int _profileSelectionGeneration;
+    private IReadOnlyList<LauncherProfile> _renderedProfiles = [];
+    private string? _profileTabLanguage;
     private static readonly Lazy<HashSet<string>> DefaultProfileNames = new(() =>
         new[] { "en", "ko", "zh-Hans", "ja" }.Select(language =>
         {
@@ -32,51 +34,23 @@ public partial class MainWindow
     private async void InitProfileTabs()
     {
         var generation = ++_profileTabGeneration;
+        var current = LauncherProfiles.Selected;
+        bool StillCurrent() => !_closing && generation == _profileTabGeneration &&
+            current.Id == LauncherProfiles.Selected.Id;
         try
         {
             var profiles = await Task.Run(LauncherProfiles.List);
-            if (_closing || generation != _profileTabGeneration)
+            if (!StillCurrent())
                 return;
 
-            var current = LauncherProfiles.Current;
-            var labels = profiles.ToLookup(ProfileLabel, StringComparer.OrdinalIgnoreCase);
-            var buttons = new List<Button>(profiles.Count);
-            foreach (var profile in profiles)
+            if (_profileTabLanguage != UiLanguage.Current || !_renderedProfiles.SequenceEqual(profiles))
             {
-                var active = profile.Id == current.Id;
-                var name = ProfileLabel(profile);
-                if (profile.Id != "default" && labels[name].Skip(1).Any())
-                    name += " · " + profile.Id[..Math.Min(8, profile.Id.Length)];
-                var button = new Button
-                {
-                    Tag = profile, Style = (Style)FindResource(active ? "PrimaryAction" : "Action"),
-                    Content = new TextBlock { Text = name, TextTrimming = TextTrimming.CharacterEllipsis },
-                    ToolTip = name + Environment.NewLine + profile.ConfigRoot,
-                    Padding = new Thickness(10, 2, 10, 2), Margin = new Thickness(0, 0, 4, 0),
-                    MinHeight = 26, MaxWidth = 195
-                };
-                AutomationProperties.SetName(button, name);
-                AutomationProperties.SetAutomationId(button, "AccountTab_" + profile.Id);
-                if (active)
-                {
-                    AutomationProperties.SetItemStatus(button, ProfileText("Current"));
-                    button.Loaded += (_, _) => button.BringIntoView();
-                }
-                button.Click += SwitchProfile_Click;
-                buttons.Add(button);
-            }
-            ProfileTabs.ItemsSource = buttons;
-            if (!_initialProfileLoginChecked)
-            {
-                _initialProfileLoginChecked = true;
-                if (LauncherProfiles.ConsumeLoginRequest())
-                {
-                    await SignInFromTabAsync();
-                    return;
-                }
+                RenderProfileTabs(profiles, current);
+                _renderedProfiles = profiles;
+                _profileTabLanguage = UiLanguage.Current;
             }
             await SessionOwnerProfiles.RefreshAsync(profiles);
-            if (!_closing && generation == _profileTabGeneration && _sessions is { } index)
+            if (StillCurrent() && _sessions is { } index)
             {
                 var saved = index.Sessions.ToDictionary(session => session.Id);
                 var rows = _shownFolders.SelectMany(folder => folder.Children.OfType<SessionTreeRow>())
@@ -91,8 +65,47 @@ public partial class MainWindow
         }
         catch (Exception error) when (ProfileAccessError(error))
         {
-            if (!_closing && generation == _profileTabGeneration)
+            if (StillCurrent())
                 SetStatus("ProfileListFailed");
+        }
+    }
+
+    private void RenderProfileTabs(IReadOnlyList<LauncherProfile> profiles, LauncherProfile current)
+    {
+        var labels = profiles.ToLookup(ProfileLabel, StringComparer.OrdinalIgnoreCase);
+        var buttons = new List<Button>(profiles.Count);
+        foreach (var profile in profiles)
+        {
+            var name = ProfileLabel(profile);
+            if (profile.Id != "default" && labels[name].Skip(1).Any())
+                name += " · " + profile.Id[..Math.Min(8, profile.Id.Length)];
+            var button = new Button
+            {
+                Tag = profile, Content = new TextBlock { Text = name, TextTrimming = TextTrimming.CharacterEllipsis },
+                ToolTip = name + Environment.NewLine + profile.ConfigRoot,
+                Padding = new Thickness(10, 2, 10, 2), Margin = new Thickness(0, 0, 4, 0),
+                MinHeight = 26, MaxWidth = 195
+            };
+            AutomationProperties.SetName(button, name);
+            AutomationProperties.SetAutomationId(button, "AccountTab_" + profile.Id);
+            if (current.Id == profile.Id)
+                button.Loaded += (_, _) => { if (LauncherProfiles.Selected.Id == profile.Id) button.BringIntoView(); };
+            button.Click += SwitchProfile_Click;
+            buttons.Add(button);
+        }
+        ProfileTabs.ItemsSource = buttons;
+        HighlightProfile(current);
+    }
+
+    private void HighlightProfile(LauncherProfile selected)
+    {
+        foreach (var button in ProfileTabs.Items.OfType<Button>())
+        {
+            var active = button.Tag is LauncherProfile profile && profile.Id == selected.Id;
+            button.Style = (Style)FindResource(active ? "PrimaryAction" : "Action");
+            AutomationProperties.SetItemStatus(button, active ? ProfileText("Current") : "");
+            if (active && button.IsLoaded)
+                button.BringIntoView();
         }
     }
 
@@ -100,8 +113,7 @@ public partial class MainWindow
     {
         if (_closing || _profileSwitching || _profileSigningIn)
             return false;
-        if (_setup?.IsBusy == true || _changingSessions ||
-            _operations.Any(operation => operation.Live is null || operation.Live.Activity == "Starting"))
+        if (_setup is not null || _changingSessions)
         {
             SetStatus("ProfileBusy");
             return false;
@@ -111,7 +123,7 @@ public partial class MainWindow
 
     private async void SwitchProfile_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button { Tag: LauncherProfile selected } || selected.Id == LauncherProfiles.Current.Id ||
+        if (sender is not Button { Tag: LauncherProfile selected } || selected.Id == LauncherProfiles.Selected.Id ||
             !CanUseProfileAction())
             return;
         await SwitchProfileAsync(selected);
@@ -119,33 +131,42 @@ public partial class MainWindow
 
     private async Task SwitchProfileAsync(LauncherProfile profile, bool signIn = false)
     {
-        _profileSwitching = true;
-        LauncherSurface.IsEnabled = false;
+        LauncherProfile selected;
         try
         {
-            SetStatus("ProfileSwitching");
-            var placement = CaptureSwitchPlacement();
-            if (await Task.Run(() => LauncherProfiles.SwitchTo(profile, signIn, windowPlacement: placement)))
-            {
-                _profileSwitching = false;
-                Close();
-                return;
-            }
-            SetStatus("ProfileSwitchFailed");
+            // Selection is published only after the registry entry and its directories are validated.
+            selected = LauncherProfiles.Select(profile);
         }
         catch (Exception error) when (ProfileAccessError(error))
         {
             SetStatus("ProfileSwitchFailed");
+            return;
         }
-        finally
+
+        var generation = ++_profileSelectionGeneration;
+        bool StillSelected() => !_closing && generation == _profileSelectionGeneration &&
+            selected.Id == LauncherProfiles.Selected.Id;
+        HighlightProfile(selected);
+        try
         {
-            _profileSwitching = false;
-            if (!_closing)
-            {
-                LauncherSurface.IsEnabled = true;
-                InitProfileTabs();
-            }
+            // Reset clears the old rows before its first await. New tab clicks can supersede the disk read.
+            var refresh = ResetProfileHistoryAsync();
+            SetStatus("ProfileSwitching");
+            InitProfileTabs();
+            await refresh;
         }
+        catch (Exception error) when (ProfileAccessError(error))
+        {
+            if (StillSelected())
+                SetStatus("ProfileHistoryFailed");
+            return;
+        }
+        if (!StillSelected())
+            return;
+        if (_status == "ProfileSwitching")
+            SetStatus(null);
+        if (signIn)
+            await SignInFromTabAsync();
     }
 
     private async void AddProfile_Click(object sender, RoutedEventArgs e)

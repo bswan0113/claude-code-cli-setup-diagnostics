@@ -19,6 +19,8 @@ internal static partial class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        if (args is ["--profile-tabs-only"])
+            return RunProfileTabsFixture();
         if (args is ["--focus-child", var focusRoot])
             return RunFocusChild(focusRoot);
         if (args is ["--guided-only", var captureDirectory])

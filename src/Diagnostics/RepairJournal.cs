@@ -19,11 +19,12 @@ internal static partial class RepairJournal
     private static readonly AsyncLocal<Operation?> Current = new();
     private static readonly Guid Instance = Guid.NewGuid();
     private static readonly string Base = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-    private static readonly string Folder = ProfileDataPaths.LocalStore(Path.Combine(Base, "ClaudeCodeSetupDiagnostics", "repair-history"));
+    private static string Folder => ProfileDataPaths.LocalStore(Path.Combine(Base, "ClaudeCodeSetupDiagnostics", "repair-history"));
 
     internal static async Task<T> TrackAsync<T>(string action, Func<Task<T>> execute, Func<T, bool> changed,
         string? subject = null)
     {
+        using var scope = LauncherProfiles.Bind(LauncherProfiles.Current);
         if (action.Length is 0 or > 80 || !action.All(char.IsAsciiLetterOrDigit))
             throw new ArgumentException("Invalid repair action.", nameof(action));
         var previous = Current.Value;
@@ -93,6 +94,7 @@ internal static partial class RepairJournal
 
     private static Entry[] Entries()
     {
+        using var scope = LauncherProfiles.Bind(LauncherProfiles.Current);
         GuardPath(Folder);
         IEnumerable<string> files;
         try { files = Directory.GetFiles(Folder, "*.bin"); }
@@ -110,8 +112,15 @@ internal static partial class RepairJournal
             .OrderByDescending(entry => entry.At).ThenByDescending(entry => entry.Id).ToArray();
     }
 
-    internal static Task<bool> UndoAsync(Guid id, CancellationToken token) => Task.Run(() =>
+    internal static Task<bool> UndoAsync(Guid id, CancellationToken token)
     {
+        var profile = LauncherProfiles.Current;
+        return Task.Run(() => UndoWithLock(id, profile, token), token);
+    }
+
+    private static bool UndoWithLock(Guid id, LauncherProfile profile, CancellationToken token)
+    {
+        using var scope = LauncherProfiles.Bind(profile);
         token.ThrowIfCancellationRequested();
         using var identity = WindowsIdentity.GetCurrent();
         if (identity.User is null)
@@ -121,10 +130,11 @@ internal static partial class RepairJournal
         catch (AbandonedMutexException) { }
         try { return UndoLockedAsync(id, token).GetAwaiter().GetResult(); }
         finally { mutex.ReleaseMutex(); }
-    }, token);
+    }
 
     internal static async Task<bool> UndoLockedAsync(Guid id, CancellationToken token)
     {
+        using var scope = LauncherProfiles.Bind(LauncherProfiles.Current);
         var entry = Load(id);
         if (!CanUndo(entry) || entry.Plan is not { } plan)
             return false;

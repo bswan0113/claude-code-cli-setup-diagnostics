@@ -219,6 +219,8 @@ internal static partial class Program
         var runtime = new DirectoryInfo(RuntimeEnvironment.GetRuntimeDirectory());
         info.Environment["DOTNET_ROOT"] = runtime.Parent!.Parent!.Parent!.FullName;
         info.Environment.Remove(MarkerName);
+        info.Environment.Remove("CLAUDE_QA_CONSOLE_READY");
+        info.Environment.Remove("DOTNET_STARTUP_HOOKS");
         info.ArgumentList.Add("--qa-hold");
         info.ArgumentList.Add(stop);
         var process = Process.Start(info) ?? throw new InvalidOperationException("Synthetic process did not start.");

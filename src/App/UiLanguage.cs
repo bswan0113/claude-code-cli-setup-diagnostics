@@ -7,7 +7,7 @@ namespace ClaudeLauncher;
 internal static class UiLanguage
 {
     private static readonly string PreferencePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        ProfileDataPaths.LocalData,
         "ClaudeCodeSetupDiagnostics", "language.txt");
 
     private static ResourceDictionary? _translation;
@@ -80,7 +80,7 @@ internal static class UiLanguage
         }
     }
 
-    public static string Text(string key) => (string)Application.Current.FindResource(key);
+    public static string Text(string key) => TryText(key) ?? key;
 
     public static string? TryText(string key) => Application.Current.TryFindResource(key) as string;
 

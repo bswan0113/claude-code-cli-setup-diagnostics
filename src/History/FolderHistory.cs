@@ -12,10 +12,10 @@ public static class FolderHistory
     private const int HistoryLimit = 100;
 
     private static string StorePath => ProfileDataPaths.LocalStore(Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        ProfileDataPaths.LocalData,
         "BlsLab", "ClaudeLauncher", "recent-folders.json"));
 
-    public static Task<IReadOnlyList<RecentFolder>> LoadAsync() => Task.Run<IReadOnlyList<RecentFolder>>(() =>
+    public static Task<IReadOnlyList<RecentFolder>> LoadAsync() => LauncherProfiles.RunBound<IReadOnlyList<RecentFolder>>(() =>
     {
         var folders = ReadLocal(StorePath);
         return Sort(folders).Where(folder => !WorkingFolder.IsClaudeScratchpad(folder.Path)).Take(HistoryLimit).ToArray();

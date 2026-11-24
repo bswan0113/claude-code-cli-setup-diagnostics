@@ -5,13 +5,18 @@ namespace ClaudeLauncher;
 
 internal static class ProfileDataPaths
 {
+    internal static readonly string LocalData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
     private static string Home => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
     private static string StandardRoot => Path.Combine(Home, ".claude");
-    private static string? Override => Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR");
-    internal static string Config => LauncherProfiles.IsAdditional ? LauncherProfiles.Current.ConfigRoot :
-        string.IsNullOrWhiteSpace(Override) ? StandardRoot : Override;
-    internal static string AccountState => Path.Combine(!LauncherProfiles.IsAdditional && string.IsNullOrWhiteSpace(Override)
-        ? Home : Config, ".claude.json");
+    internal static string Config => LauncherProfiles.Current.ConfigRoot;
+    internal static string AccountState
+    {
+        get
+        {
+            var profile = LauncherProfiles.Current;
+            return Path.Combine(profile.UsesStandardAccountState ? Home : profile.ConfigRoot, ".claude.json");
+        }
+    }
 
     // Preserve existing launcher data for the ordinary Claude profile.
     internal static string LocalStore(string legacyPath)

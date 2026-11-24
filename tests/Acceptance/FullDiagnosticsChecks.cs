@@ -449,10 +449,11 @@ internal static partial class Program
     {
         var type = install.GetNestedType("InstallPaths", BindingFlags.NonPublic)!;
         var paths = Activator.CreateInstance(type, nonPublic: true)!;
-        foreach (var name in new[] { "Profile", "LocalAppData", "Roaming" })
+        foreach (var name in new[] { "Profile", "LocalAppData", "Roaming", "ConfigRoot" })
         {
-            type.GetField($"<{name}>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(paths, profile);
-            Require(string.Equals(type.GetProperty(name)!.GetValue(paths) as string, profile, StringComparison.Ordinal),
+            var isolated = name == "ConfigRoot" ? Path.Combine(profile, ".claude") : profile;
+            type.GetField($"<{name}>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(paths, isolated);
+            Require(string.Equals(type.GetProperty(name)!.GetValue(paths) as string, isolated, StringComparison.Ordinal),
                 $"The fixture install paths did not isolate {name}.");
         }
         return paths;

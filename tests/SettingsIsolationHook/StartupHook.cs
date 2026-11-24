@@ -51,7 +51,7 @@ public static class StartupHook
         finally { File.Delete(request); }
     }
 
-    private static void Redirect(Assembly app, string typeName, string fieldName, string path)
+    public static void Redirect(Assembly app, string typeName, string fieldName, string path)
     {
         var type = app.GetType(typeName, throwOnError: true)!;
         var field = type.GetField(fieldName, BindingFlags.Static | BindingFlags.NonPublic)

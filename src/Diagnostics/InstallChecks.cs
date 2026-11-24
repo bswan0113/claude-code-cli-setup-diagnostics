@@ -205,11 +205,12 @@ internal static partial class InstallChecks
         public string Profile { get; } = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         public string LocalAppData { get; } = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         public string Roaming { get; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        public string ConfigRoot { get; } = ProfileDataPaths.Config;
         public string Bin => Path.Combine(Profile, ".local", "bin");
         public string Native => Path.Combine(Bin, "claude.exe");
         public string Versions => Path.Combine(Profile, ".local", "share", "claude", "versions");
-        public string Legacy => Path.Combine(ProfileDataPaths.Config, "local");
-        public string Downloads => Path.Combine(ProfileDataPaths.Config, "downloads");
+        public string Legacy => Path.Combine(ConfigRoot, "local");
+        public string Downloads => Path.Combine(ConfigRoot, "downloads");
         public string UserWinGet => Diagnostics.UserWinGetClaude;
         public string MachineWinGet => Diagnostics.MachineWinGetClaude;
         public string UserWinGetLink => Path.Combine(WinGetLinksFor(LocalAppData), "claude.exe");

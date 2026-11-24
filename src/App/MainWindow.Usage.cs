@@ -10,6 +10,8 @@ public partial class MainWindow
 
     private void ScheduleUsageRead(bool liveOnly)
     {
+        var profile = LauncherProfiles.Selected;
+        using var scope = LauncherProfiles.Bind(profile);
         if (_usageRead is not null)
         {
             _usageRescanQueued |= !liveOnly;
@@ -31,11 +33,13 @@ public partial class MainWindow
 
         var source = new CancellationTokenSource();
         _usageRead = source;
-        _ = ReadUsageAsync(sessions, priority, source);
+        _ = ReadUsageAsync(sessions, priority, source, profile, _profileViewGeneration);
     }
 
-    private async Task ReadUsageAsync(SavedSession[] sessions, HashSet<Guid> priority, CancellationTokenSource source)
+    private async Task ReadUsageAsync(SavedSession[] sessions, HashSet<Guid> priority, CancellationTokenSource source,
+        LauncherProfile profile, int generation)
     {
+        using var scope = LauncherProfiles.Bind(profile);
         using (source)
         {
             try
@@ -64,7 +68,8 @@ public partial class MainWindow
                         }
                         return changed;
                     }, source.Token);
-                    if (source.IsCancellationRequested || _closing || _sessions is not { } current)
+                    if (source.IsCancellationRequested || _closing || !IsSelectedProfile(profile) ||
+                        generation != _profileViewGeneration || _sessions is not { } current)
                         return;
                     if (changes.Count == 0)
                         continue;
@@ -80,11 +85,13 @@ public partial class MainWindow
             finally
             {
                 if (ReferenceEquals(_usageRead, source))
-                    _usageRead = null;
-                if (_usageRescanQueued && !_closing)
                 {
-                    _usageRescanQueued = false;
-                    ScheduleUsageRead(liveOnly: false);
+                    _usageRead = null;
+                    if (_usageRescanQueued && !_closing && IsSelectedProfile(profile) && generation == _profileViewGeneration)
+                    {
+                        _usageRescanQueued = false;
+                        ScheduleUsageRead(liveOnly: false);
+                    }
                 }
             }
         }
