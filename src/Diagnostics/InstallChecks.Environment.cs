@@ -207,6 +207,7 @@ internal static partial class InstallChecks
         }
 
         token.ThrowIfCancellationRequested();
+        RepairJournal.PreparePaths(preferred.PathEntry, persist ? user.Raw : null, user.Kind, processPath);
         if (persist)
         {
             using var key = Registry.CurrentUser.CreateSubKey(UserEnvironment);
@@ -236,6 +237,11 @@ internal static partial class InstallChecks
 
     private sealed record UpdateFlags(string? User, string? Machine, string? Process, string? PackageManager);
 
+    internal static bool UserUpdaterMutable() =>
+        ReadScope(DisableUpdater, EnvironmentVariableTarget.Machine) is null &&
+        !Enum.GetValues<EnvironmentVariableTarget>().Any(scope => !string.IsNullOrEmpty(ReadScope("DISABLE_UPDATES", scope))) &&
+        !EnvironmentChecks.HasManagedUpdateFlags();
+
     private static UpdateFlags GetUpdateFlags() => new(
         ReadScope(DisableUpdater, EnvironmentVariableTarget.User), ReadScope(DisableUpdater, EnvironmentVariableTarget.Machine),
         ReadScope(DisableUpdater, EnvironmentVariableTarget.Process), ReadScope(ManagerUpdater, EnvironmentVariableTarget.Process));
@@ -248,9 +254,34 @@ internal static partial class InstallChecks
             flags.User is null && IsEnabled(flags.Machine) || IsEnabled(flags.Process);
         if (disabled)
         {
-            plans.Add(new(new(8, "InstallUpdaterDisabled", CheckState.Info, DisableUpdater)));
+            if (IsEnabled(flags.User) && (flags.Process is null || flags.Process == flags.User) &&
+                UserUpdaterMutable() && RepairJournal.CanTrackUpdater(flags.Process))
+            {
+                var owned = RepairJournal.LastOwnedUpdater();
+                var action = owned.HasValue ? "EnableClaudeUpdater" : "EnableUserClaudeUpdater";
+                var key = owned.HasValue ? "InstallUpdaterDisabledOwned" : "InstallUpdaterUserFlag";
+                const string target = @"HKCU\Environment\DISABLE_AUTOUPDATER";
+                plans.Add(Mutation(8, key, CheckState.Info, DisableUpdater, action, target,
+                    Fingerprint(flags, owned), async token =>
+                    {
+                        token.ThrowIfCancellationRequested();
+                        if (GetUpdateFlags() != flags || !UserUpdaterMutable() || RepairJournal.LastOwnedUpdater() != owned)
+                            return false;
+                        if (owned is Guid id)
+                            return await RepairJournal.UndoLockedAsync(id, token).ConfigureAwait(false);
+                        RepairJournal.PrepareUpdater(flags.Process, null, null);
+                        if (GetUpdateFlags() != flags)
+                            return false;
+                        Environment.SetEnvironmentVariable(DisableUpdater, null, EnvironmentVariableTarget.User);
+                        Environment.SetEnvironmentVariable(DisableUpdater, null, EnvironmentVariableTarget.Process);
+                        return ReadScope(DisableUpdater, EnvironmentVariableTarget.User) is null;
+                    }));
+            }
+            else
+                plans.Add(new(new(8, "InstallUpdaterDisabled", CheckState.Info, DisableUpdater)));
         }
-        else if (native.File is not null && (!native.Valid || updaterArtifacts))
+        else if (native.File is not null && (!native.Valid || updaterArtifacts) && RepairJournal.CanTrackUpdater(flags.Process) &&
+            UserUpdaterMutable())
         {
             const string target = "HKCU\\Environment\\DISABLE_AUTOUPDATER = 1\nClaude Launcher process environment";
             plans.Add(Mutation(8, "InstallUpdaterRisk", CheckState.Warning, DisableUpdater, "DisableClaudeUpdater", target,
@@ -258,6 +289,9 @@ internal static partial class InstallChecks
                 {
                     token.ThrowIfCancellationRequested();
                     if (GetUpdateFlags() != flags || Stamp(paths.Native) != native.File)
+                        return Task.FromResult(false);
+                    RepairJournal.PrepareUpdater(flags.Process, "1", "1");
+                    if (GetUpdateFlags() != flags || !UserUpdaterMutable())
                         return Task.FromResult(false);
                     Environment.SetEnvironmentVariable(DisableUpdater, "1", EnvironmentVariableTarget.User);
                     Environment.SetEnvironmentVariable(DisableUpdater, "1", EnvironmentVariableTarget.Process);

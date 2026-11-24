@@ -16,10 +16,11 @@ public partial class SetupPanel
     private IInputElement? _reviewFocus;
     private double _reviewScrollOffset;
 
-    private async Task RefreshAsync(CancellationToken token, DiagnosticNotice? launchFailure = null)
+    private async Task RefreshAsync(CancellationToken token, DiagnosticNotice? launchFailure = null,
+        DiagnosticResult? checkedStatus = null)
     {
         var full = FullDiagnostics.ScanAsync(_cwd, token);
-        var quick = Diagnostics.CheckWithCancellationAsync(_cwd, token);
+        var quick = checkedStatus is null ? Diagnostics.CheckWithCancellationAsync(_cwd, token) : Task.FromResult(checkedStatus);
         await Task.WhenAll(full, quick);
         token.ThrowIfCancellationRequested();
         _checks = await full;
@@ -31,7 +32,7 @@ public partial class SetupPanel
             expanded: false)).ToArray();
     }
 
-    private void ReviewCheck_Click(object sender, RoutedEventArgs e)
+    private async void ReviewCheck_Click(object sender, RoutedEventArgs e)
     {
         if (IsBusy || !DetailsExpander.IsExpanded || _approval is not null ||
             sender is not Button { DataContext: DiagnosticItemView item } || !item.CanReview)
@@ -39,7 +40,10 @@ public partial class SetupPanel
             return;
         }
 
-        OpenApproval(new RepairApproval(item.ActionLabel!, item.Solution, item.Target, item.Evidence, item.Check));
+        if (item.Check.Action == SettingsDiagnostics.RestoreAction)
+            await ReviewSettingsBackupAsync(item.Check);
+        else
+            OpenApproval(new RepairApproval(item.ActionLabel!, item.Solution, item.Target, item.Evidence, item.Check));
     }
 
     private void OpenApproval(RepairApproval approval)
@@ -80,7 +84,11 @@ public partial class SetupPanel
 
         _approval = null;
         _reviewFocus = null;
-        await ApplyFullRepairAsync(approval.Item);
+        if (approval.UndoId is Guid id)
+            await ApplyAndVerifyAsync(async () => (await RepairJournal.UndoAsync(id, CancellationToken.None), null),
+                installing: false, unavailableFeedback: "UndoUnavailable");
+        else if (approval.Item is { } item)
+            await ApplyFullRepairAsync(item);
     }
 
     private async Task ApplyFullRepairAsync(CheckItem item)
@@ -107,5 +115,5 @@ public partial class SetupPanel
         string.Format(CultureInfo.GetCultureInfo(UiLanguage.Current), UiLanguage.Text(key), arguments);
 
     private sealed record RepairApproval(string Title, string Description, string Target, string Evidence,
-        CheckItem Item);
+        CheckItem? Item, Guid? UndoId = null);
 }

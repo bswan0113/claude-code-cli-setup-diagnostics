@@ -28,10 +28,23 @@ If the launcher can fix the problem, it explains what happened, recommends one a
 
 The network check contacts `downloads.claude.ai`, `api.anthropic.com` and `claude.ai`. If your organization uses a proxy or a private certificate authority, review the results with your network administrator. [Anthropic network configuration](https://code.claude.com/docs/en/network-config)
 
+### Settings files, Defender and repair history
+
+Step 6 checks `~/.claude.json` and `~/.claude/settings.json` as UTF-8 JSON. A missing file is allowed. An invalid file gets a line and column. The launcher can remove one trailing comma if that makes the entire file valid. Otherwise it looks for a compatible backup and tries to restore the damaged section. If the whole file needs replacing, the preview says so. Review the masked changes and the path where the original will be kept before approving.
+
+If you undo a settings repair, the launcher restores the original file, including its JSON error. It first checks that both the repaired file and the saved original still match their recorded hashes. If either has changed, undo stops.
+
+If the CLI executable is missing, step 2 checks Microsoft Defender for quarantine evidence at its known install paths. If the record is unavailable or no matching detection is found, Defender is listed as a possible cause. Open **Protection history** in Windows Security to review it. Decisions about quarantined files stay in Windows Security.
+
+Step 8 can restore the previous user-level automatic update setting when the launcher’s history identifies its own change and the setting still matches. A pre-existing `DISABLE_AUTOUPDATER` user value can also be cleared with separate approval if no conflicting system, process or managed policy applies.
+
+Repair history is saved under `%LOCALAPPDATA%\ClaudeCodeSetupDiagnostics\repair-history`, encrypted for the current Windows account with DPAPI. Undo is available for supported PATH edits, user execution policy, update settings and removal of a recorded npm package version. The launcher checks the current state before undoing a change. Restoring an npm package requires its recorded version and prefix, verified tools and network access. File deletions and process termination appear in history without an undo action.
+
 ### Installation and sign-in
 
 - Before you choose **Yes**, the launcher explains that it will use Anthropic’s PowerShell installer first and when it may switch to WinGet. Your approval covers that installation attempt, including the fallback.
-- If sign-in is required, run `claude auth login` in PowerShell and check again. The launcher distinguishes failure to start from an error after startup and shows the exit code when available.
+- If sign-in is required, choose **Yes** to open a separate PowerShell window. The launcher runs `claude auth login` with the verified CLI. Finish in the browser or close the sign-in window to cancel. The launcher checks the account again in either case.
+- Git for Windows is optional. If it is missing and the launcher finds Microsoft’s registered WinGet, step 6 offers to install `Git.Git` for your Windows account. Review the target and approve this installation separately. Approving installation also accepts the terms of the WinGet source and the Git package.
 - If you opened setup while launching a conversation, a successful quick check after repair lets you return to the original folder and session.
 
 | Symptom | Next step |

@@ -11,7 +11,7 @@ namespace ClaudeLauncher;
 
 public partial class SetupPanel : UserControl
 {
-    private const string LoginCommand = "claude auth login";
+    private CancellationTokenSource? _loginCancellation;
     private readonly string _cwd;
     private readonly LaunchIntent? _intent;
     private DiagnosticNotice? _notice;
@@ -80,8 +80,12 @@ public partial class SetupPanel : UserControl
     {
         if (IsBusy || _approval is not null || _guided is not { } result)
             return;
-        if (result.Repair is { } item)
+        if (result.Repair is { Action: SettingsDiagnostics.RestoreAction } settings)
+            await ReviewSettingsBackupAsync(settings);
+        else if (result.Repair is { } item)
             await ApplyFullRepairAsync(item);
+        else if (result.QuickRepair?.Code == "AuthRequired")
+            await LoginAndVerifyAsync();
         else if (result.QuickRepair is { } quick)
             await ApplyQuickRepairAsync(quick);
     }
@@ -97,7 +101,8 @@ public partial class SetupPanel : UserControl
                 failed ? new DiagnosticNotice(result.Code, result.Detail) : null);
         }, installing: notice.Code == "Missing");
 
-    private async Task ApplyAndVerifyAsync(Func<Task<(bool? Applied, DiagnosticNotice? Failure)>> change, bool installing)
+    private async Task ApplyAndVerifyAsync(Func<Task<(bool? Applied, DiagnosticNotice? Failure)>> change, bool installing,
+        string unavailableFeedback = "FullNotApplied")
     {
         _retryVerified = false;
         DetailsExpander.IsExpanded = false;
@@ -117,7 +122,7 @@ public partial class SetupPanel : UserControl
         try
         {
             await RefreshAsync(CancellationToken.None);
-            _feedback = applied switch { true => "FullApplied", false => "FullNotApplied", _ => null };
+            _feedback = applied switch { true => "FullApplied", false => unavailableFeedback, _ => null };
             if (failure is not null)
                 _notice = failure;
             _retryVerified = applied != false && _intent is not null &&
@@ -133,6 +138,8 @@ public partial class SetupPanel : UserControl
         {
             End();
         }
+        if (HistoryExpander.IsExpanded)
+            await LoadRepairHistoryAsync();
     }
 
     private void InvalidateResults()
@@ -166,6 +173,11 @@ public partial class SetupPanel : UserControl
 
     private void Close_Click(object sender, RoutedEventArgs e)
     {
+        if (_loginCancellation is { } login)
+        {
+            login.Cancel();
+            return;
+        }
         if (_approval is not null)
         {
             CancelApproval();
@@ -189,9 +201,6 @@ public partial class SetupPanel : UserControl
         e.Handled = true;
         Close_Click(sender, e);
     }
-
-    private void LoginCommand_Click(object sender, RoutedEventArgs e) =>
-        CopyToClipboard(LoginCommand, "LoginCopied");
 
     private void CopySummary_Click(object sender, RoutedEventArgs e)
     {
@@ -242,7 +251,7 @@ public partial class SetupPanel : UserControl
 
     private void Render()
     {
-        CloseButton.IsEnabled = !IsBusy || _scanCancellation is not null;
+        CloseButton.IsEnabled = !IsBusy || _scanCancellation is not null || _loginCancellation is not null;
         ProgressPanel.Visibility = IsBusy ? Visibility.Visible : Visibility.Collapsed;
         ProgressText.Text = _work is null ? "" : UiLanguage.Text(_work);
         FeedbackText.Visibility = _feedback is null ? Visibility.Collapsed : Visibility.Visible;

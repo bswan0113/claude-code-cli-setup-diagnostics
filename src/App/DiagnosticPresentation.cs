@@ -10,7 +10,10 @@ internal sealed class DiagnosticItemView(CheckItem item)
     public string Title => UiLanguage.TryText("Check" + Check.Key + "Title") ?? Check.Key;
     public string Cause => UiLanguage.TryText("Check" + Check.Key + "Cause") ?? UiLanguage.Text("FullCauseUnknown");
     public string Solution => UiLanguage.TryText("Check" + Check.Key + "Solution") ?? UiLanguage.Text("FullSolutionUnknown");
-    public string Evidence => Check.Evidence;
+    public string Evidence => Check.SettingsError is { } error
+        ? string.Format(CultureInfo.GetCultureInfo(UiLanguage.Current), UiLanguage.Text("SettingsErrorLocation"),
+            Check.Evidence, error.Line, error.Column)
+        : Check.Evidence;
     public string Target => Check.Target ?? "";
     public string TargetLabel => UiLanguage.Text(Check.Action is null ? "FullObservedTarget" : "FullChangeTarget");
     public bool HasEvidence => !string.IsNullOrWhiteSpace(Evidence);

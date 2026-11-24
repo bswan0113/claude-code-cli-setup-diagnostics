@@ -207,7 +207,7 @@
     <sys:String x:Key="CheckStage3">PATH</sys:String>
     <sys:String x:Key="CheckStage4">중복 설치와 명령 충돌</sys:String>
     <sys:String x:Key="CheckStage5">PowerShell 실행 정책</sys:String>
-    <sys:String x:Key="CheckStage6">로그인·인증서·Git 설정</sys:String>
+    <sys:String x:Key="CheckStage6">설정 파일·로그인·인증서·Git</sys:String>
     <sys:String x:Key="CheckStage7">네트워크 연결</sys:String>
     <sys:String x:Key="CheckStage8">잔여 파일과 자동 업데이트</sys:String>
     <sys:String x:Key="GuidedInstallNeeded">설치 필요</sys:String>

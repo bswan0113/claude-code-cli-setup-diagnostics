@@ -207,7 +207,7 @@
     <sys:String x:Key="CheckStage3">PATH</sys:String>
     <sys:String x:Key="CheckStage4">重复安装和命令冲突</sys:String>
     <sys:String x:Key="CheckStage5">PowerShell 执行策略</sys:String>
-    <sys:String x:Key="CheckStage6">登录、证书和 Git 设置</sys:String>
+    <sys:String x:Key="CheckStage6">设置文件、登录、证书和 Git</sys:String>
     <sys:String x:Key="CheckStage7">网络连接</sys:String>
     <sys:String x:Key="CheckStage8">残留文件和自动更新</sys:String>
     <sys:String x:Key="GuidedInstallNeeded">需要安装</sys:String>

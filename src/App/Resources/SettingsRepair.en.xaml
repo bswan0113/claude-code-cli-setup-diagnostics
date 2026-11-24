@@ -1,0 +1,42 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="CheckSettingsMissingTitle">Optional configuration file is absent</sys:String>
+    <sys:String x:Key="CheckSettingsMissingCause">Claude Code has not created this file in the checked location.</sys:String>
+    <sys:String x:Key="CheckSettingsMissingSolution">No repair is needed for an absent file.</sys:String>
+    <sys:String x:Key="CheckSettingsValidTitle">JSON syntax is valid</sys:String>
+    <sys:String x:Key="CheckSettingsValidCause">The file contains a complete UTF-8 JSON object.</sys:String>
+    <sys:String x:Key="CheckSettingsValidSolution">No syntax repair is needed.</sys:String>
+    <sys:String x:Key="CheckSettingsUnreadableTitle">Configuration file could not be inspected</sys:String>
+    <sys:String x:Key="CheckSettingsUnreadableCause">Access, a redirected path or the 32 MiB inspection limit prevented a reliable read.</sys:String>
+    <sys:String x:Key="CheckSettingsUnreadableSolution">Check the file location, size and read permissions, then scan again.</sys:String>
+    <sys:String x:Key="CheckSettingsWrongRootTitle">Settings must be a JSON object</sys:String>
+    <sys:String x:Key="CheckSettingsWrongRootCause">The file parses as JSON, but Claude Code settings require an object enclosed in braces.</sys:String>
+    <sys:String x:Key="CheckSettingsWrongRootSolution">Review the suggested change if one is available. Otherwise check the file at the shown location.</sys:String>
+    <sys:String x:Key="CheckSettingsInvalidTitle">JSON syntax error in the configuration file</sys:String>
+    <sys:String x:Key="CheckSettingsInvalidCause">The parser could not read the file as strict UTF-8 JSON. The location points to the first error it detected.</sys:String>
+    <sys:String x:Key="CheckSettingsInvalidSolution">Preview the suggested repair when available. Otherwise inspect the indicated line and its preceding delimiter in a text editor.</sys:String>
+    <sys:String x:Key="SettingsErrorLocation" xml:space="preserve">{0}&#10;Line {1}, column {2}</sys:String>
+    <sys:String x:Key="FixRestoreSettingsBackup">Review configuration repair</sys:String>
+    <sys:String x:Key="GuidedSettingsPreview">Would you like to preview the change before repairing this file?</sys:String>
+    <sys:String x:Key="SettingsPreparingPreview">Preparing the repair preview…</sys:String>
+    <sys:String x:Key="SettingsPreviewChanged">The file or backup changed. Review the new scan before continuing.</sys:String>
+    <sys:String x:Key="SettingsScopeComma">Fix one comma and keep every other byte in the file. The proposed result passes strict JSON parsing.</sys:String>
+    <sys:String x:Key="SettingsScopeSection">Restore one malformed top-level object or array from the matching backup. All other settings keep their current content.</sys:String>
+    <sys:String x:Key="SettingsScopeWholeFile">Replace the entire file with the selected backup. A local repair could not be verified. This can revert account, trust, permissions or hook settings to the backup version.</sys:String>
+    <sys:String x:Key="SettingsDiffRedacted">The preview shows the affected line ranges and a structural excerpt at the first change. − is the current file, + is the proposed file. Keys and values are hidden for privacy.</sys:String>
+    <sys:String x:Key="SettingsFileTarget">File to change  {0}</sys:String>
+    <sys:String x:Key="SettingsBackupSource">Read from backup  {0}</sys:String>
+    <sys:String x:Key="SettingsKeepOriginal">Keep current file at  {0}</sys:String>
+    <sys:String x:Key="CheckDefenderPossibleTitle">Check whether Microsoft Defender quarantined the executable</sys:String>
+    <sys:String x:Key="CheckDefenderPossibleCause">The executable is missing. A matching quarantine record could not be confirmed.</sys:String>
+    <sys:String x:Key="CheckDefenderPossibleSolution">Open Windows Security Protection history and check the affected path and time.</sys:String>
+    <sys:String x:Key="CheckDefenderQuarantinedTitle">Defender recorded a quarantine for this CLI path</sys:String>
+    <sys:String x:Key="CheckDefenderQuarantinedCause">Defender reports a successful quarantine for a file at this exact path. The record can predate the current issue.</sys:String>
+    <sys:String x:Key="CheckDefenderQuarantinedSolution">Review the path and time in Windows Security Protection history.</sys:String>
+    <sys:String x:Key="OpenProtectionHistory">Open protection history</sys:String>
+    <sys:String x:Key="ProtectionHistoryFailed">Open Windows Security, then Virus &amp; threat protection → Protection history.</sys:String>
+    <sys:String x:Key="DefenderPossibleSummary">Defender quarantine is one possible cause. You can check Protection history.</sys:String>
+    <sys:String x:Key="DefenderConfirmedSummary">Defender recorded a quarantine at this CLI path. Check its time in Protection history.</sys:String>
+    <sys:String x:Key="SettingsChangedSection">Restored section  {0}</sys:String>
+</ResourceDictionary>

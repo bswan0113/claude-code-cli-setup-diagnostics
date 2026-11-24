@@ -19,6 +19,17 @@ internal sealed class ConsoleProcess : WaitHandle
 
     internal uint Id { get; }
 
+    internal bool ExitedWith(uint code) =>
+        WaitOne(0) && GetExitCodeProcess(SafeWaitHandle, out var status) && status == code;
+
+    internal void StopShell() => TerminateProcess(SafeWaitHandle, 1);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool GetExitCodeProcess(SafeWaitHandle process, out uint exitCode);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool TerminateProcess(SafeWaitHandle process, uint exitCode);
+
     internal static ConsoleProcess Start(string executable, string arguments, string cwd,
         IReadOnlyDictionary<string, string> overrides)
     {

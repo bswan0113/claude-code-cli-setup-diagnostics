@@ -203,6 +203,7 @@ internal static partial class EnvironmentChecks
         if (shell is null || PolicyItem(cwd, shell) != approved)
             return false;
         token.ThrowIfCancellationRequested();
+        RepairJournal.Prepare(new RepairJournal.UndoPlan("Policy", Previous: shell.CurrentUser));
         return await ReadShellAsync(cwd, token, shell.PolicyIdentity).ConfigureAwait(false) is { Applied: true };
     }
 

@@ -1,0 +1,42 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="CheckSettingsMissingTitle">未找到可选配置文件</sys:String>
+    <sys:String x:Key="CheckSettingsMissingCause">此路径下没有配置文件。</sys:String>
+    <sys:String x:Key="CheckSettingsMissingSolution">无需为此创建文件。</sys:String>
+    <sys:String x:Key="CheckSettingsValidTitle">JSON 语法正确</sys:String>
+    <sys:String x:Key="CheckSettingsValidCause">文件包含完整的 UTF-8 JSON 对象。</sys:String>
+    <sys:String x:Key="CheckSettingsValidSolution">无需修复语法。</sys:String>
+    <sys:String x:Key="CheckSettingsUnreadableTitle">无法检查配置文件</sys:String>
+    <sys:String x:Key="CheckSettingsUnreadableCause">读取权限、路径重定向或 32 MiB 的大小限制导致检查无法完成。</sys:String>
+    <sys:String x:Key="CheckSettingsUnreadableSolution">请检查文件路径、大小和读取权限，然后重新诊断。</sys:String>
+    <sys:String x:Key="CheckSettingsWrongRootTitle">配置文件顶层必须是 JSON 对象</sys:String>
+    <sys:String x:Key="CheckSettingsWrongRootCause">文件的 JSON 语法正确，但 Claude Code 需要由花括号包围的顶层对象。</sys:String>
+    <sys:String x:Key="CheckSettingsWrongRootSolution">如有修复建议，请先预览。否则请检查所示文件的顶层值。</sys:String>
+    <sys:String x:Key="CheckSettingsInvalidTitle">配置文件存在 JSON 语法错误</sys:String>
+    <sys:String x:Key="CheckSettingsInvalidCause">解析器无法按严格的 UTF-8 JSON 读取文件。所示行列为首次检测到错误的位置。</sys:String>
+    <sys:String x:Key="CheckSettingsInvalidSolution">若有修复建议，可先预览。否则请在编辑器中检查所示位置和前面的分隔符。</sys:String>
+    <sys:String x:Key="SettingsErrorLocation" xml:space="preserve">{0}&#10;第 {1} 行，第 {2} 列</sys:String>
+    <sys:String x:Key="FixRestoreSettingsBackup">预览配置修复</sys:String>
+    <sys:String x:Key="GuidedSettingsPreview">修复前先预览这个文件的更改吗？</sys:String>
+    <sys:String x:Key="SettingsPreparingPreview">正在准备修复预览…</sys:String>
+    <sys:String x:Key="SettingsPreviewChanged">文件或备份发生变化。请查看新的检查结果。</sys:String>
+    <sys:String x:Key="SettingsScopeComma">只修正一处逗号，其余字节保持原样。修改后的文件已通过严格 JSON 解析。</sys:String>
+    <sys:String x:Key="SettingsScopeSection">从对应备份恢复一个损坏的顶层对象或数组，其余设置保持原样。</sys:String>
+    <sys:String x:Key="SettingsScopeWholeFile">无法确认局部修复是否可靠，将用备份替换整个文件。账户、信任、权限或钩子设置可能恢复到备份时的状态。</sys:String>
+    <sys:String x:Key="SettingsDiffRedacted">下方显示受影响的行范围和首个差异附近的结构。− 为当前文件，+ 为修复结果。键名和值均已隐藏。</sys:String>
+    <sys:String x:Key="SettingsFileTarget">目标文件  {0}</sys:String>
+    <sys:String x:Key="SettingsBackupSource">备份来源  {0}</sys:String>
+    <sys:String x:Key="SettingsKeepOriginal">保留原文件的位置  {0}</sys:String>
+    <sys:String x:Key="CheckDefenderPossibleTitle">检查 Microsoft Defender 是否隔离了执行文件</sys:String>
+    <sys:String x:Key="CheckDefenderPossibleCause">执行文件缺失，尚未确认该路径有对应的隔离记录。</sys:String>
+    <sys:String x:Key="CheckDefenderPossibleSolution">请打开 Windows 安全中心的保护历史记录，核对文件路径和时间。</sys:String>
+    <sys:String x:Key="CheckDefenderQuarantinedTitle">Defender 记录显示此 CLI 路径曾被隔离</sys:String>
+    <sys:String x:Key="CheckDefenderQuarantinedCause">Defender 报告此路径有成功隔离记录。该记录可能早于当前问题。</sys:String>
+    <sys:String x:Key="CheckDefenderQuarantinedSolution">请在 Windows 安全中心的保护历史记录中核对路径和时间。</sys:String>
+    <sys:String x:Key="OpenProtectionHistory">打开保护历史记录</sys:String>
+    <sys:String x:Key="ProtectionHistoryFailed">请打开 Windows 安全中心，然后进入“病毒和威胁防护 → 保护历史记录”。</sys:String>
+    <sys:String x:Key="DefenderPossibleSummary">Defender 隔离是可能原因之一，可在保护历史记录中核对。</sys:String>
+    <sys:String x:Key="DefenderConfirmedSummary">Defender 记录显示此 CLI 路径曾被隔离。请在保护历史记录中核对时间。</sys:String>
+    <sys:String x:Key="SettingsChangedSection">恢复的配置项  {0}</sys:String>
+</ResourceDictionary>

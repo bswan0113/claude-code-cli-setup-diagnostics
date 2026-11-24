@@ -29,7 +29,8 @@ internal static partial class EnvironmentChecks
         var shell = ReadShellAsync(cwd, token);
         var network = ScanNetworkAsync(token);
         await Task.WhenAll(shell, network).ConfigureAwait(false);
-        return [PolicyItem(cwd, shell.Result), .. variables, GitItem(shell.Result), .. network.Result];
+        var git = await PrepareGitAsync(cwd, shell.Result, token).ConfigureAwait(false);
+        return [PolicyItem(cwd, shell.Result), .. variables, git, .. network.Result];
     }
 
     internal static async Task<bool> ApplyAsync(string cwd, CheckItem approved, CancellationToken token)
@@ -40,6 +41,9 @@ internal static partial class EnvironmentChecks
 
         if (approved.Stage == 5 && approved.Action == "UserRemoteSigned")
             return await ApplyPolicyAsync(cwd, approved, token).ConfigureAwait(false);
+
+        if (approved.Stage == 6 && approved.Action == InstallGitAction)
+            return await ApplyGitInstallAsync(cwd, approved, token).ConfigureAwait(false);
 
         if (approved.Stage != 6 || approved.Action is not (ClearVariable or SetGitBash))
             return false;
@@ -187,10 +191,11 @@ internal static partial class EnvironmentChecks
             ? Environment.ExpandEnvironmentVariables(raw) : raw);
     }
 
-    private static HashSet<string> ReadManagedVariables()
+    private static HashSet<string> ReadManagedVariables(bool strict = false)
     {
         const string registryPath = @"SOFTWARE\Policies\ClaudeCode";
         var knownNames = AuthenticationVariables.Concat(PathVariables).Concat(ProxyVariables)
+            .Concat(["DISABLE_AUTOUPDATER", "DISABLE_UPDATES"])
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         using var machine = Registry.LocalMachine.OpenSubKey(registryPath);
@@ -201,6 +206,8 @@ internal static partial class EnvironmentChecks
         var config = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "ClaudeCode");
         var dropIns = Path.Combine(config, "managed-settings.d");
         AddFile(Path.Combine(config, "managed-settings.json"));
+        if (strict && Directory.Exists(dropIns) && (File.GetAttributes(dropIns) & FileAttributes.ReparsePoint) != 0)
+            throw new IOException("Managed configuration is redirected.");
         if (Directory.Exists(dropIns) && (File.GetAttributes(dropIns) & FileAttributes.ReparsePoint) == 0)
         {
             foreach (var file in Directory.EnumerateFiles(dropIns, "*.json"))
@@ -214,16 +221,32 @@ internal static partial class EnvironmentChecks
         void AddFile(string path)
         {
             var file = new FileInfo(path);
-            if (!file.Exists || file.Length > 1024 * 1024 || (file.Attributes & FileAttributes.ReparsePoint) != 0)
+            if (strict)
+            {
+                try { _ = File.GetAttributes(path); }
+                catch (FileNotFoundException) { return; }
+                catch (DirectoryNotFoundException) { return; }
+            }
+            if (!file.Exists)
                 return;
+            if (file.Length > 1024 * 1024 || (file.Attributes & FileAttributes.ReparsePoint) != 0)
+            {
+                if (strict) throw new IOException("Managed configuration is unavailable for inspection.");
+                return;
+            }
             try { Add(File.ReadAllText(path)); }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException) { }
+            catch (Exception ex) when (!strict && ex is (IOException or UnauthorizedAccessException or SecurityException)) { }
         }
 
         void Add(string? json)
         {
-            if (json is null || json.Length > 1024 * 1024)
+            if (json is null)
                 return;
+            if (json.Length > 1024 * 1024)
+            {
+                if (strict) throw new IOException("Managed configuration exceeds the inspection limit.");
+                return;
+            }
             try
             {
                 using var document = JsonDocument.Parse(json);
@@ -237,7 +260,20 @@ internal static partial class EnvironmentChecks
                     }
                 }
             }
-            catch (JsonException) { }
+            catch (JsonException) when (!strict) { }
+        }
+    }
+
+    internal static bool HasManagedUpdateFlags()
+    {
+        try
+        {
+            var names = ReadManagedVariables(strict: true);
+            return names.Contains("DISABLE_AUTOUPDATER") || names.Contains("DISABLE_UPDATES");
+        }
+        catch (Exception error) when (error is JsonException or IOException or UnauthorizedAccessException or SecurityException)
+        {
+            return true;
         }
     }
 

@@ -13,6 +13,7 @@ internal sealed record CheckItem(int Stage, string Key, CheckState State, string
 {
     // Used for checking that the approval still refers to the same value. Never display it.
     public string? Revision { get; init; }
+    public SettingsLocation? SettingsError { get; init; }
 }
 
 internal sealed record RepairOutcome(bool Applied, DiagnosticResult? Failure = null);
@@ -25,10 +26,20 @@ internal static class FullDiagnostics
         var system = Task.Run(() => InspectComputerAsync(token), token);
         var install = ScanGroupAsync(InstallChecks.ScanAsync, cwd, [2, 3, 4, 8], token);
         var environment = ScanGroupAsync(EnvironmentChecks.ScanAsync, cwd, [5, 6, 7], token);
-        await Task.WhenAll(system, install, environment).ConfigureAwait(false);
+        var settings = ScanGroupAsync(SettingsDiagnostics.ScanAsync, cwd, [6], token);
+        var defender = InspectMissingBinaryAsync(install, token);
+        await Task.WhenAll(system, install, environment, settings, defender).ConfigureAwait(false);
         token.ThrowIfCancellationRequested();
-        return system.Result.Concat(install.Result).Concat(environment.Result)
+        return system.Result.Concat(install.Result).Concat(environment.Result).Concat(settings.Result).Concat(defender.Result)
             .OrderBy(item => item.Stage).ToArray();
+    }
+
+    private static async Task<CheckItem[]> InspectMissingBinaryAsync(Task<IReadOnlyList<CheckItem>> installation,
+        CancellationToken token)
+    {
+        if (!(await installation.ConfigureAwait(false)).Any(item => item.Key == "InstallBinaryMissing"))
+            return [];
+        return [await DefenderDiagnostics.InspectMissingAsync(token).ConfigureAwait(false)];
     }
 
     private static async Task<IReadOnlyList<CheckItem>> ScanGroupAsync(
@@ -129,12 +140,9 @@ internal static class FullDiagnostics
                 try
                 {
                     token.ThrowIfCancellationRequested();
-                    return approved.Stage switch
-                    {
-                        2 or 3 or 4 or 8 => InstallChecks.ApplyWithOutcomeAsync(cwd, approved, token).GetAwaiter().GetResult(),
-                        5 or 6 => new RepairOutcome(EnvironmentChecks.ApplyAsync(cwd, approved, token).GetAwaiter().GetResult()),
-                        _ => new RepairOutcome(false)
-                    };
+                    return RepairJournal.TrackAsync(approved.Action,
+                        () => DispatchAsync(cwd, approved, token), result => result.Applied,
+                        JournalSubject(approved)).GetAwaiter().GetResult();
                 }
                 finally { mutex.ReleaseMutex(); }
             }
@@ -143,5 +151,26 @@ internal static class FullDiagnostics
                 return new RepairOutcome(false);
             }
         }, token);
+    }
+
+    private static string? JournalSubject(CheckItem approved)
+    {
+        if (approved.Action == SettingsDiagnostics.RestoreAction)
+            return Path.GetFileName(approved.Evidence) == ".claude.json" ? "~/.claude.json" : "~/.claude/settings.json";
+        if (approved.Action is "ClearUserVariable" or "SetUserGitBash")
+            return approved.Evidence.Split(' ', '\n', '\r')[0];
+        return null;
+    }
+
+    private static async Task<RepairOutcome> DispatchAsync(string cwd, CheckItem approved, CancellationToken token)
+    {
+        if (approved.Action == SettingsDiagnostics.RestoreAction && approved.Stage == 6)
+            return new(await SettingsDiagnostics.ApplyAsync(cwd, approved, token).ConfigureAwait(false));
+        return approved.Stage switch
+        {
+            2 or 3 or 4 or 8 => await InstallChecks.ApplyWithOutcomeAsync(cwd, approved, token).ConfigureAwait(false),
+            5 or 6 => new(await EnvironmentChecks.ApplyAsync(cwd, approved, token).ConfigureAwait(false)),
+            _ => new(false)
+        };
     }
 }

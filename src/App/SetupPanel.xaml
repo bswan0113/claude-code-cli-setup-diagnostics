@@ -116,13 +116,19 @@
                         <TextBlock x:Name="ResultBody" Style="{StaticResource BodyText}" Margin="2,12,0,8" />
                         <TextBlock x:Name="ResultFolder" Foreground="{DynamicResource Muted}" FontSize="{DynamicResource Font13}"
                                    Margin="2,0,0,4" TextWrapping="Wrap" />
-                        <Button x:Name="LoginCommandButton" HorizontalAlignment="Left" Style="{StaticResource LinkAction}"
-                                Click="LoginCommand_Click" Content="{DynamicResource CopyLoginCommand}" />
+                        <StackPanel x:Name="DefenderPanel" Margin="2,4,0,0" Visibility="Collapsed">
+                            <TextBlock x:Name="DefenderText" Style="{StaticResource BodyText}" />
+                            <Button Style="{StaticResource LinkAction}" HorizontalAlignment="Left"
+                                    Content="{DynamicResource OpenProtectionHistory}" Click="ProtectionHistory_Click" />
+                        </StackPanel>
                         <Expander x:Name="DetailsExpander" Header="{DynamicResource GuidedDetails}"
                                   Style="{StaticResource CheckStageExpander}" Margin="0,12,0,0">
                             <StackPanel>
                                 <TextBlock x:Name="ResultDetail" Style="{StaticResource BodyText}" Margin="2,4,0,8" />
                                 <TextBlock x:Name="ScopeText" Style="{StaticResource BodyText}" Margin="2,0,0,8" />
+                                <Button x:Name="DefenderDetailButton" Style="{StaticResource LinkAction}"
+                                        HorizontalAlignment="Left" Visibility="Collapsed" Margin="0,0,0,8"
+                                        Content="{DynamicResource OpenProtectionHistory}" Click="ProtectionHistory_Click" />
                                 <ItemsControl x:Name="FullStages" AutomationProperties.AutomationId="FullDiagnosticStages">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
@@ -218,6 +224,39 @@
                                     <Button Style="{StaticResource LinkAction}" Content="{DynamicResource CopySummary}" Click="CopySummary_Click" Margin="0,2,8,2" />
                                     <Button Style="{StaticResource LinkAction}" Content="{DynamicResource OfficialHelp}" Click="Help_Click" />
                                 </WrapPanel>
+                            </StackPanel>
+                        </Expander>
+                        <Expander x:Name="HistoryExpander" Header="{DynamicResource RepairHistoryHeading}"
+                                  Style="{StaticResource CheckStageExpander}" Margin="0,8,0,0"
+                                  Expanded="History_Expanded">
+                            <StackPanel>
+                                <TextBlock x:Name="HistoryNotice" Style="{StaticResource BodyText}"
+                                           AutomationProperties.LiveSetting="Polite" Margin="2,4" />
+                                <ItemsControl x:Name="HistoryRows">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="2,6">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                                    <TextBlock Text="{Binding Detail}" Foreground="{DynamicResource Muted}"
+                                                               FontSize="{DynamicResource Font13}" TextWrapping="Wrap" />
+                                                    <Button HorizontalAlignment="Left" Margin="0,4,0,0"
+                                                            Content="{DynamicResource UndoRepair}" Click="UndoRepair_Click">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource Action}">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding CanUndo}" Value="False">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </StackPanel>
                         </Expander>
                     </StackPanel>

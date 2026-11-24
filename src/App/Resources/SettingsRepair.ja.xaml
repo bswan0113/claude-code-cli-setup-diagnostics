@@ -1,0 +1,42 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="CheckSettingsMissingTitle">設定ファイルはありません</sys:String>
+    <sys:String x:Key="CheckSettingsMissingCause">確認した場所に設定ファイルがありません。</sys:String>
+    <sys:String x:Key="CheckSettingsMissingSolution">このためにファイルを作成する必要はありません。</sys:String>
+    <sys:String x:Key="CheckSettingsValidTitle">JSON の構文は正常です</sys:String>
+    <sys:String x:Key="CheckSettingsValidCause">UTF-8 の JSON オブジェクトを最後まで読み取れました。</sys:String>
+    <sys:String x:Key="CheckSettingsValidSolution">構文の修正は不要です。</sys:String>
+    <sys:String x:Key="CheckSettingsUnreadableTitle">設定ファイルを確認できませんでした</sys:String>
+    <sys:String x:Key="CheckSettingsUnreadableCause">読み取り権限、パスのリダイレクト、または 32 MiB の上限により確認できませんでした。</sys:String>
+    <sys:String x:Key="CheckSettingsUnreadableSolution">場所、サイズ、読み取り権限を確認してから再診断してください。</sys:String>
+    <sys:String x:Key="CheckSettingsWrongRootTitle">設定ファイルの最上位が JSON オブジェクトではありません</sys:String>
+    <sys:String x:Key="CheckSettingsWrongRootCause">JSON としては有効ですが、最上位には波括弧で囲んだオブジェクトが必要です。</sys:String>
+    <sys:String x:Key="CheckSettingsWrongRootSolution">修正案があればプレビューを確認してください。ない場合は表示されたファイルの最上位を確認してください。</sys:String>
+    <sys:String x:Key="CheckSettingsInvalidTitle">設定ファイルに JSON の構文エラーがあります</sys:String>
+    <sys:String x:Key="CheckSettingsInvalidCause">厳密な UTF-8 JSON として読み取れませんでした。最初にエラーを検出した行と列を示します。</sys:String>
+    <sys:String x:Key="CheckSettingsInvalidSolution">修正案があればプレビューできます。ない場合はエディターで表示された位置と直前の区切り文字を確認してください。</sys:String>
+    <sys:String x:Key="SettingsErrorLocation" xml:space="preserve">{0}&#10;{1} 行 {2} 列</sys:String>
+    <sys:String x:Key="FixRestoreSettingsBackup">設定の修復内容を確認</sys:String>
+    <sys:String x:Key="GuidedSettingsPreview">修復前に変更内容を確認しますか？</sys:String>
+    <sys:String x:Key="SettingsPreparingPreview">修復内容を読み込んでいます…</sys:String>
+    <sys:String x:Key="SettingsPreviewChanged">ファイルまたはバックアップが変わりました。最新の診断結果を確認してください。</sys:String>
+    <sys:String x:Key="SettingsScopeComma">コンマを 1 か所だけ修正します。それ以外の内容は保持され、修正案の JSON 構文は確認済みです。</sys:String>
+    <sys:String x:Key="SettingsScopeSection">構文が壊れた最上位の項目を 1 つだけ、バックアップ内の同じ項目に戻します。他の項目は保持されます。</sys:String>
+    <sys:String x:Key="SettingsScopeWholeFile">部分修復を確認できないため、バックアップでファイル全体を置き換えます。アカウント、信頼、権限、フックの設定もバックアップ時点に戻る場合があります。</sys:String>
+    <sys:String x:Key="SettingsDiffRedacted">変更行の範囲と最初の差分付近の構造を示します。− は現在の内容、+ は修正案です。キー名と値は伏せています。</sys:String>
+    <sys:String x:Key="SettingsFileTarget">変更するファイル  {0}</sys:String>
+    <sys:String x:Key="SettingsBackupSource">復元元のバックアップ  {0}</sys:String>
+    <sys:String x:Key="SettingsKeepOriginal">現在のファイルの保存先  {0}</sys:String>
+    <sys:String x:Key="CheckDefenderPossibleTitle">Microsoft Defender の隔離履歴を確認</sys:String>
+    <sys:String x:Key="CheckDefenderPossibleCause">実行ファイルが見つからず、一致する隔離記録も確認できませんでした。</sys:String>
+    <sys:String x:Key="CheckDefenderPossibleSolution">Windows セキュリティの保護の履歴でファイルの場所と時刻を確認してください。</sys:String>
+    <sys:String x:Key="CheckDefenderQuarantinedTitle">同じ CLI パスに Defender の隔離記録があります</sys:String>
+    <sys:String x:Key="CheckDefenderQuarantinedCause">Defender が同じパスのファイルを隔離した記録を返しました。今回の問題より前の記録の可能性もあります。</sys:String>
+    <sys:String x:Key="CheckDefenderQuarantinedSolution">Windows セキュリティの保護の履歴でパスと時刻を照合してください。</sys:String>
+    <sys:String x:Key="OpenProtectionHistory">保護の履歴を開く</sys:String>
+    <sys:String x:Key="ProtectionHistoryFailed">Windows セキュリティで「ウイルスと脅威の防止 → 保護の履歴」を開いてください。</sys:String>
+    <sys:String x:Key="DefenderPossibleSummary">原因の候補に Defender の隔離があります。保護の履歴で確認できます。</sys:String>
+    <sys:String x:Key="DefenderConfirmedSummary">この CLI のパスに Defender の隔離記録があります。保護の履歴で時刻を確認してください。</sys:String>
+    <sys:String x:Key="SettingsChangedSection">復元する項目  {0}</sys:String>
+</ResourceDictionary>

@@ -207,7 +207,7 @@
     <sys:String x:Key="CheckStage3">PATH</sys:String>
     <sys:String x:Key="CheckStage4">重複インストールとコマンドの競合</sys:String>
     <sys:String x:Key="CheckStage5">PowerShell の実行ポリシー</sys:String>
-    <sys:String x:Key="CheckStage6">ログイン・証明書・Git の設定</sys:String>
+    <sys:String x:Key="CheckStage6">設定ファイル・ログイン・証明書・Git</sys:String>
     <sys:String x:Key="CheckStage7">ネットワーク接続</sys:String>
     <sys:String x:Key="CheckStage8">残存ファイルと自動更新</sys:String>
     <sys:String x:Key="GuidedInstallNeeded">インストールが必要</sys:String>

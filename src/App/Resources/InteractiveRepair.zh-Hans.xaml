@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="AuthRequiredBody">在 PowerShell 中登录 Claude Code。命令结束或登录窗口关闭后，启动器会重新检查登录状态。</sys:String>
+    <sys:String x:Key="GuidedLogin">要打开 PowerShell 登录 Claude Code 吗？</sys:String>
+    <sys:String x:Key="LoginWaiting">请在 PowerShell 和浏览器中完成登录。关闭登录窗口即可返回启动器。</sys:String>
+    <sys:String x:Key="LoginUnavailable">未能在 PowerShell 中完成登录命令。启动器已重新检查当前登录状态。</sys:String>
+    <sys:String x:Key="FixInstallGitWinGet">安装 Git for Windows</sys:String>
+    <sys:String x:Key="GuidedGitInstall">是否同意 WinGet 源和 Git 软件包的条款，并为当前用户安装 Git for Windows？</sys:String>
+    <sys:String x:Key="CheckGitNotFoundSolution">Git 可按需安装。需要 Git 或 Bash 时，可以使用 WinGet 安装按钮。如果没有该按钮，可以从 git-scm.com 下载 Git for Windows。确认安装也表示同意 WinGet 源和 Git 软件包的条款。</sys:String>
+</ResourceDictionary>

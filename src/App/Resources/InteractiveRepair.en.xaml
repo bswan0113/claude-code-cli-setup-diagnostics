@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="AuthRequiredBody">Open PowerShell to sign in with the Claude Code CLI. The launcher checks your sign-in status when the command finishes or you close it.</sys:String>
+    <sys:String x:Key="GuidedLogin">Open PowerShell and sign in to Claude Code?</sys:String>
+    <sys:String x:Key="LoginWaiting">Complete sign-in in PowerShell and your browser. Closing the sign-in window returns to the launcher.</sys:String>
+    <sys:String x:Key="LoginUnavailable">Could not complete the sign-in command in PowerShell. The launcher has checked the current sign-in status again.</sys:String>
+    <sys:String x:Key="FixInstallGitWinGet">Install Git for Windows</sys:String>
+    <sys:String x:Key="GuidedGitInstall">Do you agree to the WinGet source and Git package terms and want to install Git for Windows for your account?</sys:String>
+    <sys:String x:Key="CheckGitNotFoundSolution">Git is optional. To use Git or Bash, install Git for Windows using the WinGet action when available, or get it from git-scm.com. Approving installation also accepts the terms of the WinGet source and the Git package.</sys:String>
+</ResourceDictionary>

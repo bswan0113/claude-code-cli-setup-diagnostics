@@ -57,6 +57,9 @@ internal static partial class InstallChecks
                             return false;
                         }
 
+                        var version = NpmVersion(manifest);
+                        if (version is not null)
+                            RepairJournal.Prepare(new RepairJournal.UndoPlan("Npm", Prefix: prefix, Version: version));
                         var temporary = Path.Combine(Path.GetTempPath(), $"blslab-npm-{Guid.NewGuid():N}");
                         var result = await RunToolAsync(node,
                             [npmCli, "uninstall", "--global", "--prefix", prefix, "--ignore-scripts", "--offline",

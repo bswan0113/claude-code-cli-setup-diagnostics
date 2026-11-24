@@ -1,0 +1,35 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="RepairHistoryHeading">更改记录</sys:String>
+    <sys:String x:Key="HistoryReading">正在读取更改记录…</sys:String>
+    <sys:String x:Key="HistoryEmptyList">尚无操作记录。</sys:String>
+    <sys:String x:Key="HistoryReadFailed">无法读取此 Windows 帐户的更改记录。</sys:String>
+    <sys:String x:Key="RecordedRepair">修复操作</sys:String>
+    <sys:String x:Key="HistoryPending">尚未确认完成</sys:String>
+    <sys:String x:Key="HistoryApplied">已完成</sys:String>
+    <sys:String x:Key="HistoryFailed">未完成</sys:String>
+    <sys:String x:Key="HistoryUndoing">尚未确认是否已撤销</sys:String>
+    <sys:String x:Key="HistoryUndone">已撤销</sys:String>
+    <sys:String x:Key="HistoryUndoFailed">未能撤销</sys:String>
+    <sys:String x:Key="HistoryUnknown">状态未知</sys:String>
+    <sys:String x:Key="UndoRepair">撤销此更改</sys:String>
+    <sys:String x:Key="UndoRepairQuestion">要恢复先前的设置值或软件包版本吗？启动器会先检查当前状态是否与记录一致。</sys:String>
+    <sys:String x:Key="StartLogin">登录</sys:String>
+    <sys:String x:Key="PreviewSettings">预览更改</sys:String>
+    <sys:String x:Key="FixClaudeLogin">登录 Claude Code</sys:String>
+    <sys:String x:Key="FixEnableClaudeUpdater">恢复原来的更新设置</sys:String>
+    <sys:String x:Key="CheckInstallUpdaterDisabledOwnedTitle">启动器已关闭自动更新</sys:String>
+    <sys:String x:Key="CheckInstallUpdaterDisabledOwnedCause">当前用户设置与启动器关闭自动更新时的记录一致。</sys:String>
+    <sys:String x:Key="CheckInstallUpdaterDisabledOwnedSolution">可以按更改记录恢复原来的用户更新设置。</sys:String>
+    <sys:String x:Key="FixEnableUserClaudeUpdater">解除当前用户的更新限制</sys:String>
+    <sys:String x:Key="CheckInstallUpdaterUserFlagTitle">当前帐户已关闭自动更新</sys:String>
+    <sys:String x:Key="CheckInstallUpdaterUserFlagCause">用户环境变量 DISABLE_AUTOUPDATER 禁用了自动更新。</sys:String>
+    <sys:String x:Key="CheckInstallUpdaterUserFlagSolution">可以清除当前帐户的限制以允许更新。组织策略仍然有效。</sys:String>
+    <sys:String x:Key="UndoSettingsQuestion">要恢复含有 JSON 错误的原文件吗？只有修复后的文件和保存的原件都与操作记录一致时才会还原。</sys:String>
+    <sys:String x:Key="HistoryActionRestoreSettingsBackup">修复设置文件</sys:String>
+    <sys:String x:Key="HistoryUndoAction">撤销 · {0}</sys:String>
+    <sys:String x:Key="HistoryUnreadable">无法读取此记录</sys:String>
+    <sys:String x:Key="HistoryOnly">仅供查看</sys:String>
+    <sys:String x:Key="UndoUnavailable">未能完成撤销。请检查当前设置、所需的备份或软件包，并查看最新诊断结果。</sys:String>
+</ResourceDictionary>

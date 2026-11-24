@@ -29,6 +29,10 @@ internal sealed record GuidedDiagnosis(string StatusKey, CheckItem? Finding = nu
             WorkingFolder.Normalize(quick.Detail) is not null)
             return new(Issue, QuickRepair: quick);
 
+        if (checks.FirstOrDefault(item => item.Key is "SettingsInvalid" or "SettingsWrongRoot") is { } settings)
+            return new(Issue, settings, Eligible(settings) ? settings : null);
+        if (quick is { Code: "AuthRequired", AllowRepair: true })
+            return new(Issue, QuickRepair: quick);
         if (quick?.Code is "AuthRequired" or "CliExitedWithError" or "RetryFailed" or "LaunchFailed")
             return new(Issue);
 
@@ -67,7 +71,7 @@ internal sealed record GuidedDiagnosis(string StatusKey, CheckItem? Finding = nu
 
         var fresh = binary.Key == "InstallBinaryMissing" && quick?.Code == "Missing" &&
             !checks.Any(item => item.Key is "InstallBackupAvailable" or "InstallBackupUnverified" or
-                "InstallNpmOnly" or "InstallLegacy" or "InstallDebris");
+                "InstallNpmOnly" or "InstallLegacy" or "InstallDebris" or "DefenderQuarantined");
         var status = fresh ? Install : Issue;
         var installer = checks.FirstOrDefault(item => item.Action == "InstallClaudeNative" && Eligible(item));
         if (installer is not null)

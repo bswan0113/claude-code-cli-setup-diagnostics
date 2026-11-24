@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="AuthRequiredBody">PowerShell で Claude Code にログインします。コマンドが終了するかログイン画面を閉じると、ランチャーがログイン状態を再確認します。</sys:String>
+    <sys:String x:Key="GuidedLogin">PowerShell を開いて Claude Code にログインしますか？</sys:String>
+    <sys:String x:Key="LoginWaiting">PowerShell とブラウザーでログインしてください。ログイン画面を閉じるとランチャーに戻ります。</sys:String>
+    <sys:String x:Key="LoginUnavailable">PowerShell でログインコマンドを完了できませんでした。現在のログイン状態を再確認しました。</sys:String>
+    <sys:String x:Key="FixInstallGitWinGet">Git for Windows をインストール</sys:String>
+    <sys:String x:Key="GuidedGitInstall">WinGet ソースと Git パッケージの利用条件に同意し、現在のアカウントに Git for Windows をインストールしますか？</sys:String>
+    <sys:String x:Key="CheckGitNotFoundSolution">Git の導入は任意です。Git や Bash が必要なら WinGet のインストールボタンを使えます。ボタンがない場合は git-scm.com から Git for Windows を入手してください。インストールの承認には、WinGet ソースと Git パッケージの利用条件への同意が含まれます。</sys:String>
+</ResourceDictionary>

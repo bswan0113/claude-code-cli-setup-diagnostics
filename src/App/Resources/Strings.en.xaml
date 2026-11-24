@@ -207,7 +207,7 @@
     <sys:String x:Key="CheckStage3">PATH</sys:String>
     <sys:String x:Key="CheckStage4">Duplicate installations and conflicts</sys:String>
     <sys:String x:Key="CheckStage5">PowerShell execution policy</sys:String>
-    <sys:String x:Key="CheckStage6">Sign-in, certificates and Git settings</sys:String>
+    <sys:String x:Key="CheckStage6">Settings files, sign-in, certificates and Git</sys:String>
     <sys:String x:Key="CheckStage7">Network and service reachability</sys:String>
     <sys:String x:Key="CheckStage8">Leftover files and automatic updates</sys:String>
     <sys:String x:Key="GuidedInstallNeeded">Installation needed</sys:String>

@@ -88,11 +88,14 @@ public static class Diagnostics
 
             return current.Code switch
             {
-                "Missing" => await InstallAsync(cwd).ConfigureAwait(false),
+                "Missing" => await RepairJournal.TrackAsync("InstallClaudeNative", () => InstallAsync(cwd),
+                    done => done.Code is "Ready" or "AuthRequired" or "PathMissing" or "StalePath").ConfigureAwait(false),
                 "PathMissing" when current.Detail is { } directory =>
-                    await ActivatePathAsync(cwd, directory, persist: true).ConfigureAwait(false),
+                    await RepairJournal.TrackAsync("PreferClaudePath", () => ActivatePathAsync(cwd, directory, persist: true),
+                        done => done.Code is "Ready" or "AuthRequired").ConfigureAwait(false),
                 "StalePath" when current.Detail is { } directory =>
-                    await ActivatePathAsync(cwd, directory, persist: false).ConfigureAwait(false),
+                    await RepairJournal.TrackAsync("RefreshClaudeProcessPath", () => ActivatePathAsync(cwd, directory, persist: false),
+                        done => done.Code is "Ready" or "AuthRequired").ConfigureAwait(false),
                 _ => current
             };
         }
@@ -372,6 +375,9 @@ public static class Diagnostics
                 if (ReadPathValue(environment) != (raw, kind))
                     return new("RepairFailed", Describe("UserPathChanged", directory));
 
+                RepairJournal.PreparePaths(directory, replacement, kind, newPath);
+                if (ReadPathValue(environment) != (raw, kind))
+                    return new("RepairFailed", Describe("UserPathChanged", directory));
                 environment.SetValue("Path", replacement, kind);
                 if (ReadPathValue(environment) != (replacement, kind))
                     return new("RepairFailed", Describe("UserPathChanged", directory));
@@ -380,6 +386,8 @@ public static class Diagnostics
             }
         }
 
+        if (!persist)
+            RepairJournal.PreparePaths(directory, null, RegistryValueKind.String, newPath);
         // Child terminals inherit this app's environment even when Explorer has a newer PATH.
         Environment.SetEnvironmentVariable("Path", newPath, EnvironmentVariableTarget.Process);
         var verified = await InspectAsync(cwd).ConfigureAwait(false);

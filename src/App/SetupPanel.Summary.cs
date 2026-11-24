@@ -53,6 +53,8 @@ public partial class SetupPanel
         ResultTitle.Text = finding?.Title ?? UiLanguage.TryText(notice.Code + "Title") ?? UiLanguage.Text("UnknownTitle");
         ResultBody.Text = hasAction ? RepairQuestion(result)
             : finding?.Solution ?? UiLanguage.TryText(notice.Code + "Body") ?? UiLanguage.Text("UnknownBody");
+        if (result.Finding?.SettingsError is not null)
+            ResultBody.Text = finding!.Evidence + Environment.NewLine + ResultBody.Text;
         if (result.Repair?.Action == "InstallClaudeNative" || result.QuickRepair?.Code == "Missing")
             ResultBody.Text += Environment.NewLine + UiLanguage.Text("GuidedFallbackNotice");
         if (notice.Code == "RepairFailed" && !string.IsNullOrEmpty(notice.Detail))
@@ -71,7 +73,13 @@ public partial class SetupPanel
             target = Diagnostics.NativeInstallCommand;
         ScopeText.Text = string.IsNullOrWhiteSpace(target) ? "" : UiLanguage.Text("FullChangeTarget") + Environment.NewLine + target;
         ScopeText.Visibility = Show(ScopeText.Text.Length > 0);
-        LoginCommandButton.Visibility = Show(notice.Code == "AuthRequired" && finding is null && !hasAction);
+        var defender = _checks.FirstOrDefault(check => check.Key is "DefenderQuarantined" or "DefenderPossible");
+        DefenderPanel.Visibility = Show(defender is not null && result.StatusKey != "GuidedInstallNeeded");
+        DefenderDetailButton.Visibility = Show(defender is not null && DefenderPanel.Visibility != Visibility.Visible);
+        if (defender is not null)
+            DefenderText.Text = UiLanguage.Text(defender.Key == "DefenderQuarantined" ? "DefenderConfirmedSummary" : "DefenderPossibleSummary");
+        RecommendedAction.Content = UiLanguage.Text(result.QuickRepair?.Code == "AuthRequired" ? "StartLogin" :
+            result.Repair?.Action == SettingsDiagnostics.RestoreAction ? "PreviewSettings" : "GuidedYes");
         DetailsExpander.Visibility = Show(notice.Code != "InvalidFolder");
         CancelButton.Content = UiLanguage.Text(hasAction ? "GuidedNo" : "CloseSetup");
         RecommendedAction.Visibility = Show(hasAction);
@@ -97,6 +105,7 @@ public partial class SetupPanel
                 "SetUserGitBash" => "GuidedGitBash",
                 "RefreshClaudeProcessPath" => "GuidedRefreshPath",
                 "PreferClaudePath" => "GuidedUserPath",
+                SettingsDiagnostics.RestoreAction => "GuidedSettingsPreview",
                 _ => throw new InvalidOperationException("Unknown guided repair.")
             });
         }
@@ -106,6 +115,7 @@ public partial class SetupPanel
             "Missing" => "GuidedInstall",
             "PathMissing" => "GuidedUserPath",
             "StalePath" => "GuidedRefreshPath",
+            "AuthRequired" => "GuidedLogin",
             _ => throw new InvalidOperationException("Unknown guided quick repair.")
         });
     }
