@@ -1,0 +1,25 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="CheckWindows64Title">Windows 版本和体系结构</sys:String>
+    <sys:String x:Key="CheckWindows64Cause">当前使用 64 位 Windows。</sys:String>
+    <sys:String x:Key="CheckWindows64Solution">无需更改设置。</sys:String>
+    <sys:String x:Key="CheckWindows32Title">32 位 Windows</sys:String>
+    <sys:String x:Key="CheckWindows32Cause">此启动器适用于 Windows x64。</sys:String>
+    <sys:String x:Key="CheckWindows32Solution">请在 64 位 Windows 电脑上运行。</sys:String>
+    <sys:String x:Key="CheckProfileCharactersTitle">用户文件夹路径</sys:String>
+    <sys:String x:Key="CheckProfileCharactersCause">路径中含有空格或非 ASCII 字符。某些工具可能无法正确处理该路径。</sys:String>
+    <sys:String x:Key="CheckProfileCharactersSolution">如果遇到错误，请检查传给工具的路径。无需更改账户文件夹。</sys:String>
+    <sys:String x:Key="CheckProfilePathTitle">用户文件夹路径</sys:String>
+    <sys:String x:Key="CheckProfilePathCause">路径中没有空格或非 ASCII 字符。</sys:String>
+    <sys:String x:Key="CheckProfilePathSolution">无需更改设置。</sys:String>
+    <sys:String x:Key="CheckShellInstalledTitle">Windows PowerShell 版本</sys:String>
+    <sys:String x:Key="CheckShellInstalledCause">已启动 Windows PowerShell 并检查其版本和可执行文件路径。</sys:String>
+    <sys:String x:Key="CheckShellInstalledSolution">如果启动失败，请查看快速诊断结果。</sys:String>
+    <sys:String x:Key="CheckShellUnknownTitle">检查 Windows PowerShell</sys:String>
+    <sys:String x:Key="CheckShellUnknownCause">未能启动 Windows PowerShell 或获取有效的版本号。</sys:String>
+    <sys:String x:Key="CheckShellUnknownSolution">请检查能否从显示的路径打开 Windows PowerShell。</sys:String>
+    <sys:String x:Key="CheckInspectionErrorTitle">部分项目无法检查</sys:String>
+    <sys:String x:Key="CheckInspectionErrorCause">Windows 无法读取或处理此项检查所需的信息。</sys:String>
+    <sys:String x:Key="CheckInspectionErrorSolution">请核对显示的错误和访问权限，然后重新检查。</sys:String>
+</ResourceDictionary>

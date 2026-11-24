@@ -1,0 +1,35 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="Canvas" Color="#F6F9FB" />
+    <SolidColorBrush x:Key="Surface" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="FieldFill" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Ink" Color="#182D37" />
+    <SolidColorBrush x:Key="Muted" Color="#425C69" />
+    <SolidColorBrush x:Key="Line" Color="#8CA6B2" />
+    <SolidColorBrush x:Key="RowLine" Color="#CDDCE3" />
+    <SolidColorBrush x:Key="Primary" Color="#116575" />
+    <SolidColorBrush x:Key="PrimaryInk" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Header" Color="#1D3440" />
+    <SolidColorBrush x:Key="SidebarHeader" Color="#173642" />
+    <SolidColorBrush x:Key="HeaderInk" Color="#F2FAFF" />
+    <SolidColorBrush x:Key="HeaderControl" Color="#2A4957" />
+    <SolidColorBrush x:Key="HeaderLine" Color="#7191A0" />
+    <SolidColorBrush x:Key="FolderFill" Color="#EBF3F4" />
+    <SolidColorBrush x:Key="FolderExpanded" Color="#DEEEF0" />
+    <SolidColorBrush x:Key="Selected" Color="#DEEFFA" />
+    <SolidColorBrush x:Key="FocusLine" Color="#166B99" />
+    <SolidColorBrush x:Key="Accent" Color="#126A86" />
+    <SolidColorBrush x:Key="SelectionFill" Color="#C5E6FB" />
+    <SolidColorBrush x:Key="WorkingFill" Color="#DBF0E5" />
+    <SolidColorBrush x:Key="WorkingInk" Color="#155E48" />
+    <SolidColorBrush x:Key="WaitingFill" Color="#E3EFF9" />
+    <SolidColorBrush x:Key="WaitingInk" Color="#28536F" />
+    <SolidColorBrush x:Key="ApprovalFill" Color="#FAEDCE" />
+    <SolidColorBrush x:Key="ApprovalInk" Color="#734B0E" />
+    <SolidColorBrush x:Key="AnswerFill" Color="#F3E6F1" />
+    <SolidColorBrush x:Key="AnswerInk" Color="#7A326A" />
+    <SolidColorBrush x:Key="Overlay" Color="#8A1B3340" />
+    <SolidColorBrush x:Key="RepairFill" Color="#D9EEF9" />
+    <SolidColorBrush x:Key="RepairInk" Color="#19485F" />
+    <SolidColorBrush x:Key="RepairLine" Color="#7AA8BD" />
+</ResourceDictionary>

@@ -1,0 +1,25 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="CheckWindows64Title">Windows version and architecture</sys:String>
+    <sys:String x:Key="CheckWindows64Cause">Windows is running in 64-bit mode.</sys:String>
+    <sys:String x:Key="CheckWindows64Solution">No changes are needed.</sys:String>
+    <sys:String x:Key="CheckWindows32Title">32-bit Windows</sys:String>
+    <sys:String x:Key="CheckWindows32Cause">This launcher is built for Windows x64.</sys:String>
+    <sys:String x:Key="CheckWindows32Solution">Use a 64-bit Windows PC.</sys:String>
+    <sys:String x:Key="CheckProfileCharactersTitle">User profile path</sys:String>
+    <sys:String x:Key="CheckProfileCharactersCause">The path contains spaces or non-ASCII characters. Some tools may handle it incorrectly.</sys:String>
+    <sys:String x:Key="CheckProfileCharactersSolution">If an error occurs, check the path passed to the tool. You can keep your account folder.</sys:String>
+    <sys:String x:Key="CheckProfilePathTitle">User profile path</sys:String>
+    <sys:String x:Key="CheckProfilePathCause">The path contains no spaces or non-ASCII characters.</sys:String>
+    <sys:String x:Key="CheckProfilePathSolution">No changes are needed.</sys:String>
+    <sys:String x:Key="CheckShellInstalledTitle">Windows PowerShell version</sys:String>
+    <sys:String x:Key="CheckShellInstalledCause">The launcher started Windows PowerShell and checked its version and executable path.</sys:String>
+    <sys:String x:Key="CheckShellInstalledSolution">If PowerShell fails to start, check the quick diagnosis.</sys:String>
+    <sys:String x:Key="CheckShellUnknownTitle">Check Windows PowerShell</sys:String>
+    <sys:String x:Key="CheckShellUnknownCause">Windows PowerShell could not start or return a valid version.</sys:String>
+    <sys:String x:Key="CheckShellUnknownSolution">Check whether Windows PowerShell opens from the displayed path.</sys:String>
+    <sys:String x:Key="CheckInspectionErrorTitle">Some checks could not run</sys:String>
+    <sys:String x:Key="CheckInspectionErrorCause">Windows could not read or process the information required for this check.</sys:String>
+    <sys:String x:Key="CheckInspectionErrorSolution">Review the reported error and access permissions, then scan again.</sys:String>
+</ResourceDictionary>

@@ -1,0 +1,25 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="CheckWindows64Title">Windows のバージョンとアーキテクチャ</sys:String>
+    <sys:String x:Key="CheckWindows64Cause">64 ビット版の Windows を使用しています。</sys:String>
+    <sys:String x:Key="CheckWindows64Solution">設定の変更は不要です。</sys:String>
+    <sys:String x:Key="CheckWindows32Title">32 ビット版 Windows</sys:String>
+    <sys:String x:Key="CheckWindows32Cause">このランチャーは Windows x64 用です。</sys:String>
+    <sys:String x:Key="CheckWindows32Solution">64 ビット版の Windows PC で実行してください。</sys:String>
+    <sys:String x:Key="CheckProfileCharactersTitle">ユーザーフォルダーのパス</sys:String>
+    <sys:String x:Key="CheckProfileCharactersCause">パスに空白または非 ASCII 文字が含まれています。一部のツールで正しく扱えない場合があります。</sys:String>
+    <sys:String x:Key="CheckProfileCharactersSolution">エラーが出た場合はツールに渡したパスを確認してください。アカウントのフォルダーを変更する必要はありません。</sys:String>
+    <sys:String x:Key="CheckProfilePathTitle">ユーザーフォルダーのパス</sys:String>
+    <sys:String x:Key="CheckProfilePathCause">パスに空白や非 ASCII 文字はありません。</sys:String>
+    <sys:String x:Key="CheckProfilePathSolution">設定の変更は不要です。</sys:String>
+    <sys:String x:Key="CheckShellInstalledTitle">Windows PowerShell のバージョン</sys:String>
+    <sys:String x:Key="CheckShellInstalledCause">ランチャーで使用する PowerShell を起動し、バージョンと実行ファイルの場所を確認しました。</sys:String>
+    <sys:String x:Key="CheckShellInstalledSolution">起動時にエラーが出る場合はクイック診断の結果も確認してください。</sys:String>
+    <sys:String x:Key="CheckShellUnknownTitle">Windows PowerShell の確認</sys:String>
+    <sys:String x:Key="CheckShellUnknownCause">Windows PowerShell を起動できないか、バージョンを確認できませんでした。</sys:String>
+    <sys:String x:Key="CheckShellUnknownSolution">表示された場所から Windows PowerShell を開けるか確認してください。</sys:String>
+    <sys:String x:Key="CheckInspectionErrorTitle">一部の項目を検査できませんでした</sys:String>
+    <sys:String x:Key="CheckInspectionErrorCause">検査に必要な情報を Windows から取得または処理できませんでした。</sys:String>
+    <sys:String x:Key="CheckInspectionErrorSolution">表示されたエラーとアクセス権を確認し、もう一度検査してください。</sys:String>
+</ResourceDictionary>

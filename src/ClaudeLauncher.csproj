@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ClaudeLauncher</RootNamespace>
+    <AssemblyName>ClaudeLauncher</AssemblyName>
+    <Product>Claude Code CLI Setup &amp; Diagnostics</Product>
+    <Version>0.4.0</Version>
+    <ApplicationIcon>Launcher.ico</ApplicationIcon>
+    <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="System.IO" />
+    <Page Remove="App/App.xaml" />
+    <ApplicationDefinition Include="App/App.xaml" />
+  </ItemGroup>
+</Project>

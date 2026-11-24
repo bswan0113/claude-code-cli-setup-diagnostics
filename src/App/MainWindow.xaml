@@ -1,0 +1,311 @@
+<Window x:Class="ClaudeLauncher.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ClaudeLauncher"
+        Title="{DynamicResource AppTitle}" Width="1500" Height="960" MinWidth="760" MinHeight="540"
+        WindowStartupLocation="CenterScreen" UseLayoutRounding="True" FontFamily="Segoe UI" FontSize="{DynamicResource Font16}"
+        Foreground="{DynamicResource Ink}" Background="{DynamicResource Canvas}"
+        Closing="Window_Closing" SizeChanged="Window_SizeChanged">
+    <Grid Background="{DynamicResource Canvas}">
+        <Grid x:Name="LauncherSurface">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Border x:Name="Toolbar" Background="{DynamicResource Header}" Padding="36,0" MinHeight="64">
+                <Grid VerticalAlignment="Center">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <WrapPanel x:Name="MainToolbar" Grid.Column="1" VerticalAlignment="Center">
+                        <Button x:Name="PinLeftButton" Style="{StaticResource ToolbarAction}" Margin="0,0,8,0"
+                                Content="{DynamicResource PinLeft}" Click="PinLeft_Click" />
+                        <Button x:Name="PinRightButton" Style="{StaticResource ToolbarAction}" Margin="0,0,12,0"
+                                Content="{DynamicResource PinRight}" Click="PinRight_Click" />
+                        <Button x:Name="SetupButton" AutomationProperties.AutomationId="InstallRepairButton"
+                                Style="{StaticResource RepairAction}" Margin="0,0,8,0"
+                                Content="{DynamicResource InstallRepairTitle}" Click="Setup_Click" />
+                        <ComboBox x:Name="LanguagePicker" Width="126" Style="{StaticResource ToolbarCombo}"
+                                  VerticalContentAlignment="Center" AutomationProperties.Name="{DynamicResource LanguageLabel}"
+                                  SelectionChanged="LanguagePicker_SelectionChanged" SelectedValuePath="Tag">
+                            <ComboBoxItem Tag="en" Content="English" />
+                            <ComboBoxItem Tag="ko" Content="한국어" />
+                            <ComboBoxItem Tag="zh-Hans" Content="简体中文" />
+                            <ComboBoxItem Tag="ja" Content="日本語" />
+                        </ComboBox>
+                    </WrapPanel>
+                    <Button x:Name="UnpinButton" AutomationProperties.AutomationId="UndockButton" Grid.Column="1"
+                            Style="{StaticResource ToolbarAction}" VerticalAlignment="Center" Content="{DynamicResource Unpin}"
+                            Visibility="Collapsed" Click="Unpin_Click" />
+                    <Button x:Name="AppearanceButton" AutomationProperties.AutomationId="AppearanceButton" Grid.Column="2"
+                            Margin="8,0,0,0" VerticalAlignment="Center" Style="{StaticResource ToolbarAction}"
+                            Content="{DynamicResource AppearanceTitle}" Click="Appearance_Click" />
+                    <TextBlock x:Name="WindowTitle" Text="{DynamicResource AppTitle}" Foreground="{DynamicResource HeaderInk}"
+                               Margin="0,0,10,0"
+                               VerticalAlignment="Center" FontSize="{DynamicResource Font28}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                </Grid>
+            </Border>
+
+            <Grid x:Name="Workspace" Grid.Row="1" Margin="36,24,36,20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid x:Name="Dashboard" Margin="0,0,0,31">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition x:Name="RunningColumn" Width="1.02*" />
+                        <ColumnDefinition x:Name="DashboardGap" Width="30" />
+                        <ColumnDefinition x:Name="RecentColumn" Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel x:Name="RunningPanel">
+                        <StackPanel x:Name="RunningCaption" Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Style="{StaticResource DashboardTitle}" Text="{DynamicResource RunningTitle}" />
+                            <TextBlock x:Name="RunningCount" Style="{StaticResource DashboardTitle}" Margin="18,0,0,0" />
+                        </StackPanel>
+                        <Border x:Name="RunningCard" Height="254" Background="{DynamicResource Surface}"
+                                BorderBrush="{DynamicResource Line}" BorderThickness="1" Padding="13,0">
+                            <Grid>
+                                <TextBlock x:Name="RunningEmpty" Style="{StaticResource BodyText}" Margin="5,12"
+                                           Text="{DynamicResource RunningEmpty}" />
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                    <ItemsControl x:Name="RunningTerminals" AutomationProperties.AutomationId="LiveItems">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource ListAction}" Click="FocusTerminal_Click" Tag="{Binding}"
+                                                        AutomationProperties.AutomationId="FocusTerminalButton" AutomationProperties.Name="{Binding AutomationName}"
+                                                        AutomationProperties.HelpText="{Binding Subtitle}"
+                                                        ToolTip="{Binding Terminal.Folder}">
+                                                    <Border Style="{StaticResource RunningSeparator}">
+                                                        <DockPanel>
+                                                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource MainOnlyText}"
+                                                                       VerticalAlignment="Center" Margin="9,0,3,0" FontSize="{DynamicResource Font14}"
+                                                                       Foreground="{DynamicResource Muted}" Text="{DynamicResource FocusTerminal}" />
+                                                            <Border DockPanel.Dock="Right" Style="{StaticResource ActivityBadge}">
+                                                                <TextBlock Style="{StaticResource ActivityText}" Text="{Binding ActivityLabel}" />
+                                                            </Border>
+                                                            <StackPanel Margin="0,0,8,0" VerticalAlignment="Center">
+                                                                <TextBlock Style="{StaticResource ListTitle}" Text="{Binding Title}" />
+                                                                <TextBlock Text="{Binding Subtitle}" FontSize="{DynamicResource Font13}" Foreground="{DynamicResource Muted}"
+                                                                           TextTrimming="CharacterEllipsis" />
+                                                            </StackPanel>
+                                                        </DockPanel>
+                                                    </Border>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                    <StackPanel x:Name="RecentPanel" Grid.Column="2">
+                        <StackPanel x:Name="RecentCaption" Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Style="{StaticResource DashboardTitle}" Text="{DynamicResource RecentlyRunTitle}" />
+                            <TextBlock x:Name="RecentCount" Style="{StaticResource DashboardTitle}" Margin="18,0,0,0" />
+                        </StackPanel>
+                        <Border x:Name="RecentCard" Height="254" Background="{DynamicResource Surface}"
+                                BorderBrush="{DynamicResource Line}" BorderThickness="1" Padding="13,0">
+                            <Grid>
+                                <TextBlock x:Name="RecentEmpty" Style="{StaticResource BodyText}" Margin="5,12"
+                                           Text="{DynamicResource RecentlyRunEmpty}" />
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                    <ItemsControl x:Name="RecentSessions" AutomationProperties.AutomationId="RecentSessionItems">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource ListAction}" Click="ResumeSession_Click" Tag="{Binding}"
+                                                        AutomationProperties.AutomationId="{Binding ResumeAutomationId}"
+                                                        AutomationProperties.Name="{Binding AutomationName}" ToolTip="{Binding Session.Cwd}"
+                                                        AutomationProperties.HelpText="{Binding FullTime}">
+                                                    <Border Style="{StaticResource ItemSeparator}">
+                                                        <DockPanel>
+                                                            <TextBlock DockPanel.Dock="Right" FontSize="{DynamicResource Font14}" Text="{DynamicResource ResumeSession}"
+                                                                       Foreground="{DynamicResource Muted}" VerticalAlignment="Center" Margin="8,0,3,0" />
+                                                            <StackPanel VerticalAlignment="Center">
+                                                                <TextBlock Style="{StaticResource ListTitle}" Text="{Binding Session.Title}" />
+                                                                <TextBlock Text="{Binding Subtitle}" FontSize="{DynamicResource Font13}" Foreground="{DynamicResource Muted}"
+                                                                           TextTrimming="CharacterEllipsis" />
+                                                            </StackPanel>
+                                                        </DockPanel>
+                                                    </Border>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+
+                <Grid Grid.Row="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <DockPanel x:Name="TreeCaption" Margin="0,0,0,10">
+                        <Grid x:Name="SearchBox" DockPanel.Dock="Right" Width="505" VerticalAlignment="Center">
+                            <TextBox x:Name="HistorySearch" Style="{StaticResource Field}" TextChanged="HistorySearch_TextChanged"
+                                     AutomationProperties.Name="{DynamicResource SearchHistory}" />
+                            <TextBlock x:Name="SearchHint" IsHitTestVisible="False" Foreground="{DynamicResource Muted}"
+                                       Text="{DynamicResource SearchHistory}" Margin="12,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </Grid>
+                        <TextBlock Style="{StaticResource DashboardTitle}" Text="{DynamicResource FolderTreeTitle}" />
+                    </DockPanel>
+                    <Grid Grid.Row="1">
+                        <TreeView x:Name="FolderTree" AutomationProperties.Name="{DynamicResource FolderTreeTitle}"
+                                  PreviewKeyDown="FolderTree_PreviewKeyDown" BorderBrush="{DynamicResource Line}"
+                                  BorderThickness="1" Background="{DynamicResource Surface}" Foreground="{DynamicResource Ink}" Padding="0"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                            <TreeView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem AutomationProperties.AutomationId="SessionPickerButton"
+                                              Header="{DynamicResource ChooseFolderInCli}" Click="SessionPicker_Click" />
+                                </ContextMenu>
+                            </TreeView.ContextMenu>
+                            <TreeView.Resources>
+                                <Style TargetType="TreeViewItem" BasedOn="{StaticResource HistoryItem}" />
+                                <HierarchicalDataTemplate DataType="{x:Type local:FolderTreeRow}" ItemsSource="{Binding Children}">
+                                    <DockPanel Margin="1,0,12,0" Style="{StaticResource FolderHeader}">
+                                        <Button DockPanel.Dock="Right" MinHeight="28"
+                                                Padding="8,3" VerticalAlignment="Center" Click="StartInFolder_Click" Tag="{Binding Path}"
+                                                AutomationProperties.AutomationId="NewSessionInFolderButton"
+                                                AutomationProperties.Name="{DynamicResource StartNewSession}" AutomationProperties.HelpText="{Binding Path}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource Action}">
+                                                    <Setter Property="Content" Value="{DynamicResource NewInThisFolder}" />
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsSidebar, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                            <Setter Property="Content" Value="{DynamicResource NewInThisFolderShort}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding CountLabel}" Foreground="{DynamicResource Muted}"
+                                                   FontSize="{DynamicResource Font14}" VerticalAlignment="Center" Margin="0,0,13,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource MainOnlyText}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <DockPanel Background="Transparent" PreviewMouseLeftButtonDown="FolderHeader_PreviewMouseLeftButtonDown"
+                                                   ToolTip="{Binding Path}" AutomationProperties.Name="{Binding Path}" Margin="0,0,10,0">
+                                            <TextBlock DockPanel.Dock="Left" Style="{StaticResource ListTitle}" Text="{Binding Title}"
+                                                       Foreground="{DynamicResource Ink}" MaxWidth="210" VerticalAlignment="Center" />
+                                            <TextBlock Style="{StaticResource MainOnlyText}" Text="{Binding Path}" FontSize="{DynamicResource Font14}"
+                                                       Foreground="{DynamicResource Muted}" Margin="12,0,0,0"
+                                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                    </DockPanel>
+                                </HierarchicalDataTemplate>
+                                <DataTemplate DataType="{x:Type local:SessionTreeRow}">
+                                    <Button Style="{StaticResource ListAction}" Click="ResumeSession_Click" Tag="{Binding}" Margin="0,1,12,0"
+                                            AutomationProperties.AutomationId="{Binding TreeAutomationId}"
+                                            AutomationProperties.Name="{Binding AutomationName}" ToolTip="{Binding Session.Title}"
+                                            AutomationProperties.HelpText="{Binding Running.ActivityLabel}">
+                                        <DockPanel Style="{StaticResource TreeSessionLine}" Margin="7,0,1,0">
+                                            <TextBlock DockPanel.Dock="Right" FontSize="{DynamicResource Font13}" Foreground="{DynamicResource Muted}"
+                                                       VerticalAlignment="Center" Margin="7,0,0,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock" BasedOn="{StaticResource MainOnlyText}">
+                                                        <Setter Property="Text" Value="{DynamicResource OpenTerminal}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                                <Setter Property="Text" Value="{DynamicResource FocusTerminalInTree}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource MainOnlyText}" Text="{Binding When}"
+                                                       ToolTip="{Binding FullTime}" FontSize="{DynamicResource Font14}" Foreground="{DynamicResource Muted}"
+                                                       Margin="10,0,8,0" VerticalAlignment="Center" />
+                                            <Border DockPanel.Dock="Right" DataContext="{Binding Running}" Style="{StaticResource ActivityBadge}"
+                                                    Margin="8,0,0,0">
+                                                <TextBlock Style="{StaticResource ActivityText}" Text="{Binding ActivityLabel}" />
+                                            </Border>
+                                            <TextBlock Text="{Binding Session.Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                    </Button>
+                                </DataTemplate>
+                                <DataTemplate DataType="{x:Type local:FallbackTreeRow}">
+                                    <Button Style="{StaticResource ListAction}" Click="FallbackFolder_Click" Tag="{Binding Path}"
+                                            Padding="7,5" AutomationProperties.AutomationId="KnownFolderPicker"
+                                            AutomationProperties.Name="{Binding Path}" ToolTip="{Binding Path}">
+                                        <TextBlock Text="{DynamicResource FolderPickerFallback}" TextWrapping="Wrap" />
+                                    </Button>
+                                </DataTemplate>
+                                <DataTemplate DataType="{x:Type local:EmptyTreeRow}">
+                                    <TextBlock Style="{StaticResource BodyText}" Margin="8,5,0,5" Text="{DynamicResource SessionsEmptyFolder}" />
+                                </DataTemplate>
+                            </TreeView.Resources>
+                        </TreeView>
+                        <TextBlock x:Name="HistoryNotice" Style="{StaticResource BodyText}" Margin="13,12"
+                                   IsHitTestVisible="False" VerticalAlignment="Top" />
+                    </Grid>
+                </Grid>
+
+                <Grid Grid.Row="2" Margin="0,9,0,0">
+                    <StackPanel x:Name="DesktopFooter">
+                        <TextBlock Text="{DynamicResource NewFolderTitle}" FontWeight="SemiBold" FontSize="{DynamicResource Font19}" Margin="2,0,0,10" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid Margin="0,0,12,0">
+                                <TextBox x:Name="FolderInput" Style="{StaticResource Field}" MinHeight="42"
+                                         AutomationProperties.Name="{DynamicResource FolderLabel}"
+                                         KeyDown="FolderInput_KeyDown" TextChanged="FolderInput_TextChanged" />
+                                <TextBlock x:Name="FolderHint" IsHitTestVisible="False" Foreground="{DynamicResource Muted}"
+                                           Text="{DynamicResource NewFolderPlaceholder}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                            </Grid>
+                            <Button x:Name="BrowseButton" Grid.Column="1" Style="{StaticResource Action}" MinWidth="158"
+                                    Content="{DynamicResource BrowseWorkFolder}" Margin="0,0,12,0" Click="Browse_Click" />
+                            <Button x:Name="OpenButton" Grid.Column="2" Style="{StaticResource PrimaryAction}" MinWidth="208"
+                                    Content="{DynamicResource StartNewSession}" Click="Open_Click" />
+                        </Grid>
+                    </StackPanel>
+                    <StackPanel x:Name="SidebarFooter" Visibility="Collapsed">
+                        <Button x:Name="SidebarNewButton" Style="{StaticResource PrimaryAction}"
+                                Content="{DynamicResource SidebarNew}" Click="SidebarNew_Click" />
+                        <DockPanel Margin="0,6,0,0">
+                            <Button x:Name="MoveSidebarButton" DockPanel.Dock="Right" Style="{StaticResource LinkAction}" Click="MoveSidebar_Click" />
+                            <Button x:Name="SidebarSetupButton" AutomationProperties.AutomationId="SidebarInstallRepairButton"
+                                    HorizontalAlignment="Left" Style="{StaticResource RepairAction}"
+                                    Content="{DynamicResource InstallRepairTitle}" Click="Setup_Click" />
+                        </DockPanel>
+                    </StackPanel>
+                </Grid>
+                <TextBlock x:Name="StatusText" Grid.Row="3" Visibility="Collapsed" Margin="0,6,0,0"
+                           Style="{StaticResource BodyText}" FontSize="{DynamicResource Font13}" AutomationProperties.LiveSetting="Polite" />
+            </Grid>
+        </Grid>
+        <Grid x:Name="SetupOverlay" Visibility="Collapsed" Background="{DynamicResource Overlay}">
+            <ContentControl x:Name="SetupHost" MaxWidth="660" Margin="14" HorizontalAlignment="Center"
+                            VerticalAlignment="Center" Focusable="False" />
+        </Grid>
+    </Grid>
+</Window>
