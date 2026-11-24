@@ -60,7 +60,6 @@
     <sys:String x:Key="TerminalPending">PowerShell 正在打开或使用中。</sys:String>
     <sys:String x:Key="TerminalExited">Claude Code 会话已结束。</sys:String>
     <sys:String x:Key="TerminalCanceled">终端会话已取消。</sys:String>
-    <sys:String x:Key="TerminalUnknown">启动器无法确认终端会话是如何结束的。</sys:String>
     <sys:String x:Key="TerminalFailed">终端报告了启动问题。</sys:String>
     <sys:String x:Key="LoginCopied">已复制登录命令。</sys:String>
     <sys:String x:Key="SummaryCopied">已复制诊断摘要。</sys:String>
@@ -247,4 +246,5 @@
     <sys:String x:Key="UsagePartial">仅统计可读取的用量记录。</sys:String>
     <sys:String x:Key="UsageUnknown">未知</sys:String>
     <sys:String x:Key="UsageLoading">正在读取用量…</sys:String>
+    <sys:String x:Key="UsageContextUnknown">上下文未知</sys:String>
 </ResourceDictionary>

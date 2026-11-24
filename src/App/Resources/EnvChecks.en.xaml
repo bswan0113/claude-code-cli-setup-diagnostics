@@ -121,4 +121,7 @@
     <sys:String x:Key="FixUserRemoteSigned">Change the current user's policy to RemoteSigned</sys:String>
     <sys:String x:Key="FixClearUserVariable">Remove the listed user environment variable</sys:String>
     <sys:String x:Key="FixSetUserGitBash">Set the user Git Bash path to the file shown</sys:String>
+    <sys:String x:Key="CheckNetWebProbeForbiddenTitle">Website declined the connection check</sys:String>
+    <sys:String x:Key="CheckNetWebProbeForbiddenCause">The Claude website declined an anonymous request from the launcher.</sys:String>
+    <sys:String x:Key="CheckNetWebProbeForbiddenSolution">Check the sign-in result in the launcher if you have trouble using your account.</sys:String>
 </ResourceDictionary>

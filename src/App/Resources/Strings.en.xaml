@@ -60,7 +60,6 @@
     <sys:String x:Key="TerminalPending">PowerShell is opening or in use.</sys:String>
     <sys:String x:Key="TerminalExited">The Claude Code session ended.</sys:String>
     <sys:String x:Key="TerminalCanceled">The terminal session was canceled.</sys:String>
-    <sys:String x:Key="TerminalUnknown">The launcher could not verify how the terminal session ended.</sys:String>
     <sys:String x:Key="TerminalFailed">The terminal reported a launch problem.</sys:String>
     <sys:String x:Key="LoginCopied">The sign-in command was copied.</sys:String>
     <sys:String x:Key="SummaryCopied">The diagnostic summary was copied.</sys:String>
@@ -247,4 +246,5 @@
     <sys:String x:Key="UsagePartial">Only the available usage records are included.</sys:String>
     <sys:String x:Key="UsageUnknown">Unknown</sys:String>
     <sys:String x:Key="UsageLoading">Reading usage…</sys:String>
+    <sys:String x:Key="UsageContextUnknown">Context unknown</sys:String>
 </ResourceDictionary>

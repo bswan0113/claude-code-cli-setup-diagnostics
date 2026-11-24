@@ -21,12 +21,12 @@
 | 4. 重复安装与命令冲突 | 同名可执行文件、npm 全局包、WindowsApps 别名和旧版安装目录 `.claude\local`。 | 调整用户 PATH 的顺序，让可用版本优先启动。卸载重复的 npm 包和清理旧文件需分别确认。清理旧版安装时，只会删除确认窗口列出的普通文件。 |
 | 5. PowerShell 执行策略 | 当前策略是否阻止 npm 安装的 PowerShell 脚本，以及组织是否管理这些策略。 | 如果仅修改用户设置就能解决，可以将 `CurrentUser` 的执行策略设为 `RemoteSigned`。如果组织策略生效，请联系管理员或使用原生 CLI。 |
 | 6. 身份验证、证书、Git 与代理 | 检查 `ANTHROPIC_API_KEY`、`ANTHROPIC_AUTH_TOKEN`、`ANTHROPIC_BASE_URL` 的作用域，`NODE_EXTRA_CA_CERTS` 指向的证书文件，`CLAUDE_CODE_GIT_BASH_PATH` 指向的程序，以及 Git 安装和代理设置。界面会隐藏凭据和代理地址的具体值。 | 先确认公司或课程对设置的要求。可以逐个删除多余的用户变量，也可以把失效的 Git Bash 路径改为检查时找到的路径。系统变量和组织管理的设置请向管理员确认。 |
-| 7. 网络 | 分别连接下载和更新服务器、Claude API 与登录服务，并检查下载响应的内容。 | 根据出错的服务和错误信息检查证书、代理、防火墙或网络连接。收到 API 的 HTTP 响应说明服务器可达，登录状态由快速检查单独确认。 |
+| 7. 网络 | 检查下载响应以及与 Claude 网站的连接。设置 API 密钥后，还会检查默认 API 服务器。 | 根据出错的服务和错误信息检查证书、代理、防火墙或网络连接。收到 API 的 HTTP 响应说明服务器可达，登录状态由快速检查单独确认。 |
 | 8. 更新清理 | 检查残留的 `claude.exe.old.*`、`.new.*`、`.broken.*` 文件、`.claude\downloads` 缓存和当前用户的自动更新设置。 | 分别核对残留文件和下载缓存的清单后再删除。清理时会保留最新的 old 备份。如果因原生安装更新损坏而关闭自动更新，今后需要手动更新。 |
 
 **如果 `~/.local/bin/claude.exe` 丢失**，启动器会查找其他可用的安装，并检查其 PATH。如果找不到可执行文件，但有通过验证且可用的备份，启动器会推荐一个备份，并询问是否将它恢复到原路径。如果没有可用的备份，启动器会询问是否使用 Anthropic 官方 PowerShell 安装程序重装 CLI。
 
-网络检查会访问 `downloads.claude.ai`、`api.anthropic.com` 和 `claude.ai`。如果公司使用代理或内部 CA 证书，请和网络管理员一起核对结果。[Anthropic 网络配置说明](https://code.claude.com/docs/en/network-config)
+默认检查 `downloads.claude.ai` 和 `claude.ai`。仅当启动器环境中的 `ANTHROPIC_API_KEY` 非空且使用默认 API 地址时，才会向 `api.anthropic.com` 发送匿名请求。如果公司使用代理或内部 CA 证书，请和网络管理员一起核对结果。[Anthropic 网络配置说明](https://code.claude.com/docs/en/network-config)
 
 ### 设置文件、Defender 和修复记录
 

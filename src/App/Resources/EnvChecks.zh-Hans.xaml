@@ -121,4 +121,7 @@
     <sys:String x:Key="FixUserRemoteSigned">将当前用户策略改为 RemoteSigned</sys:String>
     <sys:String x:Key="FixClearUserVariable">删除所列用户环境变量</sys:String>
     <sys:String x:Key="FixSetUserGitBash">将用户 Git Bash 路径设置为所示文件</sys:String>
+    <sys:String x:Key="CheckNetWebProbeForbiddenTitle">Claude 网站拒绝了连接检查</sys:String>
+    <sys:String x:Key="CheckNetWebProbeForbiddenCause">Claude 网站拒绝了启动器发送的匿名请求。</sys:String>
+    <sys:String x:Key="CheckNetWebProbeForbiddenSolution">如果使用帐户时遇到问题，请查看启动器中的登录检查结果。</sys:String>
 </ResourceDictionary>

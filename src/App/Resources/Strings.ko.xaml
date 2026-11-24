@@ -60,7 +60,6 @@
     <sys:String x:Key="TerminalPending">PowerShell을 여는 중이거나 사용 중입니다.</sys:String>
     <sys:String x:Key="TerminalExited">Claude Code 세션이 끝났습니다.</sys:String>
     <sys:String x:Key="TerminalCanceled">터미널 세션을 취소했습니다.</sys:String>
-    <sys:String x:Key="TerminalUnknown">터미널 세션이 어떻게 끝났는지 확인하지 못했습니다.</sys:String>
     <sys:String x:Key="TerminalFailed">터미널에서 실행 문제가 발생했습니다.</sys:String>
     <sys:String x:Key="LoginCopied">로그인 명령을 복사했습니다.</sys:String>
     <sys:String x:Key="SummaryCopied">진단 요약을 복사했습니다.</sys:String>
@@ -247,4 +246,5 @@
     <sys:String x:Key="UsagePartial">읽을 수 있는 사용 기록만 포함했습니다.</sys:String>
     <sys:String x:Key="UsageUnknown">미확인</sys:String>
     <sys:String x:Key="UsageLoading">사용량 읽는 중…</sys:String>
+    <sys:String x:Key="UsageContextUnknown">컨텍스트 미확인</sys:String>
 </ResourceDictionary>

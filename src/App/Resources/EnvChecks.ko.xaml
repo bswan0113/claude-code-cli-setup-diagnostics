@@ -121,4 +121,7 @@
     <sys:String x:Key="FixUserRemoteSigned">현재 사용자 정책을 RemoteSigned로 변경</sys:String>
     <sys:String x:Key="FixClearUserVariable">표시된 사용자 환경 변수 삭제</sys:String>
     <sys:String x:Key="FixSetUserGitBash">표시된 파일로 사용자 Git Bash 경로 변경</sys:String>
+    <sys:String x:Key="CheckNetWebProbeForbiddenTitle">Claude 웹사이트에서 점검 요청을 거부함</sys:String>
+    <sys:String x:Key="CheckNetWebProbeForbiddenCause">Claude 웹사이트가 런처에서 보낸 익명 요청을 거부했습니다.</sys:String>
+    <sys:String x:Key="CheckNetWebProbeForbiddenSolution">계정 사용에 문제가 있다면 런처의 로그인 진단 결과를 확인하세요.</sys:String>
 </ResourceDictionary>

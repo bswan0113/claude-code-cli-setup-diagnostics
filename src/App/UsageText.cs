@@ -30,8 +30,10 @@ internal sealed record UsageText(string Line, string Detail)
         var percent = usage?.ContextPercent is double value && double.IsFinite(value)
             ? (usage.IsWindowEstimated ? "≈" : "") + value.ToString("0.#", Culture) + "%"
             : "—%";
-        var line = Format("UsageTotal", Short(total, partial)) + "  ·  " +
-            Format("UsageContext", Short(context, false), percent);
+        var contextLabel = context is null && usage?.ContextPercent is null
+            ? UiLanguage.Text("UsageContextUnknown")
+            : Format("UsageContext", Short(context, false), percent);
+        var line = Format("UsageTotal", Short(total, partial)) + "  ·  " + contextLabel;
         var detail = Format("UsageTotal", Exact(total)) + Environment.NewLine +
             Format("UsageContextDetail", Exact(context), Exact(usage?.ContextWindowTokens), percent);
         if (usage?.IsWindowEstimated == true)

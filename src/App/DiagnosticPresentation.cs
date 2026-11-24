@@ -7,9 +7,12 @@ internal sealed class DiagnosticItemView(CheckItem item)
     internal CheckItem Check { get; } = item;
     public CheckState State => Check.State;
     public string Status => StateText(State);
-    public string Title => UiLanguage.TryText("Check" + Check.Key + "Title") ?? Check.Key;
+    public string Title => Check.Key is "NetHttpWarning" or "NetWebProbeForbidden"
+        ? (UiLanguage.TryText("Check" + Check.Key + "Title") ?? Check.Key) + " · " + Check.Evidence.Replace("\n", " · ")
+        : UiLanguage.TryText("Check" + Check.Key + "Title") ?? Check.Key;
     public string Cause => UiLanguage.TryText("Check" + Check.Key + "Cause") ?? UiLanguage.Text("FullCauseUnknown");
-    public string Solution => UiLanguage.TryText("Check" + Check.Key + "Solution") ?? UiLanguage.Text("FullSolutionUnknown");
+    public string Solution => State is CheckState.Pass or CheckState.Info ? "—" : ActionDescription;
+    internal string ActionDescription => UiLanguage.TryText("Check" + Check.Key + "Solution") ?? UiLanguage.Text("FullSolutionUnknown");
     public string Evidence => Check.SettingsError is { } error
         ? string.Format(CultureInfo.GetCultureInfo(UiLanguage.Current), UiLanguage.Text("SettingsErrorLocation"),
             Check.Evidence, error.Line, error.Column)

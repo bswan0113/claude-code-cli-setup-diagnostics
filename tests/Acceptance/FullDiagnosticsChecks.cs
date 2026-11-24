@@ -37,6 +37,7 @@ internal static partial class Program
         {
             ["CLAUDE_CONFIG_DIR"] = config,
             ["ANTHROPIC_API_KEY"] = secret,
+            ["ANTHROPIC_BASE_URL"] = null,
             ["ANTHROPIC_AUTH_TOKEN"] = secret,
             ["NODE_EXTRA_CA_CERTS"] = Path.Combine(fixture, "missing-ca.pem"),
             ["CLAUDE_CODE_GIT_BASH_PATH"] = Path.Combine(fixture, "wrong-shell.exe"),
@@ -161,6 +162,7 @@ internal static partial class Program
             (download, HttpStatusCode.OK, syntheticBody, null, "NetDownloadUnexpected", "Warning"),
             (api, HttpStatusCode.Unauthorized, syntheticBody, null, "NetReachable", "Pass"),
             (api, HttpStatusCode.ProxyAuthenticationRequired, syntheticBody, null, "NetHttpWarning", "Warning"),
+            (new Uri("https://claude.ai"), HttpStatusCode.Forbidden, syntheticBody, null, "NetWebProbeForbidden", "Info"),
             (api, default, "", HttpRequestError.SecureConnectionError, "NetTls", "Failed"),
             (api, default, "", HttpRequestError.NameResolutionError, "NetDns", "Failed"),
             (api, default, "", HttpRequestError.ProxyTunnelError, "NetProxy", "Failed"),
@@ -186,8 +188,35 @@ internal static partial class Program
                 $"Unexpected network classification for {scenario.Key}.");
             rows.Add(row);
         }
+        var savedKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
+        var savedUrl = Environment.GetEnvironmentVariable("ANTHROPIC_BASE_URL");
+        try
+        {
+            foreach (var (key, url, expectApi) in new (string?, string?, bool)[]
+                { (null, null, false), ("  ", null, false), ("fixture", null, true), ("fixture", "https://gateway.invalid", false) })
+            {
+                Environment.SetEnvironmentVariable("ANTHROPIC_API_KEY", key);
+                Environment.SetEnvironmentVariable("ANTHROPIC_BASE_URL", url);
+                var hosts = new System.Collections.Concurrent.ConcurrentBag<string>();
+                using var client = new HttpClient(new DiagnosticHttpHandler(request =>
+                {
+                    hosts.Add(request.RequestUri!.Host);
+                    Require(request.Headers.Authorization is null && !request.Headers.Contains("x-api-key"),
+                        "The reachability probe attached credentials.");
+                    return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("2.1.4") };
+                }));
+                _ = CompletedResult((Task)Call(environment, "ScanNetworkAsync", client, CancellationToken.None)!);
+                Require(hosts.Count == (expectApi ? 3 : 2) && hosts.Contains("downloads.claude.ai") &&
+                    hosts.Contains("claude.ai") && hosts.Contains(api.Host) == expectApi, "Unexpected network probe targets.");
+            }
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("ANTHROPIC_API_KEY", savedKey);
+            Environment.SetEnvironmentVariable("ANTHROPIC_BASE_URL", savedUrl);
+        }
         VerifyDiagnosticTranslations(rows.ToArray());
-        return $"{cases.Length} fixed HTTP/TLS/DNS/proxy responses classified with no outbound traffic, credentials or body text in evidence.";
+        return $"{cases.Length} fixed HTTP/TLS/DNS/proxy responses and key-dependent probe targets checked offline.";
     }
 
     private static string TestDiagnosticNpmPolicy(string root)

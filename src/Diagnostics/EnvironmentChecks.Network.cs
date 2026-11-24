@@ -19,10 +19,22 @@ internal static partial class EnvironmentChecks
         Timeout = Timeout.InfiniteTimeSpan
     };
 
-    private static Task<CheckItem[]> ScanNetworkAsync(CancellationToken token) => Task.WhenAll(
-        CheckHostAsync(NetworkClient, new("https://downloads.claude.ai/claude-code-releases/latest"), true, token),
-        CheckHostAsync(NetworkClient, new("https://api.anthropic.com"), false, token),
-        CheckHostAsync(NetworkClient, new("https://claude.ai"), false, token));
+    private static Task<CheckItem[]> ScanNetworkAsync(HttpClient client, CancellationToken token)
+    {
+        var probes = new List<Task<CheckItem>>
+        {
+            CheckHostAsync(client, new("https://downloads.claude.ai/claude-code-releases/latest"), true, token),
+            CheckHostAsync(client, new("https://claude.ai"), false, token)
+        };
+        // Probe the default API only when the child shell inherits a key for that endpoint.
+        // The GET is anonymous. Never attach the key or call a configured third-party endpoint.
+        const string api = "https://api.anthropic.com";
+        var baseUrl = Environment.GetEnvironmentVariable("ANTHROPIC_BASE_URL");
+        if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")) &&
+            (string.IsNullOrWhiteSpace(baseUrl) || string.Equals(baseUrl.Trim().TrimEnd('/'), api, StringComparison.OrdinalIgnoreCase)))
+            probes.Add(CheckHostAsync(client, new(api), false, token));
+        return Task.WhenAll(probes);
+    }
 
     // Accepting a client also lets acceptance tests supply fixed responses without accessing the network.
     internal static async Task<CheckItem> CheckHostAsync(HttpClient client, Uri uri, bool download, CancellationToken token)
@@ -43,6 +55,8 @@ internal static partial class EnvironmentChecks
             if (!download)
             {
                 // A response from the root proves HTTP reachability only. It says nothing about credentials.
+                if (status == 403 && uri.Host == "claude.ai")
+                    return Result("NetWebProbeForbidden", CheckState.Info, observed);
                 return status is 403 or 407 or 429 or >= 500
                     ? Result("NetHttpWarning", CheckState.Warning, observed)
                     : Result("NetReachable", CheckState.Pass, observed);

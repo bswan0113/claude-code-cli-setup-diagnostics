@@ -308,7 +308,6 @@ public partial class MainWindow : Window
                 SetStatus("TerminalCanceled");
                 return;
             case "Unknown":
-                SetStatus("TerminalUnknown");
                 return;
         }
 

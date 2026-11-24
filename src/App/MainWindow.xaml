@@ -211,11 +211,7 @@
                                             <Button.Style>
                                                 <Style TargetType="Button" BasedOn="{StaticResource Action}">
                                                     <Setter Property="Content" Value="{DynamicResource NewInThisFolder}" />
-                                                    <Setter Property="Visibility" Value="Collapsed" />
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsExpanded}" Value="True">
-                                                            <Setter Property="Visibility" Value="Visible" />
-                                                        </DataTrigger>
                                                         <DataTrigger Binding="{Binding IsSidebar, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                                             <Setter Property="Content" Value="{DynamicResource NewInThisFolderShort}" />
                                                         </DataTrigger>

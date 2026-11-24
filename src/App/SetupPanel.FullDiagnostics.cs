@@ -43,7 +43,7 @@ public partial class SetupPanel
         if (item.Check.Action == SettingsDiagnostics.RestoreAction)
             await ReviewSettingsBackupAsync(item.Check);
         else
-            OpenApproval(new RepairApproval(item.ActionLabel!, item.Solution, item.Target, item.Evidence, item.Check));
+            OpenApproval(new RepairApproval(item.ActionLabel!, item.ActionDescription, item.Target, item.Evidence, item.Check));
     }
 
     private void OpenApproval(RepairApproval approval)

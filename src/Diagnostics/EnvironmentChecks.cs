@@ -27,7 +27,7 @@ internal static partial class EnvironmentChecks
             variables = [new(6, "InspectionError", CheckState.Unknown, ex.GetType().Name)];
         }
         var shell = ReadShellAsync(cwd, token);
-        var network = ScanNetworkAsync(token);
+        var network = ScanNetworkAsync(NetworkClient, token);
         await Task.WhenAll(shell, network).ConfigureAwait(false);
         var git = await PrepareGitAsync(cwd, shell.Result, token).ConfigureAwait(false);
         return [PolicyItem(cwd, shell.Result), .. variables, git, .. network.Result];
