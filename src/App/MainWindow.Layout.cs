@@ -181,7 +181,12 @@ public partial class MainWindow
         }
         RunningCard.BorderThickness = new Thickness(sidebar ? 0 : 1);
         RecentCard.BorderThickness = RunningCard.BorderThickness;
-        SearchBox.Width = sidebar ? Math.Min(190, width / 2.3) : Math.Clamp(width * 0.34, 180, 505);
+        var stackSearch = sidebar || width < 900 * fontScale;
+        Grid.SetRow(SearchBox, stackSearch ? 1 : 0);
+        Grid.SetColumn(SearchBox, stackSearch ? 0 : 2);
+        Grid.SetColumnSpan(SearchBox, stackSearch ? 3 : 1);
+        SearchBox.Width = stackSearch ? double.NaN : Math.Clamp(width * 0.34, 180, 505);
+        SearchBox.Margin = stackSearch ? new Thickness(0, 5, 0, 0) : new Thickness(12, 0, 0, 0);
         SearchBox.Visibility = sidebar && HistorySearch.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         PinLeftButton.MinWidth = width >= 1200 ? 132 : 0;
         PinRightButton.MinWidth = width >= 1200 ? 140 : 0;

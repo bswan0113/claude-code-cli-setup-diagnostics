@@ -32,6 +32,7 @@ public partial class MainWindow : Window
         _activityTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         _activityTimer.Tick += ActivityTimer_Tick;
         RunningTerminals.ItemsSource = _liveRows;
+        FolderSort.SelectedValue = _appearance.FolderOrder.ToString();
         LanguagePicker.SelectedValue = UiLanguage.Current;
         Language = XmlLanguage.GetLanguage(UiLanguage.Current);
         FitInitialWindow();

@@ -2,8 +2,15 @@ using System.Text.Json;
 
 namespace ClaudeLauncher;
 
+internal enum FolderSortOrder
+{
+    RecentDescending, RecentAscending, NameAscending, NameDescending, PathAscending, PathDescending
+}
+
 internal sealed record AppearancePreferences(bool DarkMode = false, int FontPercent = 100, int OpacityPercent = 100)
 {
+    public FolderSortOrder FolderOrder { get; init; } = FolderSortOrder.RecentDescending;
+
     private static readonly string Store = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "ClaudeCodeSetupDiagnostics", "appearance.json");
@@ -23,6 +30,7 @@ internal sealed record AppearancePreferences(bool DarkMode = false, int FontPerc
 
     private AppearancePreferences Normalized() => this with
     {
+        FolderOrder = Enum.IsDefined(FolderOrder) ? FolderOrder : FolderSortOrder.RecentDescending,
         FontPercent = NearestStep(FontPercent, 85, 125),
         OpacityPercent = NearestStep(OpacityPercent, 60, 100)
     };

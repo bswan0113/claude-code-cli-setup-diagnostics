@@ -230,4 +230,12 @@
     <sys:String x:Key="EvidenceNativeInstallerVerificationFailed">安装命令已结束，但无法验证可执行文件的签名和版本。请在诊断详情中检查安装路径。</sys:String>
     <sys:String x:Key="EvidenceNativeInstallerStopUnconfirmed">无法确认官方安装程序是否已完全停止。请先检查安装进程，再重新检测。</sys:String>
     <sys:String x:Key="EvidenceNativeInstallerObservationFailed">无法确认官方安装进度。请检查可执行文件以及仍在运行的安装程序。</sys:String>
+    <sys:String x:Key="FolderSortLabel">文件夹排序</sys:String>
+    <sys:String x:Key="FolderSortRecentDescending">最近运行 · 从新到旧</sys:String>
+    <sys:String x:Key="FolderSortRecentAscending">最近运行 · 从旧到新</sys:String>
+    <sys:String x:Key="FolderSortNameAscending">名称 · 升序</sys:String>
+    <sys:String x:Key="FolderSortNameDescending">名称 · 降序</sys:String>
+    <sys:String x:Key="FolderSortPathAscending">路径 · 升序</sys:String>
+    <sys:String x:Key="FolderSortPathDescending">路径 · 降序</sys:String>
+    <sys:String x:Key="FolderSortSaveFailed">未能保存下次启动时使用的文件夹排序。</sys:String>
 </ResourceDictionary>

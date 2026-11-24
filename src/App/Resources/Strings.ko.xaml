@@ -230,4 +230,12 @@
     <sys:String x:Key="EvidenceNativeInstallerVerificationFailed">설치 명령은 끝났지만 공식 실행 파일의 서명과 버전을 확인하지 못했습니다. 전체 검사 결과에서 설치 경로를 확인하세요.</sys:String>
     <sys:String x:Key="EvidenceNativeInstallerStopUnconfirmed">공식 설치가 완전히 종료됐는지 확인하지 못했습니다. 실행 중인 설치를 확인한 뒤 다시 검사하세요.</sys:String>
     <sys:String x:Key="EvidenceNativeInstallerObservationFailed">공식 설치 진행 상태를 확인하지 못했습니다. 실행 파일과 진행 중인 설치를 다시 확인하세요.</sys:String>
+    <sys:String x:Key="FolderSortLabel">폴더 정렬</sys:String>
+    <sys:String x:Key="FolderSortRecentDescending">최근 실행 · 최신순</sys:String>
+    <sys:String x:Key="FolderSortRecentAscending">최근 실행 · 오래된순</sys:String>
+    <sys:String x:Key="FolderSortNameAscending">이름 · 오름차순</sys:String>
+    <sys:String x:Key="FolderSortNameDescending">이름 · 내림차순</sys:String>
+    <sys:String x:Key="FolderSortPathAscending">경로 · 오름차순</sys:String>
+    <sys:String x:Key="FolderSortPathDescending">경로 · 내림차순</sys:String>
+    <sys:String x:Key="FolderSortSaveFailed">다음 실행에 사용할 폴더 정렬 설정을 저장하지 못했습니다.</sys:String>
 </ResourceDictionary>

@@ -33,8 +33,12 @@ public partial class AppearancePanel : UserControl
         if (!_ready)
             return;
 
-        var updated = new AppearancePreferences(DarkModeToggle.IsChecked == true,
-            RoundPercent(FontScaleSlider.Value), RoundPercent(OpacitySlider.Value));
+        var updated = _shown with
+        {
+            DarkMode = DarkModeToggle.IsChecked == true,
+            FontPercent = RoundPercent(FontScaleSlider.Value),
+            OpacityPercent = RoundPercent(OpacitySlider.Value)
+        };
         _ready = false;
         FontScaleSlider.Value = updated.FontPercent;
         OpacitySlider.Value = updated.OpacityPercent;

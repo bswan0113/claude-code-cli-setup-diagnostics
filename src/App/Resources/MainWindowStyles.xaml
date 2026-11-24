@@ -105,6 +105,31 @@
             </DataTrigger>
         </Style.Triggers>
     </Style>
+    <Style x:Key="FolderNameText" TargetType="TextBlock" BasedOn="{StaticResource ListTitle}">
+        <Setter Property="DockPanel.Dock" Value="Left" />
+        <Setter Property="MaxWidth" Value="210" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{DynamicResource Ink}" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsSidebar, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                <Setter Property="DockPanel.Dock" Value="Top" />
+                <Setter Property="MaxWidth" Value="Infinity" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="FolderPathText" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="{DynamicResource Font14}" />
+        <Setter Property="Foreground" Value="{DynamicResource Muted}" />
+        <Setter Property="Margin" Value="12,0,0,0" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsSidebar, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                <Setter Property="FontSize" Value="{DynamicResource Font13}" />
+                <Setter Property="Margin" Value="0,0,0,2" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
     <Style x:Key="ItemSeparator" TargetType="Border">
         <Setter Property="BorderBrush" Value="{DynamicResource RowLine}" />
         <Setter Property="BorderThickness" Value="0,0,0,1" />

@@ -225,6 +225,40 @@ public partial class MainWindow
             UpdateLayoutMode();
     }
 
+    private void FolderSort_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_initialized || FolderSort.SelectedValue is not string tag ||
+            !Enum.TryParse<FolderSortOrder>(tag, out var order) || order == _appearance.FolderOrder)
+            return;
+
+        _appearance = _appearance with { FolderOrder = order };
+        if (!_appearance.Save())
+            SetStatus("FolderSortSaveFailed");
+        else if (_status == "FolderSortSaveFailed")
+            SetStatus(null);
+        RefreshTree();
+    }
+
+    private IEnumerable<RecentFolder> OrderFolders(IEnumerable<RecentFolder> candidates)
+    {
+        var paths = StringComparer.OrdinalIgnoreCase;
+        var names = StringComparer.Create(CultureInfo.GetCultureInfo(UiLanguage.Current), ignoreCase: true);
+        // A folder may appear in several histories. Keep its most recent timestamp in every sort mode.
+        var folders = candidates.GroupBy(row => row.Path, paths)
+            .Select(group => group.MaxBy(row => row.LastUsedUtc)!);
+        var sorted = _appearance.FolderOrder switch
+        {
+            FolderSortOrder.RecentAscending => folders.OrderBy(row => row.LastUsedUtc == DateTime.MinValue)
+                .ThenBy(row => row.LastUsedUtc),
+            FolderSortOrder.NameAscending => folders.OrderBy(row => LiveRow.FolderName(row.Path), names),
+            FolderSortOrder.NameDescending => folders.OrderByDescending(row => LiveRow.FolderName(row.Path), names),
+            FolderSortOrder.PathAscending => folders.OrderBy(row => row.Path, paths),
+            FolderSortOrder.PathDescending => folders.OrderByDescending(row => row.Path, paths),
+            _ => folders.OrderByDescending(row => row.LastUsedUtc)
+        };
+        return sorted.ThenBy(row => row.Path, paths);
+    }
+
     private void RefreshTree()
     {
         var query = HistorySearch.Text.Trim();
@@ -250,12 +284,9 @@ public partial class MainWindow
         var fallbacks = damaged.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var folders = _folderHistory.Concat(sessions.Select(session => new RecentFolder(session.Cwd, SessionRecency.LastUsedUtc(session))))
             .Concat(damaged.Select(path => new RecentFolder(path, DateTime.MinValue)))
-            .Concat(_liveRows.Select(row => new RecentFolder(row.Terminal.Folder, DateTime.MinValue)))
-            .OrderByDescending(row => row.LastUsedUtc)
-            .ThenBy(row => row.Path, StringComparer.OrdinalIgnoreCase)
-            .DistinctBy(row => row.Path, StringComparer.OrdinalIgnoreCase);
+            .Concat(_liveRows.Select(row => new RecentFolder(row.Terminal.Folder, row.Terminal.StartedUtc)));
         var results = new List<FolderTreeRow>();
-        foreach (var folder in folders)
+        foreach (var folder in OrderFolders(folders))
         {
             var pathMatches = query.Length == 0 || Matches(folder.Path, query);
             var saved = index[folder.Path].ToArray();

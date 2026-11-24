@@ -154,15 +154,35 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <DockPanel x:Name="TreeCaption" Margin="0,0,0,10">
-                        <Grid x:Name="SearchBox" DockPanel.Dock="Right" Width="505" VerticalAlignment="Center">
+                    <Grid x:Name="TreeCaption" Margin="0,0,0,10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Style="{StaticResource DashboardTitle}" Text="{DynamicResource FolderTreeTitle}"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <ComboBox x:Name="FolderSort" Grid.Column="1" Style="{StaticResource ToolbarCombo}"
+                                  SelectedValuePath="Tag" SelectionChanged="FolderSort_SelectionChanged"
+                                  AutomationProperties.Name="{DynamicResource FolderSortLabel}" ToolTip="{DynamicResource FolderSortLabel}">
+                            <ComboBoxItem Tag="RecentDescending" Content="{DynamicResource FolderSortRecentDescending}" />
+                            <ComboBoxItem Tag="RecentAscending" Content="{DynamicResource FolderSortRecentAscending}" />
+                            <ComboBoxItem Tag="NameAscending" Content="{DynamicResource FolderSortNameAscending}" />
+                            <ComboBoxItem Tag="NameDescending" Content="{DynamicResource FolderSortNameDescending}" />
+                            <ComboBoxItem Tag="PathAscending" Content="{DynamicResource FolderSortPathAscending}" />
+                            <ComboBoxItem Tag="PathDescending" Content="{DynamicResource FolderSortPathDescending}" />
+                        </ComboBox>
+                        <Grid x:Name="SearchBox" Grid.Column="2" Width="505" VerticalAlignment="Center">
                             <TextBox x:Name="HistorySearch" Style="{StaticResource Field}" TextChanged="HistorySearch_TextChanged"
                                      AutomationProperties.Name="{DynamicResource SearchHistory}" />
                             <TextBlock x:Name="SearchHint" IsHitTestVisible="False" Foreground="{DynamicResource Muted}"
                                        Text="{DynamicResource SearchHistory}" Margin="12,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                         </Grid>
-                        <TextBlock Style="{StaticResource DashboardTitle}" Text="{DynamicResource FolderTreeTitle}" />
-                    </DockPanel>
+                    </Grid>
                     <Grid Grid.Row="1">
                         <TreeView x:Name="FolderTree" AutomationProperties.Name="{DynamicResource FolderTreeTitle}"
                                   PreviewKeyDown="FolderTree_PreviewKeyDown" BorderBrush="{DynamicResource Line}"
@@ -211,11 +231,8 @@
                                         </TextBlock>
                                         <DockPanel Background="Transparent" PreviewMouseLeftButtonDown="FolderHeader_PreviewMouseLeftButtonDown"
                                                    ToolTip="{Binding Path}" AutomationProperties.Name="{Binding Path}" Margin="0,0,10,0">
-                                            <TextBlock DockPanel.Dock="Left" Style="{StaticResource ListTitle}" Text="{Binding Title}"
-                                                       Foreground="{DynamicResource Ink}" MaxWidth="210" VerticalAlignment="Center" />
-                                            <TextBlock Style="{StaticResource MainOnlyText}" Text="{Binding Path}" FontSize="{DynamicResource Font14}"
-                                                       Foreground="{DynamicResource Muted}" Margin="12,0,0,0"
-                                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                            <TextBlock Style="{StaticResource FolderNameText}" Text="{Binding Title}" />
+                                            <TextBlock Style="{StaticResource FolderPathText}" Text="{Binding Path}" ToolTip="{Binding Path}" />
                                         </DockPanel>
                                     </DockPanel>
                                 </HierarchicalDataTemplate>

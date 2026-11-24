@@ -230,4 +230,12 @@
     <sys:String x:Key="EvidenceNativeInstallerVerificationFailed">インストールは終了しましたが、実行ファイルの署名とバージョンを検証できませんでした。詳細でインストール先を確認してください。</sys:String>
     <sys:String x:Key="EvidenceNativeInstallerStopUnconfirmed">公式インストーラーの停止を確認できませんでした。実行中のインストールを確認してから再診断してください。</sys:String>
     <sys:String x:Key="EvidenceNativeInstallerObservationFailed">公式インストーラーの進捗を確認できませんでした。実行ファイルと実行中のインストールを確認してください。</sys:String>
+    <sys:String x:Key="FolderSortLabel">フォルダーの並べ替え</sys:String>
+    <sys:String x:Key="FolderSortRecentDescending">起動日時・新しい順</sys:String>
+    <sys:String x:Key="FolderSortRecentAscending">起動日時・古い順</sys:String>
+    <sys:String x:Key="FolderSortNameAscending">名前・昇順</sys:String>
+    <sys:String x:Key="FolderSortNameDescending">名前・降順</sys:String>
+    <sys:String x:Key="FolderSortPathAscending">パス・昇順</sys:String>
+    <sys:String x:Key="FolderSortPathDescending">パス・降順</sys:String>
+    <sys:String x:Key="FolderSortSaveFailed">次回起動時のフォルダーの並び順を保存できませんでした。</sys:String>
 </ResourceDictionary>
