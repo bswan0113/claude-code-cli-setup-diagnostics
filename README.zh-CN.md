@@ -2,14 +2,23 @@
 
 [English](README.md) · [한국어](README.ko.md) · **简体中文** · [日本語](README.ja.md)
 
-使用这个 Windows 启动器，你可以轻松安装或修复 Claude Code CLI，也可以打开以前的会话继续工作。
+## 下载 Windows x64 版
+
+| 版本 | 用途 | 下载 |
+|---|---|---|
+| **完整版** | 安装和修复 Claude Code，管理会话和账户，并使用侧边栏。 | [ClaudeLauncher.exe](https://github.com/bswan0113/claude-code-cli-setup-diagnostics/releases/latest/download/ClaudeLauncher.exe) |
+| **安装和修复专用 Mini** | 打开后直接开始诊断。查看原因和建议操作，确认后再执行安装或修复。 | [ClaudeRepairMini.exe](https://github.com/bswan0113/claude-code-cli-setup-diagnostics/releases/latest/download/ClaudeRepairMini.exe) |
+
+选择一个可执行文件，下载后即可打开。两个版本都无需另行安装 .NET。界面语言可选英语、韩语、简体中文或日语。
+
+完整版可以在 Windows 上安装或修复 Claude Code CLI，也可以打开以前的会话继续工作。
 
 1. **安装和修复 Claude Code CLI。** 首次使用时可安装 CLI。如果无法启动，可以运行八步诊断，查看原因和修复方法。启动器会先列出要做的更改，等你确认后再执行。
 2. **查找并继续本机的 Claude Code 会话。** 在启动器中可以按项目文件夹浏览本机保存的 Claude Code 会话记录。选中会话后，启动器会在原工作目录打开 PowerShell，让你在 CLI 中继续上次的对话。
 
 ## 安装和修复
 
-点击主窗口顶部或侧边栏左下角的**安装和修复**后，启动器会自动检查。结果分为「需要安装」「发现问题」和「未发现问题」。发现问题时，状态会以红色突出显示。
+在完整版中，点击主窗口顶部或侧边栏左下角的**安装和修复**后，启动器会自动检查。结果分为「需要安装」「发现问题」和「未发现问题」。发现问题时，状态会以红色突出显示。
 
 如果能自动修复，启动器会说明原因，推荐一项操作，并询问是否继续。选**是**执行这项操作，选**否**则保留现有设置。需要自行登录或联系管理员时，结果中会给出下一步。想查看检查依据时，可以展开「完整诊断结果」，查看八个步骤的详情。
 
@@ -105,12 +114,16 @@ irm https://claude.ai/install.ps1 | iex
 
 ## 从源码构建
 
-在安装了 .NET 10 SDK 的 Windows 上，从仓库根目录运行以下命令。
+在安装了 .NET 10 SDK 的 Windows 上，从仓库根目录运行所需版本的命令。
 
 ```powershell
+# 完整版
 dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64
+
+# 安装和修复专用 Mini
+dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64 -p:Edition=Mini
 ```
 
-生成的可执行文件位于 `artifacts/publish/win-x64/ClaudeLauncher.exe`。
+输出目录为 `artifacts/publish/win-x64/`。完整版会生成 `ClaudeLauncher.exe`，Mini 会生成 `ClaudeRepairMini.exe`。
 
 [操作流程与诊断分支（韩语）](docs/workflow.md) · [开发计划与验收标准（韩语）](docs/development-plan.md)

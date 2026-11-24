@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup Condition="'$(Edition)' == 'Mini'">
+    <!-- WPF generated sources contain assembly-specific pack URIs. -->
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == ''">obj/Mini/</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>

@@ -8,7 +8,11 @@ public partial class App : Application
     {
         base.OnStartup(e);
         UiLanguage.Apply(UiLanguage.GetInitialLanguage());
+#if REPAIR_MINI
+        MainWindow = new RepairMiniWindow();
+#else
         MainWindow = new MainWindow();
+#endif
         MainWindow.Show();
     }
 }

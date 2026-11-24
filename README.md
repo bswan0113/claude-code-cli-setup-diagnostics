@@ -2,14 +2,23 @@
 
 **English** · [한국어](README.ko.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
-This Windows launcher helps you install or repair the Claude Code CLI and pick up where you left off in a previous session.
+## Download for Windows x64
+
+| Edition | Choose it to… | Download |
+|---|---|---|
+| **Full edition** | Install or repair Claude Code, manage sessions and accounts, and use the sidebar. | [ClaudeLauncher.exe](https://github.com/bswan0113/claude-code-cli-setup-diagnostics/releases/latest/download/ClaudeLauncher.exe) |
+| **Repair Mini** | Go straight to the diagnostic scan. Review the recommended installation or repair and approve it to proceed. | [ClaudeRepairMini.exe](https://github.com/bswan0113/claude-code-cli-setup-diagnostics/releases/latest/download/ClaudeRepairMini.exe) |
+
+Download either executable and open it. No separate .NET installation is needed. In either edition you can choose English, Korean, Simplified Chinese or Japanese.
+
+The full Windows launcher helps you install or repair the Claude Code CLI and pick up where you left off in a previous session.
 
 1. **Install and repair the Claude Code CLI.** Install the CLI on first use or run eight diagnostic checks when it stops working. The launcher shows what it found and asks for approval before making changes.
 2. **Find and resume local Claude Code sessions.** Browse your Claude Code history by project folder in the launcher. Select a session to open PowerShell in its working folder and pick up where you left off in the CLI.
 
 ## Install and repair
 
-Open **Setup and repair** at the top of the main window or at the bottom left of the sidebar. The scan starts automatically. The result is **Installation needed**, **Issue found** or **No issues found**. Issues are marked in red.
+In the full edition, open **Setup and repair** at the top of the main window or at the bottom left of the sidebar. The scan starts automatically. The result is **Installation needed**, **Issue found** or **No issues found**. Issues are marked in red.
 
 If the launcher can fix the problem, it explains what happened, recommends one action and asks whether to proceed. Choose **Yes** to run that action or **No** to leave things as they are. If you need to sign in or contact an administrator, the result tells you what to do. Expand **Full diagnostic results** to see all eight checks and their evidence.
 
@@ -105,12 +114,16 @@ Dock the window to the left or right edge to use it as a sidebar. In **Appearanc
 
 ## Build from source
 
-On Windows with the .NET 10 SDK installed, run this command from the repository root.
+On Windows with the .NET 10 SDK installed, run the command for the edition you want from the repository root.
 
 ```powershell
+# Full edition
 dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64
+
+# Repair Mini
+dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64 -p:Edition=Mini
 ```
 
-The executable is written to `artifacts/publish/win-x64/ClaudeLauncher.exe`.
+Both commands publish to `artifacts/publish/win-x64/`. The full edition produces `ClaudeLauncher.exe` and Mini produces `ClaudeRepairMini.exe`.
 
 [Workflow and diagnostic decisions (Korean)](docs/workflow.md) · [Development plan and acceptance criteria (Korean)](docs/development-plan.md)

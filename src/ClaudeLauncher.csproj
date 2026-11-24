@@ -8,12 +8,27 @@
     <RootNamespace>ClaudeLauncher</RootNamespace>
     <AssemblyName>ClaudeLauncher</AssemblyName>
     <Product>Claude Code CLI Setup &amp; Diagnostics</Product>
-    <Version>0.4.0</Version>
+    <Version>0.5.0</Version>
     <ApplicationIcon>Launcher.ico</ApplicationIcon>
     <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Edition)' == 'Mini'">
+    <AssemblyName>ClaudeRepairMini</AssemblyName>
+    <Product>Claude Code Setup and Repair Mini</Product>
+    <DefineConstants>$(DefineConstants);REPAIR_MINI</DefineConstants>
+    <EnableCompressionInSingleFile Condition="'$(PublishSingleFile)' == 'true' Or '$(PublishProfile)' == 'Windows-x64'">true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(Edition)' == 'Mini'">
+    <Compile Remove="App/MainWindow*.cs;App/AppearancePanel.xaml.cs;App/DesktopSidebar.cs;App/LauncherRows.cs;App/UsageText.cs;App/SessionOwnerProfiles.cs;Launcher/LiveTerminal.cs;Launcher/TerminalLauncher.cs;History/*.cs" />
+    <Compile Include="History/ProfileDataPaths.cs" />
+    <Page Remove="App/MainWindow.xaml;App/AppearancePanel.xaml" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Edition)' != 'Mini'">
+    <Compile Remove="App/RepairMiniWindow.xaml.cs" />
+    <Page Remove="App/RepairMiniWindow.xaml" />
+  </ItemGroup>
   <ItemGroup>
     <Using Include="System.IO" />
     <!-- Keep the language dictionaries verbatim in the app's WPF resources. A language edit

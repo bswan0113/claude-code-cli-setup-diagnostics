@@ -2,14 +2,23 @@
 
 [English](README.md) · [한국어](README.ko.md) · [简体中文](README.zh-CN.md) · **日本語**
 
-このランチャーを使うと、Windows で Claude Code CLI を手軽にインストール・修復でき、以前のセッションを開いて作業を再開できます。
+## Windows x64 版をダウンロード
+
+| エディション | 用途 | ダウンロード |
+|---|---|---|
+| **フル版** | Claude Code のインストールと修復、セッションやアカウントの管理、サイドバーを利用できます。 | [ClaudeLauncher.exe](https://github.com/bswan0113/claude-code-cli-setup-diagnostics/releases/latest/download/ClaudeLauncher.exe) |
+| **インストール・修復専用 Mini** | 起動するとすぐに診断が始まります。原因と対処方法を確認し、承認するとインストールや修復を実行します。 | [ClaudeRepairMini.exe](https://github.com/bswan0113/claude-code-cli-setup-diagnostics/releases/latest/download/ClaudeRepairMini.exe) |
+
+使いたい方の実行ファイルをダウンロードして開いてください。どちらも .NET を別途インストールする必要はありません。画面の言語は英語・韓国語・中国語（簡体字）・日本語から選べます。
+
+フル版では、Windows で Claude Code CLI をインストール・修復し、以前のセッションを開いて作業を再開できます。
 
 1. **Claude Code CLI のインストールと修復。** 初めて使うときは CLI をインストールできます。起動できないときは、8 ステップの診断で原因と対処方法を確認できます。変更を加える前に、ランチャーが実行内容を表示して確認を求めます。
 2. **ローカルの Claude Code セッションを探して再開。** ランチャーでは、この PC に保存された Claude Code の会話を作業フォルダー別に探せます。セッションを選ぶと、そのフォルダーで PowerShell が開き、CLI で会話の続きを始められます。
 
 ## セットアップと修復
 
-メイン画面の上部またはサイドバーの左下で **セットアップと修復** を開くと、診断が自動で始まります。結果は「インストールが必要」「問題あり」「問題なし」のいずれかです。問題がある場合は赤で表示します。
+フル版では、メイン画面の上部またはサイドバーの左下で **セットアップと修復** を開くと、診断が自動で始まります。結果は「インストールが必要」「問題あり」「問題なし」のいずれかです。問題がある場合は赤で表示します。
 
 修復できる問題があれば、ランチャーが原因と推奨する操作を一つ示し、実行するか尋ねます。**はい** を選ぶとその操作を実行し、**いいえ** を選ぶと変更しません。ログインや管理者への問い合わせが必要な場合は、次の手順が表示されます。判定の根拠を見たいときは「診断結果の詳細」を展開すると、全 8 ステップの結果を確認できます。
 
@@ -105,12 +114,16 @@ Windows のタイトルバーをドラッグするとサイドバーを移動で
 
 ## ソースからのビルド
 
-.NET 10 SDK をインストールした Windows で、リポジトリのルートから次のコマンドを実行します。
+.NET 10 SDK をインストールした Windows で、リポジトリのルートから目的のエディションのコマンドを実行します。
 
 ```powershell
+# フル版
 dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64
+
+# インストール・修復専用 Mini
+dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64 -p:Edition=Mini
 ```
 
-実行ファイルの出力先は `artifacts/publish/win-x64/ClaudeLauncher.exe` です。
+出力先は `artifacts/publish/win-x64/` です。フル版は `ClaudeLauncher.exe`、Mini は `ClaudeRepairMini.exe` として生成されます。
 
 [操作の流れと診断の分岐（韓国語）](docs/workflow.md) · [開発計画と受け入れ基準（韓国語）](docs/development-plan.md)

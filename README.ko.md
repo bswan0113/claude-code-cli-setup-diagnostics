@@ -2,7 +2,16 @@
 
 [English](README.md) · **한국어** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
-이 런처를 쓰면 Windows에서 Claude Code CLI를 쉽게 설치하거나 복구하고, 이전 세션을 열어 작업을 이어갈 수 있습니다.
+## Windows x64 다운로드
+
+| 배포판 | 용도 | 다운로드 |
+|---|---|---|
+| **전체판** | Claude Code 설치·복구와 세션·계정 관리, 사이드바를 모두 사용합니다. | [ClaudeLauncher.exe](https://github.com/bswan0113/claude-code-cli-setup-diagnostics/releases/latest/download/ClaudeLauncher.exe) |
+| **설치·복구 전용 Mini** | 실행하면 바로 진단합니다. 원인과 권장 조치를 확인하고 승인하면 설치하거나 복구합니다. | [ClaudeRepairMini.exe](https://github.com/bswan0113/claude-code-cli-setup-diagnostics/releases/latest/download/ClaudeRepairMini.exe) |
+
+필요한 실행 파일 하나를 받아 열면 됩니다. 두 배포판 모두 .NET을 따로 설치할 필요가 없습니다. 화면 언어는 한국어·영어·중국어 간체·일본어 중에서 고를 수 있습니다.
+
+전체판에서는 Windows에서 Claude Code CLI를 설치하거나 복구하고, 이전 세션을 열어 작업을 이어갈 수 있습니다.
 
 1. **Claude Code CLI 자동 설치·복구**
 
@@ -13,7 +22,7 @@
 
 ## 설치 · 복구
 
-기본 창 상단이나 사이드바 왼쪽 아래에서 **설치 · 복구**를 누르면 검사가 시작됩니다. 결과는 **설치 필요**, **이상 있음**, **이상 없음** 중 하나로 표시됩니다. 문제가 있으면 빨간색으로 강조합니다.
+전체판의 기본 창 상단이나 사이드바 왼쪽 아래에서 **설치 · 복구**를 누르면 검사가 시작됩니다. 결과는 **설치 필요**, **이상 있음**, **이상 없음** 중 하나로 표시됩니다. 문제가 있으면 빨간색으로 강조합니다.
 
 고칠 수 있는 문제가 있으면 런처가 원인과 권장 조치 한 가지를 보여주고 진행할지 묻습니다. **예**를 누르면 해당 작업을 실행하고, **아니요**를 누르면 변경하지 않습니다. 직접 로그인하거나 관리자에게 문의해야 할 때는 화면에 다음 할 일이 나옵니다. 검사 근거가 궁금하면 **전체 검사 결과**를 펼쳐 여덟 단계의 세부 내용을 확인하세요.
 
@@ -109,12 +118,16 @@ Claude가 세션마다 만드는 임시 `scratchpad` 폴더와 서브에이전�
 
 ## 소스에서 빌드하기
 
-.NET 10 SDK가 설치된 Windows에서 저장소 루트를 열고 실행합니다.
+.NET 10 SDK가 설치된 Windows에서 저장소 루트를 열고 원하는 배포판의 명령을 실행하세요.
 
 ```powershell
+# 전체판
 dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64
+
+# 설치·복구 전용 Mini
+dotnet publish src/ClaudeLauncher.csproj -c Release -r win-x64 -p:PublishProfile=Windows-x64 -p:Edition=Mini
 ```
 
-실행 파일은 `artifacts/publish/win-x64/ClaudeLauncher.exe`에 생성됩니다.
+출력 폴더는 `artifacts/publish/win-x64/`입니다. 전체판은 `ClaudeLauncher.exe`, Mini는 `ClaudeRepairMini.exe`로 생성됩니다.
 
 [화면 흐름과 진단 분기](docs/workflow.md) · [개발 순서와 검수 기준](docs/development-plan.md)
