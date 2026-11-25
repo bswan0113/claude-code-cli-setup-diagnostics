@@ -11,7 +11,7 @@
     <RootNamespace>ClaudeLauncher</RootNamespace>
     <AssemblyName>ClaudeLauncher</AssemblyName>
     <Product>Claude Code CLI Setup &amp; Diagnostics</Product>
-    <Version>0.5.1</Version>
+    <Version>0.5.2</Version>
     <ApplicationIcon>Launcher.ico</ApplicationIcon>
     <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>

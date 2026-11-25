@@ -176,7 +176,7 @@ internal static class SessionRemoval
             if (HasLiveSession(root, id, token)) return "Active";
             if (HasDuplicate(root, id, restore ? null : original, token)) return "Conflict";
             token.ThrowIfCancellationRequested();
-            Rename(file, directory, Path.GetFileName(target));
+            Rename(file, Path.GetFileName(target));
             return restore ? "Restored" : "Removed";
         }
         catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException) { return "Changed"; }
@@ -289,17 +289,20 @@ internal static class SessionRemoval
 
     // Move the inspected object (not a reopened path) under the pinned original directory. The
     // source handle denies write/delete sharing; ReplaceIfExists stays zero even on an external race.
-    private static void Rename(SafeFileHandle source, SafeFileHandle directory, string name)
+    private static void Rename(SafeFileHandle source, string name)
     {
         var nameBytes = Encoding.Unicode.GetByteCount(name);
-        var header = new RenameHeader { Directory = directory.DangerousGetHandle(), NameBytes = (uint)nameBytes };
+        var header = new RenameHeader { NameBytes = (uint)nameBytes };
         var offset = Marshal.OffsetOf<RenameHeader>(nameof(RenameHeader.FirstChar)).ToInt32();
         var buffer = new byte[Marshal.SizeOf<RenameHeader>() + nameBytes];
         MemoryMarshal.Write(buffer.AsSpan(), in header);
         Encoding.Unicode.GetBytes(name, buffer.AsSpan(offset));
-        if (!SetFileInformationByHandle(source, 3, buffer, (uint)buffer.Length))
-            throw new Win32Exception(Marshal.GetLastWin32Error());
-        GC.KeepAlive(directory);
+        // A null RootDirectory and a basename rename within the source file's own directory.
+        // Passing this directly to NT avoids resolving the basename against the process cwd.
+        const int fileRenameInformation = 10;
+        int status = NtSetInformationFile(source, out _, buffer, (uint)buffer.Length, fileRenameInformation);
+        if (status < 0)
+            throw new Win32Exception((int)RtlNtStatusToDosError(status));
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -317,6 +320,11 @@ internal static class SessionRemoval
     private static extern bool GetFileInformationByHandle(SafeFileHandle file, out FileInfoNative info);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
     private static extern uint GetFinalPathNameByHandleW(SafeFileHandle file, StringBuilder name, uint length, uint flags);
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool SetFileInformationByHandle(SafeFileHandle file, int infoClass, byte[] info, uint size);
+    [StructLayout(LayoutKind.Sequential)]
+    private struct IoStatusBlock { internal IntPtr Status; internal UIntPtr Information; }
+    [DllImport("ntdll.dll", ExactSpelling = true)]
+    private static extern int NtSetInformationFile(SafeFileHandle file, out IoStatusBlock ioStatus,
+        byte[] info, uint size, int infoClass);
+    [DllImport("ntdll.dll", ExactSpelling = true)]
+    private static extern uint RtlNtStatusToDosError(int status);
 }
