@@ -129,3 +129,5 @@ dotnet publish src/Mini/ClaudeRepairMini.csproj -c Release
 输出目录为 `artifacts/publish/win-x64/`。完整版会生成 `ClaudeLauncher.exe`，Mini 会生成 `ClaudeRepairMini.exe`。
 
 [操作流程与诊断分支（韩语）](docs/workflow.md) · [开发计划与验收标准（韩语）](docs/development-plan.md)
+
+[MIT 许可证](LICENSE) · © 2026 BlsLab

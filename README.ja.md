@@ -129,3 +129,5 @@ dotnet publish src/Mini/ClaudeRepairMini.csproj -c Release
 出力先は `artifacts/publish/win-x64/` です。フル版は `ClaudeLauncher.exe`、Mini は `ClaudeRepairMini.exe` として生成されます。
 
 [操作の流れと診断の分岐（韓国語）](docs/workflow.md) · [開発計画と受け入れ基準（韓国語）](docs/development-plan.md)
+
+[MIT ライセンス](LICENSE) · © 2026 BlsLab

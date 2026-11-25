@@ -129,3 +129,5 @@ dotnet publish src/Mini/ClaudeRepairMini.csproj -c Release
 Both commands publish to `artifacts/publish/win-x64/`. The full edition produces `ClaudeLauncher.exe` and Mini produces `ClaudeRepairMini.exe`.
 
 [Workflow and diagnostic decisions (Korean)](docs/workflow.md) · [Development plan and acceptance criteria (Korean)](docs/development-plan.md)
+
+[MIT License](LICENSE) · © 2026 BlsLab

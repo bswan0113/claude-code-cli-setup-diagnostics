@@ -133,3 +133,5 @@ dotnet publish src/Mini/ClaudeRepairMini.csproj -c Release
 출력 폴더는 `artifacts/publish/win-x64/`입니다. 전체판은 `ClaudeLauncher.exe`, Mini는 `ClaudeRepairMini.exe`로 생성됩니다.
 
 [화면 흐름과 진단 분기](docs/workflow.md) · [개발 순서와 검수 기준](docs/development-plan.md)
+
+[MIT 라이선스](LICENSE) · © 2026 BlsLab
